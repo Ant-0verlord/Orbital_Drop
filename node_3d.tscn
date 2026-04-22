@@ -5,3 +5,5 @@
 [node name="Node3D" type="Node3D" parent="." unique_id=714268305]
 
 [node name="Node3D" type="Node3D" parent="Node3D" unique_id=1568247057]
+
+[node name="Node" type="Node" parent="Node3D/Node3D" unique_id=1528995177]
