@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://dudol3q81ickd"]
+
+[ext_resource type="PackedScene" uid="uid://bn1vmbo3mtl18" path="res://Models/Orbital_Drop_Room_Beta.glb" id="1_vynwd"]
+
+[node name="CommandCentre" type="Node3D" unique_id=1747007529]
+
+[node name="Room" parent="." unique_id=368101724 instance=ExtResource("1_vynwd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.003084302, 0, 0.005645752)
