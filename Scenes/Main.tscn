@@ -1,3 +1,5 @@
-[gd_scene format=3 uid="uid://t2tdngicdmh8"]
+[gd_scene format=3 uid="uid://bcs0wk4jue5bi"]
 
-[node name="Node" type="Node" unique_id=1616461372]
+[node name="Main" type="Node" unique_id=1616461372]
+
+[node name="Game Manager" type="Node" parent="." unique_id=64145435]
