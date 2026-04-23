@@ -1,8 +1,25 @@
 [gd_scene format=3 uid="uid://dudol3q81ickd"]
 
-[ext_resource type="PackedScene" uid="uid://bn1vmbo3mtl18" path="res://Models/Orbital_Drop_Room_Beta.glb" id="1_vynwd"]
+[ext_resource type="ArrayMesh" uid="uid://c5w223hy43juc" path="res://Models/Orbital_Drop_Room_Beta.obj" id="1_vynwd"]
+[ext_resource type="PackedScene" uid="uid://cwcetb2j4yciv" path="res://Scenes/Player.tscn" id="2_2srap"]
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_2srap"]
 
 [node name="CommandCentre" type="Node3D" unique_id=1747007529]
 
-[node name="Room" parent="." unique_id=368101724 instance=ExtResource("1_vynwd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.003084302, 0, 0.005645752)
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=111542529]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=1624492875]
+mesh = ExtResource("1_vynwd")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="StaticBody3D" unique_id=1509760509]
+shape = SubResource("WorldBoundaryShape3D_2srap")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1410528639]
+shape = SubResource("WorldBoundaryShape3D_2srap")
+
+[node name="Node3D" parent="." unique_id=1691761437 instance=ExtResource("2_2srap")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.70414376, 0, -0.5587158)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1867280174]
+transform = Transform3D(-0.9986533, 0.051882725, 1.9692932e-09, 0.020402998, 0.3927226, 0.9194308, 0.04770257, 0.91819257, -0.39325222, 0, 5.1818776, -6.5396113)
