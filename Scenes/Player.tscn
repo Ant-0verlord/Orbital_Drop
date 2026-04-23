@@ -1,55 +1,6 @@
 [gd_scene format=3 uid="uid://cwcetb2j4yciv"]
 
-[sub_resource type="GDScript" id="GDScript_qbkls"]
-script/source = "extends CharacterBody3D
-
-const SPEED = 7.5
-const SENSITIVITY = 0.005 # Mouse sensitivity
-
-@onready var camera = $Camera3D
-
-var look_dir: Vector2
-
-func _ready() -> void:
-	# Locks the mouse to the center of the screen
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-func _input(event: InputEvent) -> void:
-	# Capture mouse movement
-	if event is InputEventMouseMotion:
-		look_dir = event.relative
-
-func _physics_process(delta: float) -> void:
-	# Add the gravity
-	if not is_on_floor():
-		velocity += get_gravity() * delta
-
-	# Handle Movement
-	var input_dir := Input.get_vector(\"Walk_Left\", \"Walk_Right\", \"Walk_Front\", \"Walk_Back\")
-	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	
-	if direction:
-		velocity.x = direction.x * SPEED
-		velocity.z = direction.z * SPEED
-	else:
-		velocity.x = move_toward(velocity.x, 0, SPEED)
-		velocity.z = move_toward(velocity.z, 0, SPEED)
-
-	# Handle Camera Rotation
-	_rotate_camera()
-
-	move_and_slide()
-
-func _rotate_camera() -> void:
-	# Rotate the character body on the Y axis
-	rotate_y(-look_dir.x * SENSITIVITY)
-	
-	# Rotate the camera on the X axis
-	camera.rotation.x = clamp(camera.rotation.x - look_dir.y * SENSITIVITY, -1.5, 1.5)
-	
-	# Reset look_dir to prevent infinite spinning
-	look_dir = Vector2.ZERO
-"
+[ext_resource type="Script" uid="uid://bos2s6bhm185j" path="res://Scripts/Player.gd" id="1_rpqav"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_rpqav"]
 
@@ -66,7 +17,7 @@ size = Vector2(20, 20)
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1933271533]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6566827, 0)
-script = SubResource("GDScript_qbkls")
+script = ExtResource("1_rpqav")
 
 [node name="Camera3D" type="Camera3D" parent="CharacterBody3D" unique_id=501669847]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.73941475, -0.43672204)
@@ -81,7 +32,13 @@ mesh = SubResource("CapsuleMesh_kyqiw")
 physics_material_override = SubResource("PhysicsMaterial_qbkls")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=841605066]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0073008537, 1.1920929e-07, 0.002600193)
 mesh = SubResource("PlaneMesh_rpqav")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1213845397]
 shape = SubResource("WorldBoundaryShape3D_kyqiw")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=474208009]
+transform = Transform3D(1, 0, 0, 0, 0.29825798, 0.95448536, 0, -0.95448536, 0.29825798, 0, 4.922046, -2.8913944)
+shadow_enabled = true
+shadow_bias = 0.0
