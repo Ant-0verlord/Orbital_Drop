@@ -18,6 +18,8 @@ shape = SubResource("WorldBoundaryShape3D_2srap")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1410528639]
 shape = SubResource("WorldBoundaryShape3D_2srap")
 
+[node name="Node" type="Node" parent="StaticBody3D" unique_id=2094103180]
+
 [node name="Node3D" parent="." unique_id=1691761437 instance=ExtResource("2_2srap")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.70414376, 0, -0.5587158)
 
