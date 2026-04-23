@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://bcs0wk4jue5bi"]
 
+[ext_resource type="Script" uid="uid://conb35re10vel" path="res://Scripts/button.gd" id="1_r150o"]
+
 [sub_resource type="GDScript" id="GDScript_c1w88"]
 script/source = "extends Node
 
@@ -18,3 +20,10 @@ func _process(delta: float) -> void:
 script = SubResource("GDScript_c1w88")
 
 [node name="Game Manager" type="Node" parent="." unique_id=64145435]
+
+[node name="StartButton" type="Button" parent="." unique_id=469784209]
+offset_right = 8.0
+offset_bottom = 8.0
+script = ExtResource("1_r150o")
+
+[connection signal="pressed" from="StartButton" to="StartButton" method="_on_pressed"]
