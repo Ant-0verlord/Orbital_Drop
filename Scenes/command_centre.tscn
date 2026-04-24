@@ -6,5 +6,5 @@
 [node name="CommandCentre" type="Node3D" unique_id=1747007529]
 script = ExtResource("1_2srap")
 
-[node name="Room" parent="." unique_id=368101724 instance=ExtResource("1_vynwd")]
+[node name="Room" parent="." unique_id=923357481 instance=ExtResource("1_vynwd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.003084302, 0, 0.005645752)
