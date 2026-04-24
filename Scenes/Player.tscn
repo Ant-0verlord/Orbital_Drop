@@ -6,6 +6,13 @@
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_kyqiw"]
 
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_qbkls"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_rpqav"]
+size = Vector2(20, 20)
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_kyqiw"]
+
 [node name="Node3D" type="Node3D" unique_id=1691761437]
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1933271533]
@@ -20,3 +27,18 @@ shape = SubResource("CapsuleShape3D_rpqav")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="CharacterBody3D" unique_id=1245704114]
 mesh = SubResource("CapsuleMesh_kyqiw")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=566718467]
+physics_material_override = SubResource("PhysicsMaterial_qbkls")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=841605066]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0073008537, 1.1920929e-07, 0.002600193)
+mesh = SubResource("PlaneMesh_rpqav")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1213845397]
+shape = SubResource("WorldBoundaryShape3D_kyqiw")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=474208009]
+transform = Transform3D(1, 0, 0, 0, 0.29825798, 0.95448536, 0, -0.95448536, 0.29825798, 0, 4.922046, -2.8913944)
+shadow_enabled = true
+shadow_bias = 0.0
