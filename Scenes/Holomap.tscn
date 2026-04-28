@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://poa3ylhykd1g"]
+
+[ext_resource type="ArrayMesh" uid="uid://cxvp4fr84k0ue" path="res://Models/Holomap 1.1.obj" id="1_sdqmv"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jvvyk"]
+size = Vector3(3.659912, 0.61828613, 2.064331)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ftbq4"]
+size = Vector3(3.659912, 0.61865234, 2.064331)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_h4dqx"]
+size = Vector3(3.659912, 0.63952637, 2.064331)
+
+[node name="Node3D" type="Node3D" unique_id=920081661]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1674610407]
+mesh = ExtResource("1_sdqmv")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=180638729]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=153597025]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.19085693, -0.0033569336)
+shape = SubResource("BoxShape3D_jvvyk")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=1687002405]
+transform = Transform3D(0.5003174, 0, -0.8658421, 0, 1, 0, 0.8658421, 0, 0.5003174, 0, -0.19067383, -0.0033569336)
+shape = SubResource("BoxShape3D_ftbq4")
+
+[node name="CollisionShape3D3" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=808513259]
+transform = Transform3D(-0.49617103, 0, -0.8682248, 0, 1, 0, 0.8682248, 0, -0.49617103, 0, -0.18023682, -0.0033569336)
+shape = SubResource("BoxShape3D_h4dqx")

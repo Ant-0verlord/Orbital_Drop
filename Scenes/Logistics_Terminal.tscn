@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://ecaj1srmx3pq"]
+
+[ext_resource type="ArrayMesh" uid="uid://ckwjhi8kaqsft" path="res://Models/Logistics terminal 1.1.obj" id="1_5h3g4"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_i6nf8"]
+size = Vector3(5.132309, 1.8270569, 1.8084717)
+
+[node name="Node3D" type="Node3D" unique_id=2129069639]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=472425833]
+transform = Transform3D(0.6755957, 0, 0, 0, 0.6755957, 0, 0, 0, 0.6755957, 0, 0, 0)
+mesh = ExtResource("1_5h3g4")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=588741274]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=1172289407]
+transform = Transform3D(1.0000002, 0, 0, 0, 1.0000002, 0, 0, 0, 1.0000002, 0.9967596, -0.025222624, -0.0978472)
+shape = SubResource("BoxShape3D_i6nf8")
