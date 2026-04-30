@@ -9,13 +9,14 @@ script/source = "extends StaticBody3D
 @onready var popup: Control = $LogisticsPopup
 
 # Reference to the player so the popup can call back to close
-@export var player_path: NodePath
 @onready var player = get_node(player_path)
 
 
+var player: Node = null
+
 func _ready() -> void:
 	popup.visible = false
-	# Pass player reference to popup so it can trigger close
+	player = get_tree().get_first_node_in_group(\"player\")
 	popup.player = player
 
 
@@ -39,6 +40,7 @@ mesh = ExtResource("1_dbkkn")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=72201949]
 script = SubResource("GDScript_dbkkn")
+player_path = null
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=2012968481]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.30760193, 0.057677764, 0.07895749)
