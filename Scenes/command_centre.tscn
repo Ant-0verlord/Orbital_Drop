@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://ecaj1srmx3pq" path="res://Scenes/Logistics_Terminal.tscn" id="5_pukuc"]
 [ext_resource type="PackedScene" uid="uid://coxngs3dv5klu" path="res://Scenes/Vox-Caster Array.tscn" id="6_0ddt4"]
 [ext_resource type="PackedScene" uid="uid://dqijc1p6b6vfg" path="res://Scenes/Command Throne.tscn" id="7_0ddt4"]
+[ext_resource type="PackedScene" uid="uid://caw7db8eaj2t2" path="res://Scenes/Intel Desk.tscn" id="8_4fnma"]
 
 [sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_lgj2y"]
 
@@ -180,3 +181,6 @@ transform = Transform3D(1, 0, 0, 0, 0.012217229, 0.9999254, 0, -0.9999254, 0.012
 light_energy = 7.559
 spot_range = 40.91747
 spot_angle = 62.81881
+
+[node name="Node3D" parent="." unique_id=886229687 instance=ExtResource("8_4fnma")]
+transform = Transform3D(-0.99999994, 0, 8.742277e-08, 0, 1, 0, -8.742277e-08, 0, -0.99999994, 6.269709, 0.5999081, -4.7683716e-07)
