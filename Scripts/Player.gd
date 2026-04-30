@@ -1,49 +1,77 @@
 extends CharacterBody3D
 
-const SPEED = 7.5
-const SENSITIVITY = 0.005
+# --- Settings ---
+@export var move_speed: float = 4.0
+@export var mouse_sensitivity: float = 0.002
+@export var interact_distance: float = 2.5
 
-@onready var camera = $Camera3D
+# --- Nodes ---
+@onready var head: Node3D = $Head
+@onready var camera: Camera3D = $Head/Camera3D
+@onready var ray: RayCast3D = $Head/Camera3D/RayCast3D
+@onready var interact_label: Label = %InteractLabel  # small "Press E" hint in HUD
 
-# Default to true since we capture the mouse in _ready()
-var capMouse = true 
-var look_dir: Vector2
+var current_console = null  # the console popup currently open (or null)
+var popup_open: bool = false
+
 
 func _ready() -> void:
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	interact_label.visible = false
 
-func _input(event: InputEvent) -> void:
-	# Only capture mouse motion if the mouse is actually captured
-	if capMouse and event is InputEventMouseMotion:
-		look_dir = event.relative
 
-func _physics_process(delta: float) -> void:
-	if not is_on_floor():
-		velocity += get_gravity() * delta
+func _unhandled_input(event: InputEvent) -> void:
+	# Mouse look (only when no popup is open)
+	if not popup_open and event is InputEventMouseMotion:
+		head.rotate_y(-event.relative.x * mouse_sensitivity)
+		camera.rotate_x(-event.relative.y * mouse_sensitivity)
+		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-80), deg_to_rad(80))
 
-	# Handle Pause/Toggle
-	# Note: Ensure you have an action named "pause" in Input Map
-	if Input.is_action_just_pressed("Pause"):
-		capMouse = !capMouse
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if capMouse else Input.MOUSE_MODE_VISIBLE
+	# Open console popup
+	if event.is_action_pressed("interact") and not popup_open:
+		if ray.is_colliding():
+			var hit = ray.get_collider()
+			if hit and hit.has_method("open_popup"):
+				hit.open_popup()
+				popup_open = true
+				current_console = hit
+				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
-	# Handle Movement (only if mouse is captured)
-	if capMouse:
-		var input_dir := Input.get_vector("Walk_Left", "Walk_Right", "Walk_Front", "Walk_Back")
-		var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-		
-		if direction:
-			velocity.x = direction.x * SPEED
-			velocity.z = direction.z * SPEED
-		else:
-			velocity.x = move_toward(velocity.x, 0, SPEED)
-			velocity.z = move_toward(velocity.z, 0, SPEED)
-			
-		_rotate_camera()
+	# Close popup with Esc
+	if event.is_action_pressed("ui_cancel") and popup_open:
+		close_popup()
+
+
+func _physics_process(_delta: float) -> void:
+	if popup_open:
+		return  # Lock movement while popup is open
+
+	# WASD movement
+	var input_dir = Vector2(
+		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
+		Input.get_action_strength("move_back")  - Input.get_action_strength("move_forward")
+	)
+	var direction = (head.global_transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+
+	velocity.x = direction.x * move_speed
+	velocity.z = direction.z * move_speed
+	velocity.y -= 9.8 * _delta  # Simple gravity
 
 	move_and_slide()
 
-func _rotate_camera() -> void:
-	rotate_y(-look_dir.x * SENSITIVITY)
-	camera.rotation.x = clamp(camera.rotation.x - look_dir.y * SENSITIVITY, -1.5, 1.5)
-	look_dir = Vector2.ZERO
+	# "Press E" hint
+	var can_interact = ray.is_colliding() and ray.get_collider() and ray.get_collider().has_method("open_popup")
+	interact_label.visible = can_interact
+
+
+func close_popup() -> void:
+	if current_console and current_console.has_method("close_popup"):
+		current_console.close_popup()
+	popup_open = false
+	current_console = null
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+
+# Called by a popup's Close button directly
+func on_popup_closed() -> void:
+	close_popup()

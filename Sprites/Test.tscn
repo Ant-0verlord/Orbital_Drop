@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://dt0d4xt84n145"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_mpapf"]
+
+[node name="Node2D" type="Node2D" unique_id=41443337]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1212967829]
+texture = SubResource("PlaceholderTexture2D_mpapf")

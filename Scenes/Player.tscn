@@ -12,11 +12,26 @@
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6566827, 0)
 script = ExtResource("1_rpqav")
 
-[node name="Camera3D" type="Camera3D" parent="CharacterBody3D" unique_id=501669847]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.73941475, -0.43672204)
-
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D" unique_id=97551250]
 shape = SubResource("CapsuleShape3D_rpqav")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="CharacterBody3D" unique_id=1245704114]
 mesh = SubResource("CapsuleMesh_kyqiw")
+
+[node name="Head" type="Node3D" parent="CharacterBody3D" unique_id=2070374799]
+
+[node name="Camera3D" type="Camera3D" parent="CharacterBody3D/Head" unique_id=501669847]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7394147, -0.43672204)
+
+[node name="RayCast3D" type="RayCast3D" parent="CharacterBody3D/Head/Camera3D" unique_id=375870615]
+target_position = Vector3(0, 0, -2.5)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1462765912]
+
+[node name="InteractLabel" type="Label" parent="CanvasLayer" unique_id=1371845611]
+unique_name_in_owner = true
+offset_left = 491.0
+offset_top = 570.0
+offset_right = 631.0
+offset_bottom = 593.0
+text = "Press E to interact"
