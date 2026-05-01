@@ -9,14 +9,11 @@ script/source = "extends StaticBody3D
 # Reference to the popup scene instance (add as a child in the editor)
 @onready var popup: Control = $LogisticsPopup
 
-# Reference to the player so the popup can call back to close
-@export var player_path: NodePath
-@onready var player = get_node(player_path)
-
+var player: Node = null
 
 func _ready() -> void:
 	popup.visible = false
-	# Pass player reference to popup so it can trigger close
+	player = get_tree().get_first_node_in_group(\"player\")
 	popup.player = player
 
 

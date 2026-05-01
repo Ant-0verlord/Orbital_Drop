@@ -2,46 +2,8 @@
 
 [ext_resource type="ArrayMesh" uid="uid://lfw1piktfyhw" path="res://Models/Intel Desk 1.1.obj" id="1_dbkkn"]
 
-[sub_resource type="GDScript" id="GDScript_dbkkn"]
-script/source = "extends StaticBody3D
-
-# Reference to the popup scene instance (add as a child in the editor)
-@onready var popup: Control = $LogisticsPopup
-
-# Reference to the player so the popup can call back to close
-@onready var player = get_node(player_path)
-
-
-var player: Node = null
-
-func _ready() -> void:
-	popup.visible = false
-	player = get_tree().get_first_node_in_group(\"player\")
-	popup.player = player
-
-
-func open_popup() -> void:
-	popup.visible = true
-	popup.refresh()  # Re-draw current allocations when opened
-
-
-func close_popup() -> void:
-	popup.visible = false
-"
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_6q85b"]
-size = Vector3(3.2655945, 2.8841143, 5.8897915)
-
 [node name="Node3D" type="Node3D" unique_id=886229687]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=450404994]
 transform = Transform3D(0.50066185, 0, 0, 0, 0.45073858, 0, 0, 0, 0.4776134, 0, 0, 0)
 mesh = ExtResource("1_dbkkn")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=72201949]
-script = SubResource("GDScript_dbkkn")
-player_path = null
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=2012968481]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.30760193, 0.057677764, 0.07895749)
-shape = SubResource("BoxShape3D_6q85b")

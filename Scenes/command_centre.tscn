@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://cxyas1soh7axv"]
+[gd_scene format=3 uid="uid://c86olhr2javdx"]
 
 [ext_resource type="Script" uid="uid://b51styhlxar2p" path="res://Scripts/command_centre.gd" id="1_cxp23"]
 [ext_resource type="PackedScene" uid="uid://cwcetb2j4yciv" path="res://Scenes/Player.tscn" id="2_y0xqi"]
@@ -160,8 +160,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0677171, 0.681, 5.312)
 [node name="Vox-Caster Array" parent="Room" unique_id=807166821 instance=ExtResource("6_0ddt4")]
 transform = Transform3D(-4.3711385e-08, 0, -0.99999994, 0, 1, 0, 0.99999994, 0, -4.3711385e-08, 0.4366417, 0.035555508, -5.4210625)
 
-[node name="Player" parent="." unique_id=1691761437 instance=ExtResource("2_y0xqi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.849574, 1.9073486e-06, 0.37682748)
+[node name="player" parent="." unique_id=1691761437 instance=ExtResource("2_y0xqi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0670578, 15.918949, 0.37682748)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="." unique_id=1480309603]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 4.879982, 0)
