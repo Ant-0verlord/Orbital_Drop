@@ -1,43 +1,35 @@
-[gd_scene load_steps=4 format=3 uid="uid://cwcetb2j4yciv"]
+[gd_scene format=3 uid="uid://cwcetb2j4yciv"]
 
-[ext_resource type="ArrayMesh" uid="uid://lfw1piktfyhw" path="res://Models/Intel Desk 1.1.obj" id="1_rpqav"]
+[ext_resource type="Script" uid="uid://b76rtokexc2mj" path="res://Scripts/PlayerController.gd" id="1_rpqav"]
 
-[node name="Node3D" type="Node3D" unique_id=886229687]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_kyqiw"]
 
-<<<<<<< Updated upstream
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=450404994]
-transform = Transform3D(0.50066185, 0, 0, 0, 0.45073858, 0, 0, 0, 0.4776134, 0, 0, 0)
-mesh = ExtResource("1_rpqav")
-=======
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_kyqiw"]
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_gntrk"]
 
-[node name="Node3D" type="Node3D"]
+[node name="Node3D" type="Node3D" unique_id=542213915]
 
-[node name="CharacterBody3D" type="CharacterBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65668, 0)
+[node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1020700930 groups=["player"]]
 script = ExtResource("1_rpqav")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D"]
-shape = SubResource("CapsuleShape3D_rpqav")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D" unique_id=1626141680]
+shape = SubResource("CapsuleShape3D_kyqiw")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="CharacterBody3D"]
-mesh = SubResource("CapsuleMesh_kyqiw")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CharacterBody3D" unique_id=1866913345]
+mesh = SubResource("CapsuleMesh_gntrk")
 
-[node name="Head" type="Node3D" parent="CharacterBody3D"]
+[node name="Head" type="Node3D" parent="CharacterBody3D" unique_id=956758099]
 
-[node name="Camera3D" type="Camera3D" parent="CharacterBody3D/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.739415, -0.436722)
+[node name="Camera3D" type="Camera3D" parent="CharacterBody3D/Head" unique_id=1089722571]
+transform = Transform3D(1.3322768, 0, 0, 0, 1.3020766, 0, 0, 0, 1.3934069, 0, 0.6283808, -0.38560703)
 
-[node name="RayCast3D" type="RayCast3D" parent="CharacterBody3D/Head/Camera3D"]
+[node name="RayCast3D" type="RayCast3D" parent="CharacterBody3D/Head/Camera3D" unique_id=928293612]
 target_position = Vector3(0, 0, -2.5)
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="CharacterBody3D" unique_id=103319549]
 
-[node name="InteractLabel" type="Label" parent="CanvasLayer"]
-unique_name_in_owner = true
-offset_left = 491.0
-offset_top = 570.0
-offset_right = 631.0
-offset_bottom = 593.0
+[node name="InteractLabel" type="Label" parent="CharacterBody3D/CanvasLayer" unique_id=1978357368]
+offset_left = 500.0
+offset_top = 432.0
+offset_right = 640.0
+offset_bottom = 455.0
 text = "Press E to interact"
->>>>>>> Stashed changes

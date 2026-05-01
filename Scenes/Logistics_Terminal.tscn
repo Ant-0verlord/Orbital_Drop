@@ -1,45 +1,27 @@
 [gd_scene format=3 uid="uid://ecaj1srmx3pq"]
 
 [ext_resource type="ArrayMesh" uid="uid://ckwjhi8kaqsft" path="res://Models/Logistics terminal 1.1.obj" id="1_5h3g4"]
+[ext_resource type="Script" uid="uid://d1hkamug1ie0r" path="res://Scripts/LogisticsTerminal.gd" id="2_jyj6u"]
+[ext_resource type="Script" uid="uid://l7snwg4vd2ji" path="res://Scripts/LogisticsPopup.gd" id="3_lbbgb"]
 
-<<<<<<< HEAD
-[sub_resource type="GDScript" id="GDScript_5h3g4"]
-resource_name = "Interact"
-script/source = "extends StaticBody3D
-
-# Reference to the popup scene instance (add as a child in the editor)
-@onready var popup: Control = $LogisticsPopup
-
-var player: Node = null
-
-func _ready() -> void:
-	popup.visible = false
-	player = get_tree().get_first_node_in_group(\"player\")
-	popup.player = player
-
-
-func open_popup() -> void:
-	popup.visible = true
-	popup.refresh()  # Re-draw current allocations when opened
-
-
-func close_popup() -> void:
-	popup.visible = false
-"
-
-=======
->>>>>>> parent of 771fc64 (Calude)
 [sub_resource type="BoxShape3D" id="BoxShape3D_i6nf8"]
-size = Vector3(5.132309, 1.8270569, 1.8084717)
+size = Vector3(5.1401787, 1.9983158, 1.9859753)
 
-[node name="Node3D" type="Node3D" unique_id=2129069639]
+[node name="Node3D" type="Node3D" unique_id=1292128161]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=472425833]
-transform = Transform3D(0.6755957, 0, 0, 0, 0.6755957, 0, 0, 0, 0.6755957, 0, 0, 0)
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1318454912]
 mesh = ExtResource("1_5h3g4")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=588741274]
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=683507405]
+script = ExtResource("2_jyj6u")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=1172289407]
-transform = Transform3D(1.0000002, 0, 0, 0, 1.0000002, 0, 0, 0, 1.0000002, 0.9967596, -0.025222624, -0.0978472)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=1448184268]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0213621, 0.029160857, 0.005602532)
 shape = SubResource("BoxShape3D_i6nf8")
+
+[node name="LogisticsPopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=68396652]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("3_lbbgb")

@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://poa3ylhykd1g"]
 
 [ext_resource type="ArrayMesh" uid="uid://cxvp4fr84k0ue" path="res://Models/Holomap 1.1.obj" id="1_sdqmv"]
+[ext_resource type="Script" uid="uid://8ctke7lqmu2p" path="res://Scripts/HoloMap.gd" id="2_ftbq4"]
+[ext_resource type="Script" uid="uid://r5yd045oo1mc" path="res://Scripts/HoloMapPopup.gd" id="3_h4dqx"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_jvvyk"]
 size = Vector3(3.659912, 0.61828613, 2.064331)
@@ -12,11 +14,14 @@ size = Vector3(3.659912, 0.61865234, 2.064331)
 size = Vector3(3.659912, 0.63952637, 2.064331)
 
 [node name="Node3D" type="Node3D" unique_id=920081661]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1674610407]
+transform = Transform3D(1.6115931, 0, 0, 0, 1.6115931, 0, 0, 0, 1.6115931, 0, 0, 0)
 mesh = ExtResource("1_sdqmv")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=180638729]
+script = ExtResource("2_ftbq4")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=153597025]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.19085693, -0.0033569336)
@@ -29,3 +34,10 @@ shape = SubResource("BoxShape3D_ftbq4")
 [node name="CollisionShape3D3" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=808513259]
 transform = Transform3D(-0.49617103, 0, -0.8682248, 0, 1, 0, 0.8682248, 0, -0.49617103, 0, -0.18023682, -0.0033569336)
 shape = SubResource("BoxShape3D_h4dqx")
+
+[node name="HoloMapPopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=957230676]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("3_h4dqx")

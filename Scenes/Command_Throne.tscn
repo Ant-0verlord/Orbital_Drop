@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://dksywdr8xyjsf"]
+
+[ext_resource type="ArrayMesh" uid="uid://cfp07tk0kbprt" path="res://Models/Command Throne 1.1.obj" id="1_u7idd"]
+[ext_resource type="Script" uid="uid://caj7dobn8fawx" path="res://Scripts/CommandThrone.gd" id="2_id48o"]
+[ext_resource type="Script" uid="uid://fkuvbocfiykr" path="res://Scripts/CommandThronePopup.gd" id="3_602gn"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_oohax"]
+size = Vector3(5.431281, 4.480967, 9.567525)
+
+[node name="Node3D" type="Node3D" unique_id=112694284]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1662060828]
+transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.477, 0, 0, 0)
+mesh = ExtResource("1_u7idd")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=43047206]
+transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.477, 0, 0, 0)
+script = ExtResource("2_id48o")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=935619825]
+transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.477, 0.012145996, 1.6691685, 0.27885818)
+shape = SubResource("BoxShape3D_oohax")
+
+[node name="CommandThronePopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=778375555]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("3_602gn")

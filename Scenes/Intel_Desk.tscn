@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://caglsrgxql7v5"]
+
+[ext_resource type="ArrayMesh" uid="uid://do0blkitt0be0" path="res://Models/Intel Desk 1.1.obj" id="1_0ra3t"]
+[ext_resource type="Script" uid="uid://bd5yqf4ku64t4" path="res://Scripts/IntelConsole.gd" id="2_1kgtn"]
+[ext_resource type="Script" uid="uid://c5ousiyt0lvs" path="res://Scripts/IntelConsolePopup.gd" id="3_l8jtb"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_oohax"]
+size = Vector3(5.431281, 4.480967, 9.567525)
+
+[node name="Node3D" type="Node3D" unique_id=112694284]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1662060828]
+transform = Transform3D(0.36611095, 0, 0, 0, 0.36611095, 0, 0, 0, 0.36611095, 0, 0, 0)
+mesh = ExtResource("1_0ra3t")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=43047206]
+script = ExtResource("2_1kgtn")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=935619825]
+transform = Transform3D(0.626079, 0, 0, 0, 0.626079, 0, 0, 0, 0.626079, 0.22844839, -0.0030802488, -0.015286043)
+shape = SubResource("BoxShape3D_oohax")
+
+[node name="IntelConsolePopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=1946253231]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("3_l8jtb")
