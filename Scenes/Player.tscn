@@ -1,37 +1,9 @@
 [gd_scene format=3 uid="uid://cwcetb2j4yciv"]
 
-[ext_resource type="Script" uid="uid://bos2s6bhm185j" path="res://Scripts/Player.gd" id="1_rpqav"]
+[ext_resource type="ArrayMesh" uid="uid://lfw1piktfyhw" path="res://Models/Intel Desk 1.1.obj" id="1_rpqav"]
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_rpqav"]
+[node name="Node3D" type="Node3D" unique_id=886229687]
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_kyqiw"]
-
-[node name="Node3D" type="Node3D" unique_id=1691761437]
-
-[node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1933271533]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6566827, 0)
-script = ExtResource("1_rpqav")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D" unique_id=97551250]
-shape = SubResource("CapsuleShape3D_rpqav")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="CharacterBody3D" unique_id=1245704114]
-mesh = SubResource("CapsuleMesh_kyqiw")
-
-[node name="Head" type="Node3D" parent="CharacterBody3D" unique_id=2070374799]
-
-[node name="Camera3D" type="Camera3D" parent="CharacterBody3D/Head" unique_id=501669847]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7394147, -0.43672204)
-
-[node name="RayCast3D" type="RayCast3D" parent="CharacterBody3D/Head/Camera3D" unique_id=375870615]
-target_position = Vector3(0, 0, -2.5)
-
-[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1462765912]
-
-[node name="InteractLabel" type="Label" parent="CanvasLayer" unique_id=1371845611]
-unique_name_in_owner = true
-offset_left = 491.0
-offset_top = 570.0
-offset_right = 631.0
-offset_bottom = 593.0
-text = "Press E to interact"
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=450404994]
+transform = Transform3D(0.50066185, 0, 0, 0, 0.45073858, 0, 0, 0, 0.4776134, 0, 0, 0)
+mesh = ExtResource("1_rpqav")
