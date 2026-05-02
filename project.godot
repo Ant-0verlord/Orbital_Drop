@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Orbital Drop"
-run/main_scene="uid://bcs0wk4jue5bi"
+run/main_scene="uid://bgn1a16rrkx12"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
 [autoload]

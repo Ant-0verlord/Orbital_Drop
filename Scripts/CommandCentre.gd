@@ -12,15 +12,9 @@ extends Node3D
 
 
 func _ready() -> void:
-	# Connect mission outcome signals
 	TurnManager.mission_complete.connect(_on_mission_complete)
 	TurnManager.mission_failed.connect(_on_mission_failed)
-
-	# Hide result overlay
-	if result_overlay:
-		result_overlay.visible = false
-
-	# Start the mission
+	await get_tree().process_frame
 	GameManager.start_current_mission()
 
 

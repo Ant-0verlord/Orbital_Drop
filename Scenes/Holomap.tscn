@@ -13,6 +13,18 @@ size = Vector3(3.659912, 0.61865234, 2.064331)
 [sub_resource type="BoxShape3D" id="BoxShape3D_h4dqx"]
 size = Vector3(3.659912, 0.63952637, 2.064331)
 
+[sub_resource type="ViewportTexture" id="ViewportTexture_ftbq4"]
+viewport_path = NodePath("SubViewport")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_h4dqx"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+albedo_texture = SubResource("ViewportTexture_ftbq4")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ftbq4"]
+material = SubResource("StandardMaterial3D_h4dqx")
+
 [node name="Node3D" type="Node3D" unique_id=920081661]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 
@@ -41,3 +53,12 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("3_h4dqx")
+
+[node name="Holoplane" type="MeshInstance3D" parent="." unique_id=1081808666]
+transform = Transform3D(2.1221673, 0, 0, 0, 2.1221673, 0, 0, 0, 2.1221673, 0, 0.36769772, 0)
+mesh = SubResource("PlaneMesh_ftbq4")
+
+[node name="SubViewport" type="SubViewport" parent="." unique_id=1053546234]
+transparent_bg = true
+
+[node name="HoloMapDisplay" type="Node2D" parent="SubViewport" unique_id=119153968]
