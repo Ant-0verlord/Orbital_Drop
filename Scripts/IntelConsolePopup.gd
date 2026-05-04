@@ -10,7 +10,13 @@ var player: Node = null
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
+	# Add this:
+	TurnManager.turn_started.connect(_on_turn_started)
 	_build_ui()
+
+func _on_turn_started(_turn: int) -> void:
+	if visible:
+		refresh()
 
 
 func refresh() -> void:
@@ -72,10 +78,9 @@ func _build_ui() -> void:
 # Rebuild report cards each time popup opens or turn resolves
 # -------------------------------------------------------
 func _rebuild_reports() -> void:
-	var turn_lbl = get_node_or_null("PanelContainer/VBoxContainer/TurnLabel")
-	var container = get_node_or_null("PanelContainer/VBoxContainer/ScrollContainer/ReportContainer")
-	if turn_lbl == null or container == null:
+	if SquadManager.squads.is_empty():
 		return
+	# ... rest of function
 
 	turn_lbl.text = (
 		"Pre-mission briefing — awaiting deployment"

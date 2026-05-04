@@ -29,7 +29,14 @@ var warning_label: Label
 
 
 func _ready() -> void:
+	SquadManager.turn_resolved.connect(_on_turn_resolved)
+	# Add this:
+	TurnManager.turn_started.connect(_on_turn_started)
 	_build_ui()
+
+func _on_turn_started(_turn: int) -> void:
+	if visible:
+		refresh()
 
 
 # Called every time the popup opens to sync with current squad state
@@ -113,12 +120,9 @@ func _build_ui() -> void:
 
 
 func _rebuild_squad_rows() -> void:
-	squad_rows.clear()
-	var container = get_node_or_null("PanelContainer/VBoxContainer/SquadContainer")
-	if container == null:
+	if SquadManager.squads.is_empty():
 		return
-	for child in container.get_children():
-		child.queue_free()
+	squad_rows.clear()
 
 	for squad in SquadManager.get_squads_for_ui():
 		if squad.status == SquadManager.Status.LOST:

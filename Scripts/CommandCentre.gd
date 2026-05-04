@@ -14,7 +14,7 @@ extends Node3D
 func _ready() -> void:
 	TurnManager.mission_complete.connect(_on_mission_complete)
 	TurnManager.mission_failed.connect(_on_mission_failed)
-	await get_tree().process_frame
+	await get_tree().create_timer(0.1).timeout
 	GameManager.start_current_mission()
 
 
