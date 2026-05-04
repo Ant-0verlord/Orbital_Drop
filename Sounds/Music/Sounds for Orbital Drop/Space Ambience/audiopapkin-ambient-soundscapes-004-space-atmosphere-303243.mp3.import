@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bxgdt2ldr2va"
+path="res://.godot/imported/audiopapkin-ambient-soundscapes-004-space-atmosphere-303243.mp3-7ee6aad11eea11113a964abd4e324e5b.mp3str"
+
+[deps]
+
+source_file="res://Sounds/Music/Sounds for Orbital Drop/Space Ambience/audiopapkin-ambient-soundscapes-004-space-atmosphere-303243.mp3"
+dest_files=["res://.godot/imported/audiopapkin-ambient-soundscapes-004-space-atmosphere-303243.mp3-7ee6aad11eea11113a964abd4e324e5b.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
