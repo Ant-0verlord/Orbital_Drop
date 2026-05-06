@@ -7,9 +7,8 @@ extends Node
 # =============================================================
 
 var current_mission: int = 0
-var campaign_record: Array = []  # "win" / "loss" per mission
+var campaign_record: Array = []
 
-# Mission definitions — interference 0.0 = clear, 1.0 = maximum corruption
 var missions: Array = [
 	{
 		"title":        "Mission 1 — Planetary Insertion",
@@ -79,8 +78,11 @@ func get_current_mission_data() -> Dictionary:
 
 
 func start_current_mission() -> void:
+	print("=== GameManager.start_current_mission() called ===")
 	var data = get_current_mission_data()
+	print("Mission data keys: ", data.keys())
 	if data.is_empty():
 		push_error("GameManager: No mission data for index %d" % current_mission)
 		return
 	TurnManager.start_mission(data)
+	print("=== Squads after start: ", SquadManager.squads.keys(), " ===")

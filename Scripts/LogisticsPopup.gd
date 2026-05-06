@@ -3,13 +3,9 @@ extends Control
 # LogisticsPopup.gd
 # Attach to: Control node named "LogisticsPopup" inside
 #            LogisticsTerminal.tscn > StaticBody3D
-#
-# Builds its UI entirely in code — no extra scene setup needed.
-# Reads squad list from SquadManager.
-# On confirm, calls TurnManager.end_turn(allocations).
 # =============================================================
 
-var player: Node = null  # Set by LogisticsTerminal before opening
+var player: Node = null
 
 const SUPPLY_OPTIONS: Array = ["None", "Armaments", "Medi-Packs", "Fuel Cells"]
 const SUPPLY_COST: Dictionary = {
@@ -19,61 +15,67 @@ const SUPPLY_COST: Dictionary = {
 	"Fuel Cells": 2,
 }
 
-# allocations: { squad_name: { "Armaments": int, "Medi-Packs": int, "Fuel Cells": int } }
 var allocations: Dictionary = {}
 var squad_rows: Array = []
-
-# UI node references
 var budget_label:  Label
 var warning_label: Label
 
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
-	# Add this:
 	TurnManager.turn_started.connect(_on_turn_started)
 	_build_ui()
 
+
 func _on_turn_started(_turn: int) -> void:
+	print("LogisticsPopup _on_turn_started — visible: ", visible)
 	if visible:
 		refresh()
 
 
-# Called every time the popup opens to sync with current squad state
+func _on_turn_resolved() -> void:
+	if visible:
+		refresh()
+
+
 func refresh() -> void:
+	print("=== LogisticsPopup.refresh() called ===")
+	print("Squads empty: ", SquadManager.squads.is_empty())
+	print("Squads: ", SquadManager.squads.keys())
+	if SquadManager.squads.is_empty():
+		print("WARNING: squads empty, skipping refresh")
+		return
 	_sync_allocations()
 	_rebuild_squad_rows()
 	_refresh_budget()
 
 
 # -------------------------------------------------------
-# Build UI in code
+# Build UI
 # -------------------------------------------------------
 func _build_ui() -> void:
-	# Size and anchor to centre of screen
 	custom_minimum_size = Vector2(560, 0)
 	set_anchors_preset(Control.PRESET_CENTER)
 
 	var panel := PanelContainer.new()
+	panel.name = "PanelContainer" 
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(panel)
 
 	var vbox := VBoxContainer.new()
+	vbox.name = "VBoxContainer"
 	vbox.add_theme_constant_override("separation", 12)
 	panel.add_child(vbox)
 
-	# Title
 	var title := Label.new()
 	title.text = "LOGISTICS TERMINAL"
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
 
-	# Budget
 	budget_label = Label.new()
 	budget_label.add_theme_font_size_override("font_size", 14)
 	vbox.add_child(budget_label)
 
-	# Warning
 	warning_label = Label.new()
 	warning_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
 	warning_label.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -82,7 +84,6 @@ func _build_ui() -> void:
 
 	vbox.add_child(HSeparator.new())
 
-	# Column headers
 	var header := HBoxContainer.new()
 	for pair in [["Squad", 120], ["Status", 90], ["Armaments", 120], ["Medi-Packs", 120], ["Fuel Cells", 120]]:
 		var lbl := Label.new()
@@ -94,7 +95,6 @@ func _build_ui() -> void:
 
 	vbox.add_child(HSeparator.new())
 
-	# Squad rows container — rebuilt on refresh()
 	var squad_container := VBoxContainer.new()
 	squad_container.name = "SquadContainer"
 	squad_container.add_theme_constant_override("separation", 8)
@@ -102,7 +102,6 @@ func _build_ui() -> void:
 
 	vbox.add_child(HSeparator.new())
 
-	# Buttons
 	var btn_row := HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_END
 	btn_row.add_theme_constant_override("separation", 12)
@@ -120,10 +119,20 @@ func _build_ui() -> void:
 
 
 func _rebuild_squad_rows() -> void:
-	if SquadManager.squads.is_empty():
-		return
+	print("Children of self: ")
+	for c in get_children():
+		print("  ", c.name, " -> ", c.get_class())
+		for cc in c.get_children():
+			print("    ", cc.name, " -> ", cc.get_class())
 	squad_rows.clear()
+	var container = get_node_or_null("PanelContainer/VBoxContainer/SquadContainer")
+	if container == null:
+		print("ERROR: SquadContainer not found!")
+		return
+	for child in container.get_children():
+		child.queue_free()
 
+	print("Building rows for squads: ", SquadManager.get_squads_for_ui().size())
 	for squad in SquadManager.get_squads_for_ui():
 		if squad.status == SquadManager.Status.LOST:
 			continue
@@ -154,7 +163,6 @@ func _build_squad_row(squad: Dictionary, container: Node) -> Dictionary:
 		opt.custom_minimum_size.x = 120
 		for option in SUPPLY_OPTIONS:
 			opt.add_item(option)
-		# Restore saved selection
 		var saved_cost = allocations.get(squad.name, {}).get(supply, 0)
 		opt.selected = 0
 		for i in SUPPLY_OPTIONS.size():
@@ -169,9 +177,6 @@ func _build_squad_row(squad: Dictionary, container: Node) -> Dictionary:
 	return { "squad": squad.name, "dropdowns": dropdowns }
 
 
-# -------------------------------------------------------
-# Logic
-# -------------------------------------------------------
 func _sync_allocations() -> void:
 	for squad in SquadManager.get_squads_for_ui():
 		if not allocations.has(squad.name):
@@ -210,17 +215,11 @@ func _on_confirm_pressed() -> void:
 	if spent > total_budget:
 		warning_label.text = "Cannot confirm — over budget!"
 		return
-
 	warning_label.text = ""
-
-	# Resolve the turn
 	TurnManager.end_turn(allocations)
-
-	# Reset allocations for next turn
 	for squad_name in allocations:
 		for supply in allocations[squad_name]:
 			allocations[squad_name][supply] = 0
-
 	_on_close_pressed()
 
 

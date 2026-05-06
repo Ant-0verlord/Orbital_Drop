@@ -4,175 +4,89 @@ extends Control
 # Attach to: Control node named "VoxCasterPopup" inside
 #            Vox-Caster_Array.tscn > StaticBody3D
 #
-# Shows incoming squad transmissions — partially garbled
-# based on interference level. Gives hints about squad
-# needs without being as direct as the Intel Console.
-# Updates each turn with new transmissions.
+# Shows incoming surface transmissions from squads.
+# Transmissions are partially garbled based on interference.
 # =============================================================
 
 var player: Node = null
 
-# Transmission history — shown in the log
-var transmission_log: Array = []
-const MAX_LOG_ENTRIES: int = 12
-
-# Raw transmission templates per need/status
-const TRANSMISSIONS: Dictionary = {
-	"Armaments_ACTIVE": [
-		"—{squad}— here, pushing {sector}— need arms— can you— —static— —send ordnance—",
-		"{squad}, sector {sector}— engaging— ammunition running— —request— —arms drop—",
-		"—static— {squad} to command— we can take {sector}— just— —send the guns—",
-	],
-	"Armaments_WOUNDED": [
-		"—{squad}— wounded but holding— —need arms— or we— —static— —can't push—",
-		"—static— {squad}— {sector}— taking fire— send— —armaments— please—",
-	],
-	"Medi-Packs_WOUNDED": [
-		"{squad} to command— casualties— —static— —we need med— {sector}— —send medi—",
-		"—static— {squad}— men down— —sector {sector}— —medical— urgent— —static—",
-		"—{squad}— {sector}— wounded— can you— —static— —medi-packs— now—",
-	],
-	"Medi-Packs_CRITICAL": [
-		"—{squad}— CRITICAL— {sector}— —static— —MED NOW— losing— —static— —please—",
-		"—static— —{squad}— men dying— {sector}— send— —MEDI— —static— —hurry—",
-	],
-	"Fuel Cells_ACTIVE": [
-		"—{squad}— vehicles dead— {sector}— —need fuel— —static— —can't move—",
-		"{squad} to command— stalled at {sector}— —fuel cells— —static— —send them—",
-	],
-	"Fuel Cells_WOUNDED": [
-		"—static— {squad}— wounded— stranded— {sector}— —fuel— —need fuel— —static—",
-	],
-	"LOST": [
-		"—{squad}— —static— ———— —static— ———————————",
-		"—static— ——————— —no signal— ——————— —static—",
-		"—————————— —static— ————— ——————————————————",
-	],
-	"UNSUPPLIED": [
-		"—{squad}— where is— —static— —supply drop— {sector}— —nothing arrived—",
-		"—static— {squad}— no supplies— {sector}— —we're— —static— —alone out here—",
-	],
-}
+# Interference characters used to corrupt transmissions
+const STATIC_CHARS = ["—", "█", "░", "▒", "?", "#", "~"]
 
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
+	TurnManager.turn_started.connect(_on_turn_started)
 	_build_ui()
 
 
+func _on_turn_started(_turn: int) -> void:
+	if visible:
+		refresh()
+
+
+func _on_turn_resolved() -> void:
+	if visible:
+		refresh()
+
+
 func refresh() -> void:
-	_sync_transmissions()
-	_rebuild_log()
-
-
-# -------------------------------------------------------
-# Generate transmissions from current squad state
-# -------------------------------------------------------
-func _sync_transmissions() -> void:
-	if SquadManager.current_turn == 0:
-		_generate_briefing_transmissions()
-	# After turn 1+ transmissions are added in _on_turn_resolved
-
-
-func _generate_briefing_transmissions() -> void:
-	transmission_log.clear()
-	for squad_name in SquadManager.squads:
-		var squad = SquadManager.squads[squad_name]
-		var need_str = SquadManager.NEED_NAMES[squad.need]
-		var key = "%s_%s" % [need_str, SquadManager.STATUS_NAMES[squad.status]]
-		var raw = _pick_transmission(key, squad_name, squad.sector)
-		transmission_log.append({
-			"turn":    0,
-			"squad":   squad_name,
-			"text":    _apply_interference(raw),
-			"status":  squad.status,
-		})
-
-
-func _generate_turn_transmissions() -> void:
-	for squad_name in SquadManager.squads:
-		var squad = SquadManager.squads[squad_name]
-		var text: String
-
-		if squad.status == SquadManager.Status.LOST:
-			text = _pick_transmission("LOST", squad_name, squad.sector)
-		elif squad.turns_unsupplied > 0:
-			text = _pick_transmission("UNSUPPLIED", squad_name, squad.sector)
-		else:
-			var need_str = SquadManager.NEED_NAMES[squad.need]
-			var status_str = SquadManager.STATUS_NAMES[squad.status]
-			var key = "%s_%s" % [need_str, status_str]
-			text = _pick_transmission(key, squad_name, squad.sector)
-
-		transmission_log.append({
-			"turn":   SquadManager.current_turn,
-			"squad":  squad_name,
-			"text":   _apply_interference(text),
-			"status": squad.status,
-		})
-
-	# Trim log to max entries
-	while transmission_log.size() > MAX_LOG_ENTRIES:
-		transmission_log.pop_front()
-
-
-func _pick_transmission(key: String, squad_name: String, sector: String) -> String:
-	var options: Array = TRANSMISSIONS.get(key, TRANSMISSIONS["UNSUPPLIED"])
-	var raw: String = options[randi() % options.size()]
-	return raw.replace("{squad}", squad_name).replace("{sector}", sector)
-
-
-func _apply_interference(text: String) -> String:
-	var interference = SquadManager.interference
-	if interference <= 0.0:
-		return text
-
-	# Higher interference = more static/gaps
-	var words = text.split(" ")
-	for i in range(words.size()):
-		if words[i] != "—static—" and words[i] != "————" and randf() < interference * 0.3:
-			words[i] = "—static—"
-	return " ".join(words)
+	if SquadManager.squads.is_empty():
+		return
+	_rebuild_transmissions()
 
 
 # -------------------------------------------------------
 # Build UI
 # -------------------------------------------------------
 func _build_ui() -> void:
-	custom_minimum_size = Vector2(560, 0)
+	custom_minimum_size = Vector2(520, 0)
 	set_anchors_preset(Control.PRESET_CENTER)
 
 	var panel := PanelContainer.new()
+	panel.name = "PanelContainer"
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(panel)
 
 	var vbox := VBoxContainer.new()
+	vbox.name = "VBoxContainer"
 	vbox.add_theme_constant_override("separation", 10)
 	panel.add_child(vbox)
 
+	# Title
 	var title := Label.new()
 	title.text = "VOX-CASTER ARRAY"
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
 
+	# Subtitle
 	var subtitle := Label.new()
 	subtitle.text = "Incoming surface transmissions — signal quality varies"
 	subtitle.add_theme_font_size_override("font_size", 12)
-	subtitle.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55))
+	subtitle.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
 	vbox.add_child(subtitle)
+
+	# Turn label
+	var turn_lbl := Label.new()
+	turn_lbl.name = "TurnLabel"
+	turn_lbl.add_theme_font_size_override("font_size", 12)
+	turn_lbl.add_theme_color_override("font_color", Color(0.5, 0.75, 0.9))
+	vbox.add_child(turn_lbl)
 
 	vbox.add_child(HSeparator.new())
 
+	# Transmission list
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size.y = 340
+	scroll.name = "ScrollContainer"
+	scroll.custom_minimum_size.y = 320
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(scroll)
 
-	var log_container := VBoxContainer.new()
-	log_container.name = "LogContainer"
-	log_container.add_theme_constant_override("separation", 6)
-	log_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(log_container)
+	var transmission_container := VBoxContainer.new()
+	transmission_container.name = "TransmissionContainer"
+	transmission_container.add_theme_constant_override("separation", 10)
+	transmission_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(transmission_container)
 
 	vbox.add_child(HSeparator.new())
 
@@ -186,71 +100,137 @@ func _build_ui() -> void:
 	btn_row.add_child(close_btn)
 
 
-func _rebuild_log() -> void:
-	var container = get_node_or_null("PanelContainer/VBoxContainer/ScrollContainer/LogContainer")
+# -------------------------------------------------------
+# Rebuild transmissions
+# -------------------------------------------------------
+func _rebuild_transmissions() -> void:
+	var turn_lbl = get_node_or_null("PanelContainer/VBoxContainer/TurnLabel")
+	var container = get_node_or_null("PanelContainer/VBoxContainer/ScrollContainer/TransmissionContainer")
 	if container == null:
 		return
+
+	if turn_lbl:
+		turn_lbl.text = (
+			"Pre-mission — awaiting drop confirmation"
+			if SquadManager.current_turn == 0
+			else "Turn %d transmissions" % SquadManager.current_turn
+		)
 
 	for child in container.get_children():
 		child.queue_free()
 
-	if transmission_log.is_empty():
+	var reports: Dictionary = (
+		SquadManager.get_briefings()
+		if SquadManager.current_turn == 0
+		else SquadManager.get_reports()
+	)
+
+	if reports.is_empty():
 		var lbl := Label.new()
 		lbl.text = "No transmissions received."
 		container.add_child(lbl)
 		return
 
-	# Show newest first
-	var reversed_log = transmission_log.duplicate()
-	reversed_log.reverse()
-
-	for entry in reversed_log:
-		container.add_child(_make_transmission_entry(entry))
+	for squad_name in reports:
+		var squad_data = SquadManager.squads.get(squad_name, {})
+		var raw_text = reports[squad_name]
+		_add_transmission(container, squad_name, raw_text, squad_data)
 
 
-func _make_transmission_entry(entry: Dictionary) -> PanelContainer:
+func _add_transmission(container: Node, squad_name: String, text: String, squad_data: Dictionary) -> void:
 	var card := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.set_content_margin_all(8)
-	style.corner_radius_top_left     = 3
-	style.corner_radius_top_right    = 3
-	style.corner_radius_bottom_left  = 3
-	style.corner_radius_bottom_right = 3
-
-	match entry.status:
-		SquadManager.Status.ACTIVE:   style.bg_color = Color(0.10, 0.15, 0.10)
-		SquadManager.Status.WOUNDED:  style.bg_color = Color(0.16, 0.13, 0.05)
-		SquadManager.Status.CRITICAL: style.bg_color = Color(0.18, 0.06, 0.06)
-		SquadManager.Status.LOST:     style.bg_color = Color(0.08, 0.08, 0.08)
-	card.add_theme_stylebox_override("panel", style)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
+	var style := StyleBoxFlat.new()
+	style.set_content_margin_all(10)
+	style.bg_color = Color(0.05, 0.08, 0.12)
+	style.border_color = Color(0.3, 0.5, 0.7, 0.6)
+	style.border_width_left = 2
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 3
+	style.corner_radius_bottom_left = 3
+	style.corner_radius_bottom_right = 3
+	card.add_theme_stylebox_override("panel", style)
+
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 2)
+	vbox.add_theme_constant_override("separation", 4)
 	card.add_child(vbox)
 
-	# Header: turn + squad name
-	var header := Label.new()
-	header.text = "Turn %d  |  %s" % [entry.turn, entry.squad]
-	header.add_theme_font_size_override("font_size", 11)
-	header.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	# Header: signal source
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
 	vbox.add_child(header)
 
-	# Transmission text
-	var text_lbl := Label.new()
-	text_lbl.text = entry.text
-	text_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-	text_lbl.add_theme_font_size_override("font_size", 13)
-	text_lbl.add_theme_color_override("font_color", Color(0.75, 0.85, 0.75))
-	vbox.add_child(text_lbl)
+	var source_lbl := Label.new()
+	source_lbl.text = ">>> %s" % squad_name
+	source_lbl.add_theme_font_size_override("font_size", 13)
+	source_lbl.add_theme_color_override("font_color", Color(0.4, 0.85, 1.0))
+	header.add_child(source_lbl)
 
-	return card
+	if squad_data.has("sector"):
+		var sector_lbl := Label.new()
+		sector_lbl.text = "[%s]" % squad_data.sector
+		sector_lbl.add_theme_font_size_override("font_size", 11)
+		sector_lbl.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
+		header.add_child(sector_lbl)
+
+	# Signal quality indicator
+	var interference = SquadManager.interference
+	var quality_lbl := Label.new()
+	var quality_text: String
+	var quality_color: Color
+	if interference < 0.2:
+		quality_text = "SIGNAL: CLEAR"
+		quality_color = Color(0.3, 0.9, 0.3)
+	elif interference < 0.5:
+		quality_text = "SIGNAL: DEGRADED"
+		quality_color = Color(0.9, 0.7, 0.2)
+	elif interference < 0.8:
+		quality_text = "SIGNAL: POOR"
+		quality_color = Color(0.9, 0.4, 0.1)
+	else:
+		quality_text = "SIGNAL: CRITICAL"
+		quality_color = Color(0.9, 0.2, 0.2)
+	quality_lbl.text = quality_text
+	quality_lbl.add_theme_font_size_override("font_size", 10)
+	quality_lbl.add_theme_color_override("font_color", quality_color)
+	header.add_child(quality_lbl)
+
+	# Transmission body — apply vox garbling
+	var garbled = _garble_text(text, interference)
+	var body_lbl := Label.new()
+	body_lbl.text = garbled
+	body_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	body_lbl.add_theme_font_size_override("font_size", 12)
+	body_lbl.add_theme_color_override("font_color", Color(0.8, 0.85, 0.9))
+	vbox.add_child(body_lbl)
+
+	container.add_child(card)
 
 
-func _on_turn_resolved() -> void:
-	_generate_turn_transmissions()
-	if visible:
-		_rebuild_log()
+func _garble_text(text: String, interference: float) -> String:
+	if interference <= 0.1:
+		return text
+
+	var words = text.split(" ")
+	var result = []
+
+	for word in words:
+		# At high interference, randomly replace words with static
+		if randf() < interference * 0.4:
+			var static_char = STATIC_CHARS[randi() % STATIC_CHARS.size()]
+			result.append(static_char.repeat(randi() % 4 + 1))
+		# At medium+ interference, corrupt individual characters
+		elif randf() < interference * 0.3 and word.length() > 2:
+			var chars = word.split("")
+			for i in range(chars.size()):
+				if randf() < interference * 0.2:
+					chars[i] = STATIC_CHARS[randi() % STATIC_CHARS.size()]
+			result.append("".join(chars))
+		else:
+			result.append(word)
+
+	return " ".join(result)
 
 
 func _on_close_pressed() -> void:

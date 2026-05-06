@@ -8,10 +8,10 @@ extends Node3D
 # shows the result screen.
 # =============================================================
 
-@onready var result_overlay: Control = $ResultOverlay  # Add this node — see below
-
+var result_overlay: Control = null
 
 func _ready() -> void:
+	result_overlay = get_node_or_null("ResultOverlay")
 	TurnManager.mission_complete.connect(_on_mission_complete)
 	TurnManager.mission_failed.connect(_on_mission_failed)
 	await get_tree().create_timer(0.1).timeout

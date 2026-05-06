@@ -10,13 +10,18 @@ var player: Node = null
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
-	# Add this:
 	TurnManager.turn_started.connect(_on_turn_started)
 	_build_ui()
+
 
 func _on_turn_started(_turn: int) -> void:
 	if visible:
 		refresh()
+
+
+func _on_turn_resolved() -> void:
+	if visible:
+		_rebuild_reports()
 
 
 func refresh() -> void:
@@ -31,10 +36,12 @@ func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_CENTER)
 
 	var panel := PanelContainer.new()
+	panel.name = "PanelContainer"
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(panel)
 
 	var vbox := VBoxContainer.new()
+	vbox.name = "VBoxContainer"
 	vbox.add_theme_constant_override("separation", 10)
 	panel.add_child(vbox)
 
@@ -52,6 +59,7 @@ func _build_ui() -> void:
 	vbox.add_child(HSeparator.new())
 
 	var scroll := ScrollContainer.new()
+	scroll.name = "ScrollContainer"
 	scroll.custom_minimum_size.y = 340
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(scroll)
@@ -75,12 +83,16 @@ func _build_ui() -> void:
 
 
 # -------------------------------------------------------
-# Rebuild report cards each time popup opens or turn resolves
+# Rebuild report cards
 # -------------------------------------------------------
 func _rebuild_reports() -> void:
 	if SquadManager.squads.is_empty():
 		return
-	# ... rest of function
+
+	var turn_lbl = get_node_or_null("PanelContainer/VBoxContainer/TurnLabel")
+	var container = get_node_or_null("PanelContainer/VBoxContainer/ScrollContainer/ReportContainer")
+	if turn_lbl == null or container == null:
+		return
 
 	turn_lbl.text = (
 		"Pre-mission briefing — awaiting deployment"
@@ -117,7 +129,6 @@ func _add_report_card(container: Node, squad_name: String, report_text: String, 
 	vbox.add_theme_constant_override("separation", 4)
 	card.add_child(vbox)
 
-	# Header: name + status
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 8)
 	vbox.add_child(header)
@@ -134,7 +145,6 @@ func _add_report_card(container: Node, squad_name: String, report_text: String, 
 		status_lbl.add_theme_color_override("font_color", _status_color(squad_data.status))
 		header.add_child(status_lbl)
 
-	# Need — may be corrupted
 	if squad_data.has("need") and squad_data.has("status") and squad_data.status != SquadManager.Status.LOST:
 		var need_str = SquadManager.get_need_display(squad_name)
 		var need_lbl := Label.new()
@@ -145,7 +155,6 @@ func _add_report_card(container: Node, squad_name: String, report_text: String, 
 		)
 		vbox.add_child(need_lbl)
 
-	# Report body
 	var report_lbl := Label.new()
 	report_lbl.text = report_text
 	report_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -154,15 +163,11 @@ func _add_report_card(container: Node, squad_name: String, report_text: String, 
 
 	container.add_child(card)
 
-	# Spacer
 	var spacer := Control.new()
 	spacer.custom_minimum_size.y = 4
 	container.add_child(spacer)
 
 
-# -------------------------------------------------------
-# Styling
-# -------------------------------------------------------
 func _card_style(squad_data: Dictionary) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.set_content_margin_all(10)
@@ -203,11 +208,6 @@ func _status_color(status: int) -> Color:
 		SquadManager.Status.CRITICAL: return Color(0.9, 0.3, 0.3)
 		SquadManager.Status.LOST:     return Color(0.5, 0.5, 0.5)
 	return Color.WHITE
-
-
-func _on_turn_resolved() -> void:
-	if visible:
-		_rebuild_reports()
 
 
 func _on_close_pressed() -> void:
