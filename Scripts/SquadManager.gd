@@ -1,10 +1,7 @@
 extends Node
 # =============================================================
 # SquadManager.gd  —  AutoLoad singleton
-# Register in: Project > Project Settings > AutoLoad
-# Name: SquadManager
-# IMPORTANT: List this FIRST in AutoLoad order so its enums
-#            are available to GameManager and TurnManager.
+# MUST be first in AutoLoad order.
 # =============================================================
 
 signal turn_resolved
@@ -86,6 +83,8 @@ func resolve_turn(allocations: Dictionary) -> void:
 	emit_signal("turn_resolved")
 
 
+# Returns reports with interference applied — used by Intel Console
+# NOTE: does NOT include need information (that's VoxCaster only)
 func get_reports() -> Dictionary:
 	var result: Dictionary = {}
 	for squad_name in squads:
@@ -93,7 +92,7 @@ func get_reports() -> Dictionary:
 		if squad.status == Status.LOST:
 			result[squad_name] = squad.report
 		else:
-			result[squad_name] = _apply_interference(squad.report, squad.need)
+			result[squad_name] = _apply_interference(squad.report)
 	return result
 
 
@@ -104,15 +103,25 @@ func get_briefings() -> Dictionary:
 	return result
 
 
-func get_need_display(squad_name: String) -> String:
+# Returns the need for a squad — used ONLY by VoxCaster, with garbling applied there
+func get_need_raw(squad_name: String) -> String:
 	if not squads.has(squad_name):
 		return "Unknown"
 	var squad = squads[squad_name]
 	if squad.status == Status.LOST:
 		return "—"
-	if randf() < interference * 0.8:
-		return "[INTERFERENCE]"
 	return NEED_NAMES[squad.need]
+
+
+func get_casualty_summary() -> Dictionary:
+	var result = { "active": 0, "wounded": 0, "critical": 0, "lost": 0 }
+	for squad_name in squads:
+		match squads[squad_name].status:
+			Status.ACTIVE:   result.active   += 1
+			Status.WOUNDED:  result.wounded  += 1
+			Status.CRITICAL: result.critical += 1
+			Status.LOST:     result.lost     += 1
+	return result
 
 
 # -------------------------------------------------------
@@ -149,16 +158,14 @@ func _next_need(squad: Dictionary) -> int:
 	return randi() % 3
 
 
-func _apply_interference(text: String, need: int) -> String:
+func _apply_interference(text: String) -> String:
 	if interference <= 0.0:
 		return text
 	var corrupted = text
-	if randf() < interference * 0.7:
-		corrupted = corrupted.replace(NEED_NAMES[need], "[SIGNAL LOST]")
 	if interference >= 0.75 and randf() < 0.5:
 		var words = corrupted.split(" ")
 		for i in range(words.size()):
-			if randf() < 0.25:
+			if randf() < 0.2:
 				words[i] = "—"
 		corrupted = " ".join(words)
 	return corrupted
@@ -167,14 +174,13 @@ func _apply_interference(text: String, need: int) -> String:
 func _generate_briefings() -> void:
 	for key in squads:
 		var squad = squads[key]
-		var need_str = NEED_NAMES[squad.need]
 		match squad.status:
 			Status.ACTIVE:
-				squad.report = "%s reports in from %s. Unit is combat-ready and requesting %s for the coming push." % [squad.name, squad.sector, need_str]
+				squad.report = "%s reports in from %s. Unit is combat-ready and awaiting orders." % [squad.name, squad.sector]
 			Status.WOUNDED:
-				squad.report = "%s is holding position at %s with casualties. They need %s before they can advance." % [squad.name, squad.sector, need_str]
+				squad.report = "%s is holding position at %s with casualties. They need support before they can advance." % [squad.name, squad.sector]
 			Status.CRITICAL:
-				squad.report = "%s is in critical condition at %s. Without %s immediately, we may lose them." % [squad.name, squad.sector, need_str]
+				squad.report = "%s is in critical condition at %s. Without immediate support, we may lose them." % [squad.name, squad.sector]
 
 
 func _lost_line(squad: Dictionary) -> String:
@@ -210,7 +216,7 @@ func _report_wrong(squad: Dictionary, sent: String, needed: String) -> String:
 	return [
 		"%s acknowledges receipt of %s, but what they needed was %s. The situation is not improving." % [n, sent, needed],
 		"Your %s drop reached %s, but it was not what they asked for. They are requesting %s." % [sent, n, needed],
-		"%s has your %s but cannot use it — they are desperate for %s." % [n, sent, needed],
+		"%s has your %s but cannot use it — they need something else entirely." % [n, sent],
 	][randi() % 3]
 
 
@@ -224,9 +230,9 @@ func _report_unsupplied(squad: Dictionary, needed: String) -> String:
 			][randi() % 2]
 		Status.WOUNDED:
 			return [
-				"%s got nothing. The wounded are not being treated. They need %s now." % [n, needed],
-				"Another turn without support for %s. Their condition is worsening. Send %s." % [n, needed],
+				"%s got nothing. The wounded are not being treated. They are deteriorating." % n,
+				"Another turn without support for %s. Their condition is worsening rapidly." % n,
 			][randi() % 2]
 		Status.CRITICAL:
-			return "%s — CRITICAL. No supply received. Requesting immediate %s. If we do not act next turn, we will lose them." % [n, needed]
+			return "%s — CRITICAL. No supply received. If we do not act next turn, we will lose them." % n
 	return "%s — no signal." % n

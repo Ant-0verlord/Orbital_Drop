@@ -3,6 +3,9 @@ extends Control
 # IntelConsolePopup.gd
 # Attach to: Control node named "IntelConsolePopup" inside
 #            Intel_Desk.tscn > StaticBody3D
+#
+# Shows what happened last turn and squad status.
+# Squad NEEDS are NOT shown here — check the Vox-Caster.
 # =============================================================
 
 var player: Node = null
@@ -28,9 +31,6 @@ func refresh() -> void:
 	_rebuild_reports()
 
 
-# -------------------------------------------------------
-# Build base UI
-# -------------------------------------------------------
 func _build_ui() -> void:
 	custom_minimum_size = Vector2(580, 0)
 	set_anchors_preset(Control.PRESET_CENTER)
@@ -49,6 +49,13 @@ func _build_ui() -> void:
 	title.text = "INTEL CONSOLE"
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "Squad status and outcome reports. For supply requests, consult the Vox-Caster."
+	subtitle.add_theme_font_size_override("font_size", 11)
+	subtitle.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(subtitle)
 
 	var turn_lbl := Label.new()
 	turn_lbl.name = "TurnLabel"
@@ -82,9 +89,6 @@ func _build_ui() -> void:
 	btn_row.add_child(close_btn)
 
 
-# -------------------------------------------------------
-# Rebuild report cards
-# -------------------------------------------------------
 func _rebuild_reports() -> void:
 	if SquadManager.squads.is_empty():
 		return
@@ -129,6 +133,7 @@ func _add_report_card(container: Node, squad_name: String, report_text: String, 
 	vbox.add_theme_constant_override("separation", 4)
 	card.add_child(vbox)
 
+	# Header: name + status only (no need shown)
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 8)
 	vbox.add_child(header)
@@ -145,16 +150,14 @@ func _add_report_card(container: Node, squad_name: String, report_text: String, 
 		status_lbl.add_theme_color_override("font_color", _status_color(squad_data.status))
 		header.add_child(status_lbl)
 
-	if squad_data.has("need") and squad_data.has("status") and squad_data.status != SquadManager.Status.LOST:
-		var need_str = SquadManager.get_need_display(squad_name)
-		var need_lbl := Label.new()
-		need_lbl.text = "Requesting: %s" % need_str
-		need_lbl.add_theme_font_size_override("font_size", 12)
-		need_lbl.add_theme_color_override("font_color",
-			Color(0.45, 0.45, 0.45) if need_str == "[INTERFERENCE]" else Color(0.9, 0.75, 0.3)
-		)
-		vbox.add_child(need_lbl)
+	if squad_data.has("sector"):
+		var sector_lbl := Label.new()
+		sector_lbl.text = squad_data.sector
+		sector_lbl.add_theme_font_size_override("font_size", 11)
+		sector_lbl.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
+		header.add_child(sector_lbl)
 
+	# Report body
 	var report_lbl := Label.new()
 	report_lbl.text = report_text
 	report_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -179,7 +182,6 @@ func _card_style(squad_data: Dictionary) -> StyleBoxFlat:
 	style.border_width_top    = 0
 	style.border_width_right  = 0
 	style.border_width_bottom = 0
-
 	if squad_data.has("status"):
 		match squad_data.status:
 			SquadManager.Status.ACTIVE:
@@ -197,7 +199,6 @@ func _card_style(squad_data: Dictionary) -> StyleBoxFlat:
 	else:
 		style.bg_color     = Color(0.13, 0.13, 0.18)
 		style.border_color = Color(0.4, 0.4, 0.55)
-
 	return style
 
 

@@ -4,98 +4,137 @@ extends Control
 # Attach to: Control node named "CommandThronePopup" inside
 #            Command_Throne.tscn > StaticBody3D
 #
-# Shows: mission title, current objective, turns remaining,
-#        last turn debrief, and the Turn Seal (end turn button).
-# Ending the turn is handled here — player must physically
-# walk to the Command Throne to lock in decisions.
+# Shows mission status, squad summary, and the End Turn button.
+# End Turn is only available once allocations are locked.
 # =============================================================
 
 var player: Node = null
 
-# UI refs
-var mission_label:  Label
-var turn_label:     Label
-var objective_label: Label
-var debrief_label:  Label
-var seal_button:    Button
-var warning_label:  Label
+var end_turn_btn: Button
+var lock_status_lbl: Label
+var turn_label: Label
+var squad_summary: VBoxContainer
+var debrief_label: Label
+var progress_bar: ProgressBar
 
 
 func _ready() -> void:
 	TurnManager.turn_started.connect(_on_turn_started)
 	TurnManager.turn_ended.connect(_on_turn_ended)
-	TurnManager.mission_complete.connect(_on_mission_complete)
-	TurnManager.mission_failed.connect(_on_mission_failed)
+	TurnManager.allocations_locked.connect(_on_allocations_locked)
+	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	_build_ui()
 
 
+func _on_turn_started(_turn: int) -> void:
+	if visible:
+		refresh()
+
+
+func _on_turn_ended(_turn: int) -> void:
+	if visible:
+		refresh()
+
+
+func _on_allocations_locked() -> void:
+	_update_lock_status()
+
+
+func _on_turn_resolved() -> void:
+	if visible:
+		refresh()
+
+
 func refresh() -> void:
-	_update_display()
+	_update_mission_info()
+	_update_squad_summary()
+	_update_lock_status()
+	_update_debrief()
 
 
-# -------------------------------------------------------
-# Build UI
-# -------------------------------------------------------
 func _build_ui() -> void:
-	custom_minimum_size = Vector2(520, 0)
+	custom_minimum_size = Vector2(480, 0)
 	set_anchors_preset(Control.PRESET_CENTER)
 
 	var panel := PanelContainer.new()
+	panel.name = "PanelContainer"
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(panel)
 
 	var vbox := VBoxContainer.new()
+	vbox.name = "VBoxContainer"
 	vbox.add_theme_constant_override("separation", 12)
 	panel.add_child(vbox)
 
 	# Mission title
-	mission_label = Label.new()
-	mission_label.add_theme_font_size_override("font_size", 18)
-	vbox.add_child(mission_label)
+	var mission_title := Label.new()
+	mission_title.name = "MissionTitle"
+	mission_title.add_theme_font_size_override("font_size", 18)
+	mission_title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7))
+	vbox.add_child(mission_title)
 
-	# Turn counter
+	# Turn label
 	turn_label = Label.new()
-	turn_label.add_theme_font_size_override("font_size", 14)
-	turn_label.add_theme_color_override("font_color", Color(0.6, 0.8, 0.6))
+	turn_label.add_theme_font_size_override("font_size", 13)
+	turn_label.add_theme_color_override("font_color", Color(0.6, 0.75, 0.9))
 	vbox.add_child(turn_label)
+
+	# Progress bar
+	progress_bar = ProgressBar.new()
+	progress_bar.custom_minimum_size.y = 12
+	progress_bar.show_percentage = false
+	vbox.add_child(progress_bar)
 
 	vbox.add_child(HSeparator.new())
 
 	# Objective
 	var obj_header := Label.new()
 	obj_header.text = "CURRENT OBJECTIVE"
-	obj_header.add_theme_font_size_override("font_size", 12)
-	obj_header.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	obj_header.add_theme_font_size_override("font_size", 11)
+	obj_header.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
 	vbox.add_child(obj_header)
 
-	objective_label = Label.new()
-	objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	objective_label.add_theme_font_size_override("font_size", 14)
-	vbox.add_child(objective_label)
+	var obj_label := Label.new()
+	obj_label.name = "ObjectiveLabel"
+	obj_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	obj_label.add_theme_font_size_override("font_size", 13)
+	vbox.add_child(obj_label)
+
+	vbox.add_child(HSeparator.new())
+
+	# Squad summary
+	var squad_header := Label.new()
+	squad_header.text = "SQUAD STATUS"
+	squad_header.add_theme_font_size_override("font_size", 11)
+	squad_header.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
+	vbox.add_child(squad_header)
+
+	squad_summary = VBoxContainer.new()
+	squad_summary.add_theme_constant_override("separation", 4)
+	vbox.add_child(squad_summary)
 
 	vbox.add_child(HSeparator.new())
 
 	# Last turn debrief
 	var debrief_header := Label.new()
 	debrief_header.text = "LAST TURN DEBRIEF"
-	debrief_header.add_theme_font_size_override("font_size", 12)
-	debrief_header.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	debrief_header.add_theme_font_size_override("font_size", 11)
+	debrief_header.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
 	vbox.add_child(debrief_header)
 
 	debrief_label = Label.new()
 	debrief_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	debrief_label.add_theme_font_size_override("font_size", 13)
-	debrief_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	debrief_label.add_theme_font_size_override("font_size", 12)
+	debrief_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	vbox.add_child(debrief_label)
 
 	vbox.add_child(HSeparator.new())
 
-	# Warning
-	warning_label = Label.new()
-	warning_label.text = ""
-	warning_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
-	warning_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	vbox.add_child(warning_label)
+	# Lock status
+	lock_status_lbl = Label.new()
+	lock_status_lbl.add_theme_font_size_override("font_size", 12)
+	lock_status_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(lock_status_lbl)
 
 	# Buttons
 	var btn_row := HBoxContainer.new()
@@ -103,124 +142,133 @@ func _build_ui() -> void:
 	btn_row.add_theme_constant_override("separation", 12)
 	vbox.add_child(btn_row)
 
+	end_turn_btn = Button.new()
+	end_turn_btn.text = "ENGAGE TURN SEAL"
+	end_turn_btn.pressed.connect(_on_end_turn_pressed)
+	btn_row.add_child(end_turn_btn)
+
 	var close_btn := Button.new()
 	close_btn.text = "Close  [Esc]"
 	close_btn.pressed.connect(_on_close_pressed)
 	btn_row.add_child(close_btn)
 
-	seal_button = Button.new()
-	seal_button.text = "ENGAGE TURN SEAL"
-	seal_button.pressed.connect(_on_seal_pressed)
-	btn_row.add_child(seal_button)
+
+func _update_mission_info() -> void:
+	var data = GameManager.get_current_mission_data()
+	var mission_title = get_node_or_null("PanelContainer/VBoxContainer/MissionTitle")
+	var obj_label = get_node_or_null("PanelContainer/VBoxContainer/ObjectiveLabel")
+
+	if mission_title:
+		mission_title.text = data.get("title", "Unknown Mission")
+	if turn_label:
+		turn_label.text = "Turn %d of %d" % [TurnManager.current_turn, TurnManager.max_turns]
+	if progress_bar:
+		progress_bar.max_value = TurnManager.max_turns
+		progress_bar.value = TurnManager.current_turn
+	if obj_label:
+		var turns_left = TurnManager.max_turns - TurnManager.current_turn
+		obj_label.text = data.get("objective",
+			"Establish a foothold. Keep both squads alive for %d more turns." % turns_left
+		)
 
 
-# -------------------------------------------------------
-# Display update
-# -------------------------------------------------------
-func _update_display() -> void:
-	var mission_data = GameManager.get_current_mission_data()
-	mission_label.text  = mission_data.get("title", "ORBITAL DROP")
-	var max_turns       = mission_data.get("turns", 0)
-	var current         = TurnManager.current_turn
-	turn_label.text     = "Turn %d of %d" % [current, max_turns]
-	objective_label.text = _get_objective(mission_data, current)
+func _update_squad_summary() -> void:
+	for child in squad_summary.get_children():
+		child.queue_free()
 
-	if current == 0:
-		debrief_label.text = "No turns resolved yet. Issue your first allocations."
-	else:
-		debrief_label.text = _build_debrief()
-
-	# Disable seal if no squads are alive
-	var any_alive = false
-	for squad_name in SquadManager.squads:
-		if SquadManager.squads[squad_name].status != SquadManager.Status.LOST:
-			any_alive = true
-			break
-	seal_button.disabled = not any_alive
-	warning_label.text = "" if any_alive else "All squads lost. Mission failed."
-
-
-func _get_objective(mission_data: Dictionary, current_turn: int) -> String:
-	var _title = mission_data.get("title", "")
-	var turns = mission_data.get("turns", 0)
-	var remaining = max(0, turns - current_turn)
-
-	match GameManager.current_mission:
-		0: return "Establish a foothold. Keep both squads alive for %d more turn%s." % [remaining, "s" if remaining != 1 else ""]
-		1: return "Push the advance. Maintain all three squads for %d more turn%s." % [remaining, "s" if remaining != 1 else ""]
-		2: return "Hold the salient. Prevent sector collapse for %d more turn%s." % [remaining, "s" if remaining != 1 else ""]
-		3: return "Contest the Hive Spire. Prioritise critical squads. %d turn%s remaining." % [remaining, "s" if remaining != 1 else ""]
-		4: return "Final assault. All five squads must survive. %d turn%s remaining." % [remaining, "s" if remaining != 1 else ""]
-	return "%d turn%s remaining." % [remaining, "s" if remaining != 1 else ""]
-
-
-func _build_debrief() -> String:
-	# Summarise what happened last turn across all squads
-	var active   = 0
-	var wounded  = 0
+	var active = 0
+	var wounded = 0
 	var critical = 0
-	var lost     = 0
+	var lost = 0
 
-	for squad_name in SquadManager.squads:
-		match SquadManager.squads[squad_name].status:
-			SquadManager.Status.ACTIVE:   active   += 1
-			SquadManager.Status.WOUNDED:  wounded  += 1
+	for squad in SquadManager.get_squads_for_ui():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+
+		var name_lbl := Label.new()
+		name_lbl.text = squad.name
+		name_lbl.custom_minimum_size.x = 120
+		name_lbl.add_theme_font_size_override("font_size", 12)
+		row.add_child(name_lbl)
+
+		var status_lbl := Label.new()
+		status_lbl.text = SquadManager.STATUS_NAMES[squad.status]
+		status_lbl.add_theme_font_size_override("font_size", 12)
+		status_lbl.add_theme_color_override("font_color", _status_color(squad.status))
+		row.add_child(status_lbl)
+
+		squad_summary.add_child(row)
+
+		match squad.status:
+			SquadManager.Status.ACTIVE:   active += 1
+			SquadManager.Status.WOUNDED:  wounded += 1
 			SquadManager.Status.CRITICAL: critical += 1
-			SquadManager.Status.LOST:     lost     += 1
+			SquadManager.Status.LOST:     lost += 1
 
-	var lines: Array = []
-	if active   > 0: lines.append("%d squad%s operational." % [active,   "s" if active   != 1 else ""])
-	if wounded  > 0: lines.append("%d squad%s wounded." %     [wounded,  "s" if wounded  != 1 else ""])
-	if critical > 0: lines.append("%d squad%s CRITICAL — act immediately." % [critical, "s" if critical != 1 else ""])
-	if lost     > 0: lines.append("%d squad%s lost. No further contact." % [lost,     "s" if lost     != 1 else ""])
+	# Summary line
+	var summary_lbl := Label.new()
+	summary_lbl.add_theme_font_size_override("font_size", 11)
+	summary_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	var parts = []
+	if active > 0:   parts.append("%d operational" % active)
+	if wounded > 0:  parts.append("%d wounded" % wounded)
+	if critical > 0: parts.append("%d critical" % critical)
+	if lost > 0:     parts.append("%d lost" % lost)
+	summary_lbl.text = ", ".join(parts) if parts.size() > 0 else "No squads"
+	squad_summary.add_child(summary_lbl)
 
-	return "\n".join(lines) if lines.size() > 0 else "No status reports received."
 
-
-# -------------------------------------------------------
-# Turn Seal
-# -------------------------------------------------------
-func _on_seal_pressed() -> void:
-	# The Turn Seal locks in decisions — but allocations are
-	# confirmed at the Logistics Terminal. Here we just
-	# verify and close. If the player hasn't confirmed
-	# allocations yet, warn them.
-	if TurnManager.current_turn == SquadManager.current_turn:
-		# Turn already resolved this cycle — player is reviewing
-		warning_label.text = "Allocations already confirmed this turn. Check Intel Console for results."
+func _update_lock_status() -> void:
+	if not lock_status_lbl or not end_turn_btn:
 		return
+	if TurnManager.allocations_are_locked:
+		lock_status_lbl.text = "✓ Allocations locked. Ready to engage turn seal."
+		lock_status_lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
+		end_turn_btn.disabled = false
+		end_turn_btn.modulate = Color(1, 1, 1)
+	else:
+		lock_status_lbl.text = "⚠ Allocations not locked. Visit Logistics Terminal first."
+		lock_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.6, 0.2))
+		end_turn_btn.disabled = true
+		end_turn_btn.modulate = Color(0.5, 0.5, 0.5)
 
-	warning_label.text = ""
+
+func _update_debrief() -> void:
+	if not debrief_label:
+		return
+	if TurnManager.current_turn == 0:
+		debrief_label.text = "No turns resolved yet. Issue your first allocations."
+		return
+	var reports = SquadManager.get_reports()
+	var active_count = 0
+	var wounded_count = 0
+	for squad in SquadManager.get_squads_for_ui():
+		match squad.status:
+			SquadManager.Status.ACTIVE:  active_count += 1
+			SquadManager.Status.WOUNDED: wounded_count += 1
+	var lines = []
+	if active_count > 0: lines.append("%d squad%s operational." % [active_count, "s" if active_count > 1 else ""])
+	if wounded_count > 0: lines.append("%d squad%s wounded." % [wounded_count, "s" if wounded_count > 1 else ""])
+	debrief_label.text = "\n".join(lines) if lines.size() > 0 else "Turn resolved."
+
+
+func _on_end_turn_pressed() -> void:
+	if not TurnManager.allocations_are_locked:
+		return
+	TurnManager.end_turn()
 	_on_close_pressed()
-
-
-# -------------------------------------------------------
-# Signal handlers
-# -------------------------------------------------------
-func _on_turn_started(_turn: int) -> void:
-	if visible:
-		_update_display()
-
-
-func _on_turn_ended(_turn: int) -> void:
-	if visible:
-		_update_display()
-
-
-func _on_mission_complete() -> void:
-	if visible:
-		objective_label.text = "MISSION COMPLETE. Stand by for campaign debrief."
-		seal_button.disabled = true
-
-
-func _on_mission_failed(reason: String) -> void:
-	if visible:
-		objective_label.text = "MISSION FAILED — %s" % reason
-		objective_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
-		seal_button.disabled = true
 
 
 func _on_close_pressed() -> void:
 	visible = false
 	if player and player.has_method("on_popup_closed"):
 		player.on_popup_closed()
+
+
+func _status_color(status: int) -> Color:
+	match status:
+		SquadManager.Status.ACTIVE:   return Color(0.4, 0.9, 0.4)
+		SquadManager.Status.WOUNDED:  return Color(0.9, 0.7, 0.2)
+		SquadManager.Status.CRITICAL: return Color(0.9, 0.3, 0.3)
+		SquadManager.Status.LOST:     return Color(0.5, 0.5, 0.5)
+	return Color.WHITE

@@ -2,13 +2,6 @@ extends StaticBody3D
 # =============================================================
 # VoxCaster.gd
 # Attach to: StaticBody3D inside Vox-Caster_Array.tscn
-#
-# Scene structure required:
-#   Node3D
-#     MeshInstance3D
-#     StaticBody3D        (this script)
-#       CollisionShape3D
-#       VoxCasterPopup    (Control node, VoxCasterPopup.gd attached)
 # =============================================================
 
 @onready var popup: Control = $VoxCasterPopup

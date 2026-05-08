@@ -3,6 +3,9 @@ extends Control
 # LogisticsPopup.gd
 # Attach to: Control node named "LogisticsPopup" inside
 #            LogisticsTerminal.tscn > StaticBody3D
+#
+# "Lock Allocations" saves choices to TurnManager.
+# Actual turn resolution happens at the Command Throne.
 # =============================================================
 
 var player: Node = null
@@ -19,16 +22,17 @@ var allocations: Dictionary = {}
 var squad_rows: Array = []
 var budget_label:  Label
 var warning_label: Label
+var lock_btn: Button
 
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	TurnManager.turn_started.connect(_on_turn_started)
+	TurnManager.allocations_locked.connect(_on_allocations_locked)
 	_build_ui()
 
 
 func _on_turn_started(_turn: int) -> void:
-	print("LogisticsPopup _on_turn_started — visible: ", visible)
 	if visible:
 		refresh()
 
@@ -38,27 +42,30 @@ func _on_turn_resolved() -> void:
 		refresh()
 
 
+func _on_allocations_locked() -> void:
+	if lock_btn:
+		lock_btn.text = "✓ Allocations Locked"
+		lock_btn.disabled = true
+
+
 func refresh() -> void:
-	print("=== LogisticsPopup.refresh() called ===")
-	print("Squads empty: ", SquadManager.squads.is_empty())
-	print("Squads: ", SquadManager.squads.keys())
 	if SquadManager.squads.is_empty():
-		print("WARNING: squads empty, skipping refresh")
 		return
 	_sync_allocations()
 	_rebuild_squad_rows()
 	_refresh_budget()
+	# Reset lock button state for new turn
+	if lock_btn:
+		lock_btn.text = "Lock Allocations"
+		lock_btn.disabled = false
 
 
-# -------------------------------------------------------
-# Build UI
-# -------------------------------------------------------
 func _build_ui() -> void:
 	custom_minimum_size = Vector2(560, 0)
 	set_anchors_preset(Control.PRESET_CENTER)
 
 	var panel := PanelContainer.new()
-	panel.name = "PanelContainer" 
+	panel.name = "PanelContainer"
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(panel)
 
@@ -71,6 +78,14 @@ func _build_ui() -> void:
 	title.text = "LOGISTICS TERMINAL"
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
+
+	# Instruction line
+	var instr := Label.new()
+	instr.text = "Allocate supplies, then Lock. End turn at the Command Throne."
+	instr.add_theme_font_size_override("font_size", 11)
+	instr.add_theme_color_override("font_color", Color(0.6, 0.7, 0.8))
+	instr.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(instr)
 
 	budget_label = Label.new()
 	budget_label.add_theme_font_size_override("font_size", 14)
@@ -107,10 +122,10 @@ func _build_ui() -> void:
 	btn_row.add_theme_constant_override("separation", 12)
 	vbox.add_child(btn_row)
 
-	var confirm_btn := Button.new()
-	confirm_btn.text = "Confirm Allocations"
-	confirm_btn.pressed.connect(_on_confirm_pressed)
-	btn_row.add_child(confirm_btn)
+	lock_btn = Button.new()
+	lock_btn.text = "Lock Allocations"
+	lock_btn.pressed.connect(_on_lock_pressed)
+	btn_row.add_child(lock_btn)
 
 	var close_btn := Button.new()
 	close_btn.text = "Close  [Esc]"
@@ -119,20 +134,13 @@ func _build_ui() -> void:
 
 
 func _rebuild_squad_rows() -> void:
-	print("Children of self: ")
-	for c in get_children():
-		print("  ", c.name, " -> ", c.get_class())
-		for cc in c.get_children():
-			print("    ", cc.name, " -> ", cc.get_class())
 	squad_rows.clear()
 	var container = get_node_or_null("PanelContainer/VBoxContainer/SquadContainer")
 	if container == null:
-		print("ERROR: SquadContainer not found!")
 		return
 	for child in container.get_children():
 		child.queue_free()
 
-	print("Building rows for squads: ", SquadManager.get_squads_for_ui().size())
 	for squad in SquadManager.get_squads_for_ui():
 		if squad.status == SquadManager.Status.LOST:
 			continue
@@ -187,6 +195,12 @@ func _on_supply_changed(_index: int, squad_name: String, supply: String, opt: Op
 	if not allocations.has(squad_name):
 		allocations[squad_name] = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	allocations[squad_name][supply] = SUPPLY_COST[SUPPLY_OPTIONS[opt.selected]]
+	# Unlock if player changes after locking
+	if TurnManager.allocations_are_locked:
+		TurnManager.allocations_are_locked = false
+		if lock_btn:
+			lock_btn.text = "Lock Allocations"
+			lock_btn.disabled = false
 	_refresh_budget()
 
 
@@ -206,21 +220,17 @@ func _refresh_budget() -> void:
 		warning_label.text = ""
 
 
-func _on_confirm_pressed() -> void:
+func _on_lock_pressed() -> void:
 	var total_budget = GameManager.get_current_mission_data().get("budget", 12)
 	var spent: int = 0
 	for squad_name in allocations:
 		for supply in allocations[squad_name]:
 			spent += allocations[squad_name][supply]
 	if spent > total_budget:
-		warning_label.text = "Cannot confirm — over budget!"
+		warning_label.text = "Cannot lock — over budget!"
 		return
 	warning_label.text = ""
-	TurnManager.end_turn(allocations)
-	for squad_name in allocations:
-		for supply in allocations[squad_name]:
-			allocations[squad_name][supply] = 0
-	_on_close_pressed()
+	TurnManager.lock_allocations(allocations)
 
 
 func _on_close_pressed() -> void:

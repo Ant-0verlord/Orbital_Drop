@@ -8,13 +8,19 @@ extends Node3D
 # shows the result screen.
 # =============================================================
 
-var result_overlay: Control = null
+@onready var result_overlay: Control = $ResultOverlay  # Add this node — see below
+
 
 func _ready() -> void:
-	result_overlay = get_node_or_null("ResultOverlay")
+	# Connect mission outcome signals
 	TurnManager.mission_complete.connect(_on_mission_complete)
 	TurnManager.mission_failed.connect(_on_mission_failed)
-	await get_tree().create_timer(0.1).timeout
+
+	# Hide result overlay
+	if result_overlay:
+		result_overlay.visible = false
+
+	# Start the mission
 	GameManager.start_current_mission()
 
 
