@@ -1,7 +1,7 @@
 extends Node
 # =============================================================
 # TurnManager.gd  —  AutoLoad singleton
-# AutoLoad order: SquadManager, TurnManager, GameManager
+# AutoLoad order: SquadManager, TurnManager, GameManager, EnemyManager
 # =============================================================
 
 signal turn_started(turn_number: int)
@@ -14,6 +14,7 @@ var current_turn: int = 0
 var max_turns: int = 0
 var allocations_are_locked: bool = false
 var pending_allocations: Dictionary = {}
+var pending_enemy_list: Array = []
 
 
 func start_mission(mission_data: Dictionary) -> void:
@@ -21,23 +22,25 @@ func start_mission(mission_data: Dictionary) -> void:
 	max_turns = mission_data.get("turns", 3)
 	allocations_are_locked = false
 	pending_allocations = {}
-	var squad_list = mission_data.get("squads", [])
+
+	var squad_list   = mission_data.get("squads", [])
 	var interference = mission_data.get("interference", 0.0)
+	pending_enemy_list = mission_data.get("enemies", [])
+
 	SquadManager.init_squads(squad_list, interference)
+
 	if not SquadManager.squad_lost.is_connected(_on_squad_lost):
 		SquadManager.squad_lost.connect(_on_squad_lost)
+
 	emit_signal("turn_started", current_turn)
 
 
-# Called by LogisticsPopup when "Lock Allocations" is pressed
 func lock_allocations(allocations: Dictionary) -> void:
 	pending_allocations = allocations.duplicate(true)
 	allocations_are_locked = true
 	emit_signal("allocations_locked")
-	print("TurnManager: allocations locked — ", pending_allocations)
 
 
-# Called by CommandThrone when "End Turn" is pressed
 func end_turn() -> void:
 	if not allocations_are_locked:
 		push_warning("TurnManager: end_turn called but allocations not locked!")
@@ -45,6 +48,8 @@ func end_turn() -> void:
 
 	current_turn += 1
 	SquadManager.resolve_turn(pending_allocations)
+	EnemyManager.advance_enemies()
+
 	allocations_are_locked = false
 	pending_allocations = {}
 	emit_signal("turn_ended", current_turn)
@@ -59,11 +64,30 @@ func end_turn() -> void:
 		emit_signal("mission_failed", "All squads have been lost.")
 		return
 
+	# Check final turn — evaluate win condition
 	if max_turns > 0 and current_turn >= max_turns:
-		emit_signal("mission_complete")
+		_check_win_condition()
 		return
 
 	emit_signal("turn_started", current_turn)
+
+
+func _check_win_condition() -> void:
+	# Ask HoloMap for current zone states via the scene tree
+	var holo = get_tree().get_first_node_in_group("holomap")
+	var zone_states = {}
+	if holo and holo.has_method("get_zone_states"):
+		zone_states = holo.get_zone_states()
+
+	var held = GameManager.count_held_hexes(zone_states)
+	var needed = GameManager.get_win_hex_count()
+
+	if held >= needed:
+		emit_signal("mission_complete")
+	else:
+		emit_signal("mission_failed",
+			"Mission failed. Held %d sectors — needed %d." % [held, needed]
+		)
 
 
 func _on_squad_lost(squad_name: String) -> void:
