@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b54q1kjf4asu0"
+path="res://.godot/imported/508071__leonelmail__light-switch-018.mp3-7dcc0249b2b62d02908812f7e125eb66.mp3str"
+
+[deps]
+
+source_file="res://Sounds/Music/Sounds for Orbital Drop/Buttons/508071__leonelmail__light-switch-018.mp3"
+dest_files=["res://.godot/imported/508071__leonelmail__light-switch-018.mp3-7dcc0249b2b62d02908812f7e125eb66.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

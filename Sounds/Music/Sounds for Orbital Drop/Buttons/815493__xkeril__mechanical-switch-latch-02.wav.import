@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://rhxjfoi0uqiy"
+path="res://.godot/imported/815493__xkeril__mechanical-switch-latch-02.wav-d675ac843d8c8d38954040cd7e72c600.sample"
+
+[deps]
+
+source_file="res://Sounds/Music/Sounds for Orbital Drop/Buttons/815493__xkeril__mechanical-switch-latch-02.wav"
+dest_files=["res://.godot/imported/815493__xkeril__mechanical-switch-latch-02.wav-d675ac843d8c8d38954040cd7e72c600.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

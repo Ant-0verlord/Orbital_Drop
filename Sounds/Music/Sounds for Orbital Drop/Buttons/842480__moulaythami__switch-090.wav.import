@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://ba1els6vub8ik"
+path="res://.godot/imported/842480__moulaythami__switch-090.wav-a796fa0ecce615752d931380f2bff619.sample"
+
+[deps]
+
+source_file="res://Sounds/Music/Sounds for Orbital Drop/Buttons/842480__moulaythami__switch-090.wav"
+dest_files=["res://.godot/imported/842480__moulaythami__switch-090.wav-a796fa0ecce615752d931380f2bff619.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

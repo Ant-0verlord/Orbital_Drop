@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://2xhb46dbgftr"
+path="res://.godot/imported/646175__ufos__toggle_on09.mp3-dbdf02f4377f62b1fddfd81ba47ff29e.mp3str"
+
+[deps]
+
+source_file="res://Sounds/Music/Sounds for Orbital Drop/Buttons/646175__ufos__toggle_on09.mp3"
+dest_files=["res://.godot/imported/646175__ufos__toggle_on09.mp3-dbdf02f4377f62b1fddfd81ba47ff29e.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
