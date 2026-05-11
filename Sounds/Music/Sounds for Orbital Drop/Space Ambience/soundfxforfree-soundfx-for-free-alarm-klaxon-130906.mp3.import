@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bxk4vibfcapl3"
+path="res://.godot/imported/soundfxforfree-soundfx-for-free-alarm-klaxon-130906.mp3-3743ca9fa980fc2c97f2fae7d3ed05b0.mp3str"
+
+[deps]
+
+source_file="res://Sounds/Music/Sounds for Orbital Drop/Space Ambience/soundfxforfree-soundfx-for-free-alarm-klaxon-130906.mp3"
+dest_files=["res://.godot/imported/soundfxforfree-soundfx-for-free-alarm-klaxon-130906.mp3-3743ca9fa980fc2c97f2fae7d3ed05b0.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

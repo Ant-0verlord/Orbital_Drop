@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c8wk0xgcjxeff"
+path="res://.godot/imported/edr-synth-alarm-01-169969.mp3-f302d3fa0f178052e704e2ed3cb2aa80.mp3str"
+
+[deps]
+
+source_file="res://Sounds/Music/Sounds for Orbital Drop/Space Ambience/edr-synth-alarm-01-169969.mp3"
+dest_files=["res://.godot/imported/edr-synth-alarm-01-169969.mp3-f302d3fa0f178052e704e2ed3cb2aa80.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
