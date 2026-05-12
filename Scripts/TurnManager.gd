@@ -1,36 +1,47 @@
 extends Node
 # =============================================================
 # TurnManager.gd  —  AutoLoad singleton
-# AutoLoad order: SquadManager, TurnManager, GameManager, EnemyManager
 # =============================================================
 
 signal turn_started(turn_number: int)
 signal turn_ended(turn_number: int)
 signal allocations_locked
-signal mission_complete
+signal mission_complete(report: Dictionary)
 signal mission_failed(reason: String)
 
 var current_turn: int = 0
 var max_turns: int = 0
+var win_condition_hexes: int = 5
 var allocations_are_locked: bool = false
 var pending_allocations: Dictionary = {}
 var pending_enemy_list: Array = []
+var last_action_results: Dictionary = {}
 
 
 func start_mission(mission_data: Dictionary) -> void:
 	current_turn = 0
-	max_turns = mission_data.get("turns", 3)
+	max_turns = mission_data.get("turns", 5)
+	win_condition_hexes = mission_data.get("win_hexes", 5)
 	allocations_are_locked = false
 	pending_allocations = {}
+	last_action_results = {}
 
 	var squad_list   = mission_data.get("squads", [])
 	var interference = mission_data.get("interference", 0.0)
-	pending_enemy_list = mission_data.get("enemies", [])
+	var enemy_list   = mission_data.get("enemies", [])
 
 	SquadManager.init_squads(squad_list, interference)
 
 	if not SquadManager.squad_lost.is_connected(_on_squad_lost):
 		SquadManager.squad_lost.connect(_on_squad_lost)
+
+	# Get squad starting sectors for EnemyManager
+	var squad_sectors = []
+	for s in squad_list:
+		squad_sectors.append(s.sector)
+
+	EnemyManager.init_enemies(squad_sectors, enemy_list)
+	pending_enemy_list = enemy_list
 
 	emit_signal("turn_started", current_turn)
 
@@ -47,7 +58,11 @@ func end_turn() -> void:
 		return
 
 	current_turn += 1
-	SquadManager.resolve_turn(pending_allocations)
+
+	# Resolve squad actions (movement, combat, healing)
+	last_action_results = SquadManager.resolve_turn(pending_allocations)
+
+	# Enemies advance after squads act
 	EnemyManager.advance_enemies()
 
 	allocations_are_locked = false
@@ -64,7 +79,7 @@ func end_turn() -> void:
 		emit_signal("mission_failed", "All squads have been lost.")
 		return
 
-	# Check final turn — evaluate win condition
+	# Check turn limit
 	if max_turns > 0 and current_turn >= max_turns:
 		_check_win_condition()
 		return
@@ -73,21 +88,30 @@ func end_turn() -> void:
 
 
 func _check_win_condition() -> void:
-	# Ask HoloMap for current zone states via the scene tree
-	var holo = get_tree().get_first_node_in_group("holomap")
-	var zone_states = {}
-	if holo and holo.has_method("get_zone_states"):
-		zone_states = holo.get_zone_states()
+	var held = EnemyManager.get_held_count()
+	var squads_alive = 0
+	var squads_lost = 0
+	for squad_name in SquadManager.squads:
+		var s = SquadManager.squads[squad_name]
+		if s.status == SquadManager.Status.LOST:
+			squads_lost += 1
+		else:
+			squads_alive += 1
 
-	var held = GameManager.count_held_hexes(zone_states)
-	var needed = GameManager.get_win_hex_count()
+	var won = held >= win_condition_hexes
+	var report = {
+		"won":           won,
+		"held_hexes":    held,
+		"required_hexes": win_condition_hexes,
+		"squads_alive":  squads_alive,
+		"squads_lost":   squads_lost,
+		"turns":         current_turn,
+	}
 
-	if held >= needed:
-		emit_signal("mission_complete")
+	if won:
+		emit_signal("mission_complete", report)
 	else:
-		emit_signal("mission_failed",
-			"Mission failed. Held %d sectors — needed %d." % [held, needed]
-		)
+		emit_signal("mission_failed", "Insufficient territory held at mission end. Required %d hexes, held %d." % [win_condition_hexes, held])
 
 
 func _on_squad_lost(squad_name: String) -> void:
