@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://caglsrgxql7v5"]
 
 [ext_resource type="ArrayMesh" uid="uid://do0blkitt0be0" path="res://Models/Intel Desk 1.1.obj" id="1_0ra3t"]
-[ext_resource type="Script" uid="uid://bd5yqf4ku64t4" path="res://Scripts/IntelConsole.gd" id="2_1kgtn"]
-[ext_resource type="Script" uid="uid://c5ousiyt0lvs" path="res://Scripts/IntelConsolePopup.gd" id="3_l8jtb"]
+[ext_resource type="Script" uid="uid://bd5yqf4ku64t4" path="res://Scripts/Consoles/IntelConsole.gd" id="2_1kgtn"]
+[ext_resource type="Script" uid="uid://c5ousiyt0lvs" path="res://Scripts/Popups/IntelConsolePopup.gd" id="3_l8jtb"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_oohax"]
 size = Vector3(5.431281, 4.480967, 9.567525)

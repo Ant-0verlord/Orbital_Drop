@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://poa3ylhykd1g"]
 
 [ext_resource type="ArrayMesh" uid="uid://cxvp4fr84k0ue" path="res://Models/Holomap 1.1.obj" id="1_sdqmv"]
-[ext_resource type="Script" uid="uid://8ctke7lqmu2p" path="res://Scripts/HoloMap.gd" id="2_ftbq4"]
-[ext_resource type="Script" uid="uid://r5yd045oo1mc" path="res://Scripts/HoloMapPopup.gd" id="3_h4dqx"]
+[ext_resource type="Script" uid="uid://8ctke7lqmu2p" path="res://Scripts/Consoles/HoloMap.gd" id="2_ftbq4"]
+[ext_resource type="Script" uid="uid://r5yd045oo1mc" path="res://Scripts/Popups/HoloMapPopup.gd" id="3_h4dqx"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_jvvyk"]
 size = Vector3(3.659912, 0.61828613, 2.064331)

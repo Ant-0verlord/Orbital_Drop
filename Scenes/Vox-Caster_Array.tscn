@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://bj4d3r48vrf44"]
 
 [ext_resource type="ArrayMesh" uid="uid://dj14l20wh1r2i" path="res://Models/Vox-Caster Array.obj" id="1_7sr1o"]
-[ext_resource type="Script" uid="uid://2eyud7n0r8s6" path="res://Scripts/VoxCaster.gd" id="2_3hiqr"]
-[ext_resource type="Script" uid="uid://lvgv4kp058x1" path="res://Scripts/VoxCasterPopup.gd" id="3_ch73s"]
+[ext_resource type="Script" uid="uid://2eyud7n0r8s6" path="res://Scripts/Consoles/VoxCaster.gd" id="2_3hiqr"]
+[ext_resource type="Script" uid="uid://lvgv4kp058x1" path="res://Scripts/Popups/VoxCasterPopup.gd" id="3_ch73s"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_dl7dm"]
 size = Vector3(2.0198936, 3.5313492, 4.610565)
