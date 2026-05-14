@@ -150,7 +150,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.02165983, 0.99862486, 5.99
 shape = SubResource("BoxShape3D_tslkb")
 
 [node name="Player" parent="." unique_id=542213915 instance=ExtResource("2_ludm1")]
-transform = Transform3D(-3.7438305e-08, 0, -0.8564886, 0, 0.8564885, 0, 0.8564886, 0, -3.7438305e-08, -5.601856, 1.6934934, 0.21827985)
+transform = Transform3D(-3.2727474e-08, 0.41592658, -0.7487174, 1.818073e-08, 0.7487173, 0.41592667, 0.8564885, -1.8959246e-16, -3.7438298e-08, -0.9663353, 14.455579, 0.21827985)
 
 [node name="Holomap" parent="." unique_id=920081661 instance=ExtResource("3_pelsp")]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.018492222, 0.68744946, 0)
@@ -159,7 +159,7 @@ transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.018492222, 0.68744946
 transform = Transform3D(-4.3711385e-08, 0, -0.99999994, 0, 1, 0, 0.99999994, 0, -4.3711385e-08, -0.03024447, 0.030961523, -3.4955354)
 
 [node name="Command Throne" parent="." unique_id=112694284 instance=ExtResource("5_5ts7m")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -7.2433634, 0.8073853, -0.0857836)
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -6.913126, 0.8073853, -0.0857836)
 
 [node name="Logistics Terminal" parent="." unique_id=1292128161 instance=ExtResource("6_23xtj")]
 transform = Transform3D(-2.076493e-08, 0, 0.47504622, 0, 0.47504622, 0, -0.47504622, 0, -2.076493e-08, 4.350984, 0.49602664, 0.47250643)
@@ -168,7 +168,7 @@ transform = Transform3D(-2.076493e-08, 0, 0.47504622, 0, 0.47504622, 0, -0.47504
 transform = Transform3D(-4.3711385e-08, 0, 0.99999994, 0, 1, 0, -0.99999994, 0, -4.3711385e-08, 0.28378534, 0.5096475, 3.4207597)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="." unique_id=1473983525]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 14.428138, 0)
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 4.9006248, 12.464634, 0)
 light_energy = 25.495
 spot_range = 17.835012
 spot_angle = 81.56249
