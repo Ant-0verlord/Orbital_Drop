@@ -21,13 +21,11 @@ func _ready() -> void:
 
 
 func _on_turn_started(_turn: int) -> void:
-	if visible:
-		refresh()
+	if visible: refresh()
 
 
 func _on_turn_resolved() -> void:
-	if visible:
-		refresh()
+	if visible: refresh()
 
 
 func refresh() -> void:
@@ -115,11 +113,11 @@ func _rebuild_transmissions() -> void:
 		if squad.status == SquadManager.Status.CRITICAL:
 			_add_distress_call(container, squad)
 
-	# All squads get a need transmission (garbled by interference)
+	# All other squads get need transmissions
 	for squad_name in SquadManager.squads:
 		var squad = SquadManager.squads[squad_name]
 		if squad.status == SquadManager.Status.CRITICAL:
-			continue  # Already shown as distress call above
+			continue
 		_add_need_transmission(container, squad)
 
 
@@ -145,18 +143,15 @@ func _add_distress_call(container: Node, squad: Dictionary) -> void:
 	vbox.add_theme_constant_override("separation", 4)
 	card.add_child(vbox)
 
-	# Priority header
 	var priority_lbl := Label.new()
 	priority_lbl.text = "⚠ PRIORITY DISTRESS — %s [%s]" % [squad.name, squad.sector]
 	priority_lbl.add_theme_font_size_override("font_size", 13)
 	priority_lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	vbox.add_child(priority_lbl)
 
-	# Distress message — mostly clear even at high interference
 	var need_str = SquadManager.NEED_NAMES[squad.need]
-	var msg = "%s — we are losing men. Send %s immediately or we will not hold." % [squad.name, need_str]
 	var body_lbl := Label.new()
-	body_lbl.text = msg
+	body_lbl.text = "%s — we are losing men. Send %s immediately or we will not hold." % [squad.name, need_str]
 	body_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	body_lbl.add_theme_font_size_override("font_size", 12)
 	body_lbl.add_theme_color_override("font_color", Color(1.0, 0.7, 0.7))
@@ -167,7 +162,11 @@ func _add_distress_call(container: Node, squad: Dictionary) -> void:
 
 func _add_need_transmission(container: Node, squad: Dictionary) -> void:
 	if squad.status == SquadManager.Status.LOST:
-		_add_lost_signal(container, squad)
+		var lbl := Label.new()
+		lbl.text = ">>> %s [%s] — CARRIER LOST — NO SIGNAL" % [squad.name, squad.sector]
+		lbl.add_theme_font_size_override("font_size", 12)
+		lbl.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
+		container.add_child(lbl)
 		return
 
 	var card := PanelContainer.new()
@@ -206,10 +205,10 @@ func _add_need_transmission(container: Node, squad: Dictionary) -> void:
 	quality_lbl.add_theme_color_override("font_color", _signal_quality_color(interference))
 	header.add_child(quality_lbl)
 
-	# Need line — this is what the player needs to interpret
+	# Need line — garbled by interference
 	var need_str = SquadManager.NEED_NAMES[squad.need]
-	var raw_need_msg = "Requesting %s. Awaiting your order." % need_str
-	var garbled_need = _garble_text(raw_need_msg, interference)
+	var raw_need = "Requesting %s. Awaiting your order." % need_str
+	var garbled_need = _garble_text(raw_need, interference)
 
 	var need_lbl := Label.new()
 	need_lbl.text = garbled_need
@@ -220,7 +219,7 @@ func _add_need_transmission(container: Node, squad: Dictionary) -> void:
 	)
 	vbox.add_child(need_lbl)
 
-	# Status context line — also garbled
+	# Status context line
 	var status_msg = _status_context(squad)
 	var garbled_status = _garble_text(status_msg, interference * 0.6)
 	var status_lbl := Label.new()
@@ -231,14 +230,6 @@ func _add_need_transmission(container: Node, squad: Dictionary) -> void:
 	vbox.add_child(status_lbl)
 
 	container.add_child(card)
-
-
-func _add_lost_signal(container: Node, squad: Dictionary) -> void:
-	var lbl := Label.new()
-	lbl.text = ">>> %s [%s] — CARRIER LOST — NO SIGNAL" % [squad.name, squad.sector]
-	lbl.add_theme_font_size_override("font_size", 12)
-	lbl.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
-	container.add_child(lbl)
 
 
 func _status_context(squad: Dictionary) -> String:

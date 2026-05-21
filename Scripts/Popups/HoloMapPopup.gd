@@ -1,6 +1,8 @@
 extends Control
 # =============================================================
 # HoloMapPopup.gd
+# Attach to: Control node named "HoloMapPopup" inside
+#            Holomap.tscn > StaticBody3D
 # =============================================================
 
 var player: Node = null
@@ -8,10 +10,9 @@ var zone_states: Dictionary = {}
 var pulse_time: float = 0.0
 const PULSE_SPEED: float = 2.5
 
-# Hex geometry
-const HEX_RADIUS: float  = 38.0
-const HEX_INNER: float   = 32.0
-const GRID_CENTER: Vector2 = Vector2(310, 200)
+const HEX_RADIUS: float  = 40.0
+const HEX_INNER: float   = 34.0
+const GRID_CENTER: Vector2 = Vector2(310, 195)
 
 var hex_entries: Array = []
 var flicker_states: Dictionary = {}
@@ -42,13 +43,13 @@ func refresh(new_zone_states: Dictionary) -> void:
 	_build_hex_layout()
 	_rebuild_sector_list()
 	if turn_label:
-		turn_label.text = "Turn %d / %d" % [TurnManager.current_turn, TurnManager.max_turns]
+		turn_label.text = "Turn %d" % TurnManager.current_turn
 	if held_label:
 		var held = EnemyManager.get_held_count()
-		var required = TurnManager.win_condition_hexes
-		held_label.text = "Held: %d / %d required" % [held, required]
+		var req  = TurnManager.win_condition_hexes
+		held_label.text = "Held: %d / %d required" % [held, req]
 		held_label.add_theme_color_override("font_color",
-			Color(0.4, 0.9, 0.4) if held >= required else Color(0.9, 0.6, 0.2)
+			Color(0.4, 0.9, 0.4) if held >= req else Color(0.9, 0.6, 0.2)
 		)
 	queue_redraw()
 
@@ -66,13 +67,11 @@ func _process(delta: float) -> void:
 
 
 func _on_turn_resolved() -> void:
-	if visible:
-		queue_redraw()
+	if visible: queue_redraw()
 
 
 func _on_enemies_updated() -> void:
-	if visible:
-		queue_redraw()
+	if visible: queue_redraw()
 
 
 func _build_ui() -> void:
@@ -119,20 +118,23 @@ func _build_ui() -> void:
 		legend.add_child(lbl)
 	vbox.add_child(legend)
 
+	# Hex canvas area — _draw() renders into this Control
 	var hex_canvas := Control.new()
-	hex_canvas.custom_minimum_size = Vector2(630, 410)
 	hex_canvas.name = "HexCanvas"
+	hex_canvas.custom_minimum_size = Vector2(630, 410)
 	vbox.add_child(hex_canvas)
 
 	vbox.add_child(HSeparator.new())
 
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size.y = 130
+	scroll.name = "ScrollContainer"
+	scroll.custom_minimum_size.y = 140
 	vbox.add_child(scroll)
 
 	sector_list = VBoxContainer.new()
+	sector_list.name = "SectorList"
 	sector_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sector_list.add_theme_constant_override("separation", 2)
+	sector_list.add_theme_constant_override("separation", 3)
 	scroll.add_child(sector_list)
 
 	vbox.add_child(HSeparator.new())
@@ -148,7 +150,7 @@ func _build_ui() -> void:
 
 
 # -------------------------------------------------------
-# Build 14-hex layout with correct flat-top spacing
+# 14-hex flat-top layout using axial coordinates
 # Centre + Ring 1 (6) + Ring 2 (7)
 # -------------------------------------------------------
 func _build_hex_layout() -> void:
@@ -157,39 +159,36 @@ func _build_hex_layout() -> void:
 	if sectors.is_empty():
 		return
 
-	# Flat-top hex spacing
-	var w = HEX_RADIUS * 2.0          # hex width
-	var h = HEX_RADIUS * sqrt(3.0)    # hex height
-	var col_step = w * 0.75            # horizontal step
-	var row_step = h                   # vertical step
+	# Flat-top hex: width = 2*r, height = sqrt(3)*r
+	# Horizontal step = 1.5*r, vertical step = sqrt(3)*r
+	var r = HEX_RADIUS
+	var h_step = r * 1.5
+	var v_step = r * sqrt(3.0)
 
-	# 14 positions in axial-style flat-top layout
-	# Using cube coordinates converted to pixel
-	var hex_coords = [
-		Vector2(0,   0),    # 0 centre
-		Vector2(1,  -0.5),  # 1
-		Vector2(1,   0.5),  # 2  ring 1 — clockwise from top-right
-		Vector2(0,   1),    # 3
-		Vector2(-1,  0.5),  # 4
-		Vector2(-1, -0.5),  # 5
-		Vector2(0,  -1),    # 6
-		Vector2(2,   0),    # 7  ring 2
-		Vector2(2,   1),    # 8
-		Vector2(1,   1.5),  # 9
-		Vector2(0,   2),    # 10
-		Vector2(-1,  1.5),  # 11
-		Vector2(-2,  1),    # 12
-		Vector2(-2,  0),    # 13
+	# Axial positions (col, row) for flat-top hex grid
+	# Centre=0, Ring1=1-6, Ring2=7-13
+	var positions = [
+		Vector2(0,    0),      # 0 centre
+		Vector2(1,   -0.5),    # 1 ring 1
+		Vector2(1,    0.5),    # 2
+		Vector2(0,    1),      # 3
+		Vector2(-1,   0.5),    # 4
+		Vector2(-1,  -0.5),    # 5
+		Vector2(0,   -1),      # 6
+		Vector2(2,   -1),      # 7 ring 2
+		Vector2(2,    0),      # 8
+		Vector2(2,    1),      # 9
+		Vector2(1,    1.5),    # 10
+		Vector2(0,    2),      # 11
+		Vector2(-1,   1.5),    # 12
+		Vector2(-2,   1),      # 13
 	]
 
-	var canvas_offset = Vector2(10, 105)
+	var canvas_offset = Vector2(10, 108)
 
-	for i in range(min(sectors.size(), hex_coords.size())):
-		var coord = hex_coords[i]
-		var pixel = Vector2(
-			coord.x * col_step,
-			coord.y * row_step
-		)
+	for i in range(min(sectors.size(), positions.size())):
+		var p = positions[i]
+		var pixel = Vector2(p.x * h_step, p.y * v_step)
 		hex_entries.append({
 			"sector": sectors[i],
 			"center": canvas_offset + GRID_CENTER + pixel,
@@ -211,11 +210,11 @@ func _draw() -> void:
 	var interference = SquadManager.interference
 
 	for entry in hex_entries:
-		var center: Vector2 = entry.center
-		var sector: String  = entry.sector
-		var data = zone_states.get(sector, {})
-		var state: String   = data.get("state", "enemy")
-		var squad: String   = data.get("squad", "")
+		var center: Vector2  = entry.center
+		var sector: String   = entry.sector
+		var data             = zone_states.get(sector, {})
+		var state: String    = data.get("state", "enemy")
+		var squad: String    = data.get("squad", "")
 		var enemy_count: int = data.get("enemy_count", 0)
 
 		var enemy_visible = true
@@ -225,10 +224,7 @@ func _draw() -> void:
 		var fill = _state_color(state)
 
 		if enemy_count > 0 and enemy_visible:
-			if state in ["held", "contested"]:
-				fill = fill.lerp(COLOR_ENEMY, 0.55)
-			else:
-				fill = COLOR_ENEMY
+			fill = fill.lerp(COLOR_ENEMY, 0.55) if state in ["held", "contested"] else COLOR_ENEMY
 
 		if state == "contested" and enemy_count == 0:
 			var pulse = sin(pulse_time) * 0.5 + 0.5
@@ -243,31 +239,32 @@ func _draw() -> void:
 
 		var border = COLOR_BORDER
 		if enemy_count > 0 and enemy_visible:
-			border = COLOR_ENEMY_BORDER.lerp(Color(1,0.5,0.5,1), sin(pulse_time * 1.6) * 0.3)
+			border = COLOR_ENEMY_BORDER.lerp(Color(1, 0.5, 0.5, 1), sin(pulse_time * 1.6) * 0.3)
 		elif state == "contested":
 			border = Color(1.0, 0.85, 0.2, 0.9)
 		elif state in ["enemy", "neutral"]:
 			border = Color(0.3, 0.4, 0.5, 0.5)
 		_draw_hex_border(center, HEX_RADIUS - 1.0, border, 1.5)
 
-		# Sector label
 		var lc = COLOR_LABEL if state not in ["enemy", "neutral"] else Color(0.55, 0.65, 0.7)
-		draw_string(ThemeDB.fallback_font, center + Vector2(-len(sector)*3.0, -7),
+		draw_string(ThemeDB.fallback_font,
+			center + Vector2(-len(sector) * 3.0, -7),
 			sector, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, lc)
 
-		# Squad label
 		if squad != "":
 			var short = squad.replace("Squad ", "")
-			draw_string(ThemeDB.fallback_font, center + Vector2(-len(short)*2.8, 4),
-				short, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1,1,1,0.7))
+			draw_string(ThemeDB.fallback_font,
+				center + Vector2(-len(short) * 2.8, 4),
+				short, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 1, 1, 0.7))
 
-		# Enemy marker
 		if enemy_count > 0 and enemy_visible:
 			var marker = "✕" if enemy_count == 1 else "✕×%d" % enemy_count
-			draw_string(ThemeDB.fallback_font, center + Vector2(-len(marker)*3.5, 16),
+			draw_string(ThemeDB.fallback_font,
+				center + Vector2(-len(marker) * 3.5, 16),
 				marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.95))
 		elif enemy_count > 0 and not enemy_visible:
-			draw_string(ThemeDB.fallback_font, center + Vector2(-6, 16),
+			draw_string(ThemeDB.fallback_font,
+				center + Vector2(-6, 16),
 				"░░", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.5, 0.3, 0.3, 0.35))
 
 
@@ -282,7 +279,7 @@ func _hex_points(center: Vector2, radius: float) -> PackedVector2Array:
 func _draw_hex_border(center: Vector2, radius: float, color: Color, width: float) -> void:
 	var pts = _hex_points(center, radius)
 	for i in range(6):
-		draw_line(pts[i], pts[(i+1)%6], color, width)
+		draw_line(pts[i], pts[(i + 1) % 6], color, width)
 
 
 func _state_color(state: String) -> Color:
@@ -310,7 +307,8 @@ func _rebuild_sector_list() -> void:
 
 		var dot := Label.new()
 		dot.text = "●"
-		dot.add_theme_color_override("font_color", COLOR_ENEMY if enemy_count > 0 else _state_color(state))
+		dot.add_theme_color_override("font_color",
+			COLOR_ENEMY if enemy_count > 0 else _state_color(state))
 		dot.add_theme_font_size_override("font_size", 11)
 		dot.custom_minimum_size.x = 16
 		row.add_child(dot)
@@ -325,7 +323,8 @@ func _rebuild_sector_list() -> void:
 		var state_lbl := Label.new()
 		state_lbl.text = state_text
 		state_lbl.custom_minimum_size.x = 90
-		state_lbl.add_theme_color_override("font_color", COLOR_ENEMY if enemy_count > 0 else _state_color(state))
+		state_lbl.add_theme_color_override("font_color",
+			COLOR_ENEMY if enemy_count > 0 else _state_color(state))
 		state_lbl.add_theme_font_size_override("font_size", 11)
 		row.add_child(state_lbl)
 
