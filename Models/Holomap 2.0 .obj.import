@@ -3,11 +3,7 @@
 importer="wavefront_obj"
 importer_version=1
 type="Mesh"
-<<<<<<< HEAD
-uid="uid://b1hg2brn3p0jh"
-=======
-uid="uid://u81f72ndgnjf"
->>>>>>> 0223c8f7ee0d92d19c9fcf1f58722883b012a669
+uid="uid://b6ft3dc43g0s6"
 path="res://.godot/imported/Holomap 2.0 .obj-320bf00c2efe555b62b6dcb883022c0d.mesh"
 
 [deps]
