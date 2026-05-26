@@ -1,7 +1,6 @@
 extends Node
 # =============================================================
 # GameManager.gd  —  AutoLoad singleton
-# Mission 1: no turn limit, hold 5 tiles and survive enemy push.
 # =============================================================
 
 var current_mission: int = 0
@@ -10,11 +9,11 @@ var campaign_record: Array = []
 var missions: Array = [
 	{
 		"title":        "Mission 1 — Planetary Insertion",
-		"turns":        0,        # 0 = no turn limit
+		"turns":        5,
 		"budget":       8,
 		"win_hexes":    5,
 		"interference": 0.0,
-		"objective":    "Capture and hold 5 sectors simultaneously, then survive the enemy counter-push.",
+		"objective":    "Capture and hold 5 sectors by the end of Turn 5.",
 		"squads": [
 			{ "name": "Squad Varro", "sector": "Alpha-7", "status": SquadManager.Status.ACTIVE,  "need": SquadManager.Need.FUEL_CELLS },
 			{ "name": "Squad Kael",  "sector": "Beta-2",  "status": SquadManager.Status.WOUNDED, "need": SquadManager.Need.MEDI_PACKS },
@@ -26,11 +25,11 @@ var missions: Array = [
 	},
 	{
 		"title":        "Mission 2 — Advance on Kerath-IV",
-		"turns":        0,
+		"turns":        5,
 		"budget":       10,
 		"win_hexes":    7,
 		"interference": 0.2,
-		"objective":    "Secure 7 sectors and hold them against enemy reinforcements.",
+		"objective":    "Secure 7 sectors. Enemy reinforcements inbound.",
 		"squads": [
 			{ "name": "Squad Varro", "sector": "Alpha-7", "status": SquadManager.Status.ACTIVE,  "need": SquadManager.Need.FUEL_CELLS },
 			{ "name": "Squad Kael",  "sector": "Beta-2",  "status": SquadManager.Status.WOUNDED, "need": SquadManager.Need.MEDI_PACKS },
@@ -44,7 +43,7 @@ var missions: Array = [
 	},
 	{
 		"title":        "Mission 3 — The Iron Salient",
-		"turns":        0,
+		"turns":        5,
 		"budget":       10,
 		"win_hexes":    8,
 		"interference": 0.5,
@@ -64,7 +63,7 @@ var missions: Array = [
 	},
 	{
 		"title":        "Mission 4 — Contested Hive Spire",
-		"turns":        0,
+		"turns":        5,
 		"budget":       10,
 		"win_hexes":    9,
 		"interference": 0.75,
@@ -85,7 +84,7 @@ var missions: Array = [
 	},
 	{
 		"title":        "Mission 5 — Final Assault",
-		"turns":        0,
+		"turns":        5,
 		"budget":       12,
 		"win_hexes":    10,
 		"interference": 1.0,

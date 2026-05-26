@@ -1,270 +1,238 @@
-extends Control
+extends Node
 # =============================================================
-# LogisticsPopup.gd
-# Attach to: Control node named "LogisticsPopup" inside
-#            LogisticsTerminal.tscn > StaticBody3D
+# SquadManager.gd  —  AutoLoad singleton
 # =============================================================
 
-var player: Node = null
+signal turn_resolved
+signal squad_lost(squad_name: String)
 
-const SUPPLY_OPTIONS: Array = ["None", "Armaments", "Medi-Packs", "Fuel Cells"]
-const SUPPLY_COST: Dictionary = { "None": 0, "Armaments": 2, "Medi-Packs": 2, "Fuel Cells": 2 }
+enum Status { ACTIVE, WOUNDED, CRITICAL, LOST }
+enum Need   { ARMAMENTS, MEDI_PACKS, FUEL_CELLS }
 
-var allocations: Dictionary = {}
-var squad_rows: Array = []
-var budget_label:  Label
-var warning_label: Label
-var lock_btn: Button
+const STATUS_NAMES: Dictionary = {
+	Status.ACTIVE:   "Active",
+	Status.WOUNDED:  "Wounded",
+	Status.CRITICAL: "Critical",
+	Status.LOST:     "Lost — no signal",
+}
 
+const NEED_NAMES: Dictionary = {
+	Need.ARMAMENTS:  "Armaments",
+	Need.MEDI_PACKS: "Medi-Packs",
+	Need.FUEL_CELLS: "Fuel Cells",
+}
 
-func _ready() -> void:
-	SquadManager.turn_resolved.connect(_on_turn_resolved)
-	TurnManager.turn_started.connect(_on_turn_started)
-	TurnManager.allocations_locked.connect(_on_allocations_locked)
-	_build_ui()
-
-
-func _on_turn_started(_turn: int) -> void:
-	if visible: refresh()
-
-func _on_turn_resolved() -> void:
-	if visible: refresh()
-
-func _on_allocations_locked() -> void:
-	if lock_btn:
-		lock_btn.text = "✓ Locked"
-		lock_btn.disabled = true
-
-func refresh() -> void:
-	if SquadManager.squads.is_empty(): return
-	_sync_allocations()
-	_rebuild_squad_rows()
-	_refresh_budget()
-	if lock_btn:
-		lock_btn.text = "Lock Allocations"
-		lock_btn.disabled = false
+var squads: Dictionary = {}
+var current_turn: int = 0
+var interference: float = 0.0
 
 
-func _build_ui() -> void:
-	custom_minimum_size = Vector2(640, 0)
-	set_anchors_preset(Control.PRESET_CENTER)
-
-	var panel := PanelContainer.new()
-	panel.name = "PanelContainer"
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_child(panel)
-
-	var vbox := VBoxContainer.new()
-	vbox.name = "VBoxContainer"
-	vbox.add_theme_constant_override("separation", 10)
-	panel.add_child(vbox)
-
-	var title := Label.new()
-	title.text = "LOGISTICS TERMINAL"
-	title.add_theme_font_size_override("font_size", 20)
-	vbox.add_child(title)
-
-	# Turn / held info
-	var info_row := HBoxContainer.new()
-	info_row.add_theme_constant_override("separation", 20)
-	vbox.add_child(info_row)
-
-	var turn_lbl := Label.new()
-	turn_lbl.name = "TurnLabel"
-	turn_lbl.add_theme_font_size_override("font_size", 12)
-	turn_lbl.add_theme_color_override("font_color", Color(0.5, 0.75, 0.9))
-	info_row.add_child(turn_lbl)
-
-	var held_lbl := Label.new()
-	held_lbl.name = "HeldLabel"
-	held_lbl.add_theme_font_size_override("font_size", 12)
-	info_row.add_child(held_lbl)
-
-	# Supply role legend
-	var legend_panel := PanelContainer.new()
-	var ls := StyleBoxFlat.new()
-	ls.bg_color = Color(0.06, 0.10, 0.16)
-	ls.set_content_margin_all(8)
-	legend_panel.add_theme_stylebox_override("panel", ls)
-	vbox.add_child(legend_panel)
-
-	var lv := VBoxContainer.new()
-	lv.add_theme_constant_override("separation", 2)
-	legend_panel.add_child(lv)
-
-	for line in [
-		["Fuel Cells  →", "Squad moves to adjacent tile and captures it",    Color(0.4, 0.7, 1.0)],
-		["Armaments  →", "Squad fights enemies at current or adjacent tile", Color(1.0, 0.6, 0.3)],
-		["Medi-Packs →", "Squad heals (Critical→Wounded, Wounded→Active)",  Color(0.4, 0.9, 0.5)],
-	]:
-		var r := HBoxContainer.new()
-		r.add_theme_constant_override("separation", 8)
-		var k := Label.new()
-		k.text = line[0]; k.custom_minimum_size.x = 110
-		k.add_theme_font_size_override("font_size", 12)
-		k.add_theme_color_override("font_color", line[2]); r.add_child(k)
-		var v := Label.new()
-		v.text = line[1]
-		v.add_theme_font_size_override("font_size", 12)
-		v.add_theme_color_override("font_color", Color(0.7, 0.75, 0.8)); r.add_child(v)
-		lv.add_child(r)
-
-	var instr := Label.new()
-	instr.text = "Each supply costs 2 pts. Lock here, then end turn at the Command Throne."
-	instr.add_theme_font_size_override("font_size", 11)
-	instr.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
-	instr.autowrap_mode = TextServer.AUTOWRAP_WORD
-	vbox.add_child(instr)
-
-	budget_label = Label.new()
-	budget_label.add_theme_font_size_override("font_size", 14)
-	vbox.add_child(budget_label)
-
-	warning_label = Label.new()
-	warning_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
-	warning_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	warning_label.text = ""
-	vbox.add_child(warning_label)
-
-	vbox.add_child(HSeparator.new())
-
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 6)
-	for pair in [["Squad", 120], ["Status / Sector", 140], ["Armaments", 120], ["Medi-Packs", 120], ["Fuel Cells", 120]]:
-		var lbl := Label.new()
-		lbl.text = pair[0]; lbl.custom_minimum_size.x = pair[1]
-		lbl.add_theme_font_size_override("font_size", 12)
-		header.add_child(lbl)
-	vbox.add_child(header)
-
-	vbox.add_child(HSeparator.new())
-
-	var squad_container := VBoxContainer.new()
-	squad_container.name = "SquadContainer"
-	squad_container.add_theme_constant_override("separation", 10)
-	vbox.add_child(squad_container)
-
-	vbox.add_child(HSeparator.new())
-
-	var btn_row := HBoxContainer.new()
-	btn_row.alignment = BoxContainer.ALIGNMENT_END
-	btn_row.add_theme_constant_override("separation", 12)
-	vbox.add_child(btn_row)
-
-	lock_btn = Button.new()
-	lock_btn.text = "Lock Allocations"
-	lock_btn.pressed.connect(_on_lock_pressed)
-	btn_row.add_child(lock_btn)
-
-	var close_btn := Button.new()
-	close_btn.text = "Close  [Esc]"
-	close_btn.pressed.connect(_on_close_pressed)
-	btn_row.add_child(close_btn)
+func init_squads(squad_list: Array, mission_interference: float) -> void:
+	squads.clear()
+	current_turn = 0
+	interference = mission_interference
+	for s in squad_list:
+		squads[s.name] = {
+			"name":             s.name,
+			"sector":           s.sector,
+			"status":           s.get("status", Status.ACTIVE),
+			"need":             s.get("need", Need.ARMAMENTS),
+			"report":           "",
+			"turns_unsupplied": 0,
+		}
+	_generate_briefings()
 
 
-func _rebuild_squad_rows() -> void:
-	var turn_lbl = get_node_or_null("PanelContainer/VBoxContainer/TurnLabel")
-	var held_lbl = get_node_or_null("PanelContainer/VBoxContainer/HeldLabel")
-	if turn_lbl: turn_lbl.text = "Turn %d / %d" % [TurnManager.current_turn, TurnManager.max_turns]
-	if held_lbl:
-		var held = EnemyManager.get_held_count()
-		var req  = TurnManager.win_condition_hexes
-		held_lbl.text = "Held: %d / %d required" % [held, req]
-		held_lbl.add_theme_color_override("font_color",
-			Color(0.4, 0.9, 0.4) if held >= req else Color(0.9, 0.6, 0.2))
-
-	squad_rows.clear()
-	var container = get_node_or_null("PanelContainer/VBoxContainer/SquadContainer")
-	if container == null: return
-	for child in container.get_children(): child.queue_free()
-
-	for squad in SquadManager.get_squads_for_ui():
-		if squad.status == SquadManager.Status.LOST: continue
-		squad_rows.append(_build_squad_row(squad, container))
+func get_squads_for_ui() -> Array:
+	var result: Array = []
+	for key in squads:
+		result.append(squads[key])
+	return result
 
 
-func _build_squad_row(squad: Dictionary, container: Node) -> Dictionary:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-
-	var name_lbl := Label.new()
-	name_lbl.text = squad.name; name_lbl.custom_minimum_size.x = 120
-	name_lbl.add_theme_font_size_override("font_size", 13); row.add_child(name_lbl)
-
-	var info_lbl := Label.new()
-	info_lbl.text = "%s\n%s" % [SquadManager.STATUS_NAMES[squad.status], squad.sector]
-	info_lbl.custom_minimum_size.x = 140
-	info_lbl.add_theme_font_size_override("font_size", 12)
-	info_lbl.add_theme_color_override("font_color", _status_color(squad.status))
-	row.add_child(info_lbl)
-
-	var dropdowns: Dictionary = {}
-	for supply in ["Armaments", "Medi-Packs", "Fuel Cells"]:
-		var opt := OptionButton.new()
-		opt.custom_minimum_size.x = 120
-		for option in SUPPLY_OPTIONS: opt.add_item(option)
-		var saved = allocations.get(squad.name, {}).get(supply, 0)
-		opt.selected = 0
-		for i in SUPPLY_OPTIONS.size():
-			if SUPPLY_COST[SUPPLY_OPTIONS[i]] == saved and saved > 0:
-				opt.selected = i; break
-		opt.item_selected.connect(_on_supply_changed.bind(squad.name, supply, opt))
-		row.add_child(opt); dropdowns[supply] = opt
-
-	container.add_child(row)
-	return { "squad": squad.name, "dropdowns": dropdowns }
+func get_squad_names() -> Array:
+	return squads.keys()
 
 
-func _sync_allocations() -> void:
-	for squad in SquadManager.get_squads_for_ui():
-		if not allocations.has(squad.name):
-			allocations[squad.name] = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
+func resolve_turn(allocations: Dictionary) -> Dictionary:
+	current_turn += 1
+	var action_results: Dictionary = {}
+
+	for squad_name in squads:
+		var squad = squads[squad_name]
+
+		if squad.status == Status.LOST:
+			squad.report = _lost_line(squad)
+			action_results[squad_name] = { "action": "lost", "moved_to": "" }
+			continue
+
+		var alloc     = allocations.get(squad_name, {})
+		var got_arms  = alloc.get("Armaments",  0) > 0
+		var got_meds  = alloc.get("Medi-Packs", 0) > 0
+		var got_fuel  = alloc.get("Fuel Cells", 0) > 0
+		var action    = "none"
+		var moved_to  = ""
+
+		# FUEL + ARMS = move then fight
+		if got_fuel and got_arms:
+			var target = EnemyManager.get_best_attack_target(squad.sector)
+			if target != "":
+				squad.sector = target
+				moved_to = target
+				EnemyManager.fight_at(squad.sector, squad_name)
+				EnemyManager.capture_tile(squad.sector)
+				action = "moved_and_fought"
+				squad.turns_unsupplied = 0
+			else:
+				# No enemies adjacent — just move
+				target = EnemyManager.get_best_move_target(squad.sector)
+				if target != "":
+					squad.sector = target
+					moved_to = target
+					EnemyManager.capture_tile(squad.sector)
+					action = "moved"
+					squad.turns_unsupplied = 0
+
+		# FUEL CELLS only = move and capture
+		elif got_fuel:
+			var target = EnemyManager.get_best_move_target(squad.sector)
+			if target != "":
+				squad.sector = target
+				moved_to = target
+				EnemyManager.capture_tile(squad.sector)
+				action = "moved"
+				squad.turns_unsupplied = 0
+
+		# ARMAMENTS only = fight at current tile
+		elif got_arms:
+			var fought = EnemyManager.fight_at(squad.sector, squad_name)
+			if fought:
+				action = "fought"
+				squad.turns_unsupplied = 0
+			else:
+				# No enemies here — still hold the tile
+				action = "held"
+				squad.turns_unsupplied = 0
+
+		# MEDI-PACKS = heal
+		if got_meds:
+			_heal(squad)
+			if action == "none":
+				action = "healed"
+			squad.turns_unsupplied = 0
+
+		# Nothing sent
+		if not got_arms and not got_meds and not got_fuel:
+			squad.turns_unsupplied += 1
+			if squad.turns_unsupplied >= 2:
+				_worsen_status(squad)
+
+		squad.report = _generate_report(squad, action, moved_to)
+		squad.need   = _next_need(squad, action)
+		action_results[squad_name] = { "action": action, "moved_to": moved_to }
+
+		if squad.status == Status.LOST:
+			emit_signal("squad_lost", squad_name)
+
+	emit_signal("turn_resolved")
+	return action_results
 
 
-func _on_supply_changed(_index: int, squad_name: String, supply: String, opt: OptionButton) -> void:
-	if not allocations.has(squad_name):
-		allocations[squad_name] = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
-	allocations[squad_name][supply] = SUPPLY_COST[SUPPLY_OPTIONS[opt.selected]]
-	if TurnManager.allocations_are_locked:
-		TurnManager.allocations_are_locked = false
-		if lock_btn: lock_btn.text = "Lock Allocations"; lock_btn.disabled = false
-	_refresh_budget()
+func get_reports() -> Dictionary:
+	var result: Dictionary = {}
+	for squad_name in squads:
+		var squad = squads[squad_name]
+		result[squad_name] = _apply_interference(squad.report) if squad.status != Status.LOST else squad.report
+	return result
 
 
-func _refresh_budget() -> void:
-	var total = GameManager.get_current_mission_data().get("budget", 8)
-	var spent: int = 0
-	for sn in allocations:
-		for s in allocations[sn]: spent += allocations[sn][s]
-	var rem = total - spent
-	budget_label.text = "Budget:  %d / %d  (%d remaining)" % [spent, total, rem]
-	if rem < 0:
-		budget_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
-		warning_label.text = "Over budget!"
-	else:
-		budget_label.remove_theme_color_override("font_color")
-		warning_label.text = ""
+func get_briefings() -> Dictionary:
+	var result: Dictionary = {}
+	for squad_name in squads:
+		result[squad_name] = squads[squad_name].report
+	return result
 
 
-func _on_lock_pressed() -> void:
-	var total = GameManager.get_current_mission_data().get("budget", 8)
-	var spent: int = 0
-	for sn in allocations:
-		for s in allocations[sn]: spent += allocations[sn][s]
-	if spent > total: warning_label.text = "Cannot lock — over budget!"; return
-	warning_label.text = ""
-	TurnManager.lock_allocations(allocations)
+func get_need_display(squad_name: String) -> String:
+	if not squads.has(squad_name):
+		return "Unknown"
+	var squad = squads[squad_name]
+	if squad.status == Status.LOST:
+		return "—"
+	if randf() < interference * 0.8:
+		return "[INTERFERENCE]"
+	return NEED_NAMES[squad.need]
 
 
-func _on_close_pressed() -> void:
-	visible = false
-	if player and player.has_method("on_popup_closed"):
-		player.on_popup_closed()
+func _heal(squad: Dictionary) -> void:
+	match squad.status:
+		Status.CRITICAL: squad.status = Status.WOUNDED
+		Status.WOUNDED:  squad.status = Status.ACTIVE
 
 
-func _status_color(status: int) -> Color:
-	match status:
-		SquadManager.Status.ACTIVE:   return Color(0.4, 0.9, 0.4)
-		SquadManager.Status.WOUNDED:  return Color(0.9, 0.7, 0.2)
-		SquadManager.Status.CRITICAL: return Color(0.9, 0.3, 0.3)
-	return Color.WHITE
+func _worsen_status(squad: Dictionary) -> void:
+	match squad.status:
+		Status.ACTIVE:   squad.status = Status.WOUNDED
+		Status.WOUNDED:  squad.status = Status.CRITICAL
+		Status.CRITICAL: squad.status = Status.LOST
+
+
+func _next_need(squad: Dictionary, last_action: String) -> int:
+	if squad.status == Status.CRITICAL: return Need.MEDI_PACKS
+	if squad.status == Status.WOUNDED:  return Need.MEDI_PACKS if randf() > 0.4 else Need.ARMAMENTS
+	match last_action:
+		"moved":            return Need.ARMAMENTS
+		"fought":           return Need.MEDI_PACKS
+		"moved_and_fought": return Need.MEDI_PACKS
+	return Need.FUEL_CELLS if randf() > 0.5 else Need.ARMAMENTS
+
+
+func _apply_interference(text: String) -> String:
+	if interference <= 0.0:
+		return text
+	if randf() < interference * 0.5:
+		var words = text.split(" ")
+		for i in range(words.size()):
+			if randf() < interference * 0.2:
+				words[i] = "—"
+		return " ".join(words)
+	return text
+
+
+func _generate_briefings() -> void:
+	for key in squads:
+		var squad = squads[key]
+		var need_str = NEED_NAMES[squad.need]
+		match squad.status:
+			Status.ACTIVE:
+				squad.report = "%s reports in from %s. Combat-ready and requesting %s for the coming push." % [squad.name, squad.sector, need_str]
+			Status.WOUNDED:
+				squad.report = "%s holding at %s with casualties. Need %s before they can advance." % [squad.name, squad.sector, need_str]
+			Status.CRITICAL:
+				squad.report = "%s critical at %s. Without %s immediately, we may lose them." % [squad.name, squad.sector, need_str]
+
+
+func _lost_line(squad: Dictionary) -> String:
+	return "%s — no signal from %s. They are gone." % [squad.name, squad.sector]
+
+
+func _generate_report(squad: Dictionary, action: String, moved_to: String) -> String:
+	var n = squad.name
+	var s = squad.sector
+	match action:
+		"moved":
+			return "%s advanced to %s using fuel cells. Sector secured." % [n, s]
+		"fought":
+			return "%s engaged enemy forces at %s. Armaments expended — sector held." % [n, s]
+		"moved_and_fought":
+			return "%s pushed into %s and engaged enemy contact. Sector taken." % [n, moved_to if moved_to != "" else s]
+		"healed":
+			return "%s received medical supplies at %s. Casualties stabilising." % [n, s]
+		"held":
+			return "%s is holding position at %s." % [n, s]
+		"none":
+			match squad.status:
+				Status.ACTIVE:   return "%s holding at %s. No supplies this turn." % [n, s]
+				Status.WOUNDED:  return "%s taking losses at %s. Needs support." % [n, s]
+				Status.CRITICAL: return "%s critical at %s. Without aid they will be lost." % [n, s]
+	return "%s — no report." % n

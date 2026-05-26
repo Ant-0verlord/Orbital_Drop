@@ -1,7 +1,10 @@
 extends Control
 # =============================================================
 # IntelConsolePopup.gd
-# Shows squad status and outcome reports only.
+# Attach to: Control node named "IntelConsolePopup" inside
+#            Intel_Desk.tscn > StaticBody3D
+#
+# Shows what happened last turn and squad status.
 # Squad NEEDS are NOT shown here — check the Vox-Caster.
 # =============================================================
 
@@ -15,10 +18,14 @@ func _ready() -> void:
 
 
 func _on_turn_started(_turn: int) -> void:
-	if visible: refresh()
+	if visible:
+		refresh()
+
 
 func _on_turn_resolved() -> void:
-	if visible: _rebuild_reports()
+	if visible:
+		_rebuild_reports()
+
 
 func refresh() -> void:
 	_rebuild_reports()
@@ -40,7 +47,7 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = "INTEL CONSOLE"
-	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
 
 	var subtitle := Label.new()
@@ -83,11 +90,13 @@ func _build_ui() -> void:
 
 
 func _rebuild_reports() -> void:
-	if SquadManager.squads.is_empty(): return
+	if SquadManager.squads.is_empty():
+		return
 
-	var turn_lbl  = get_node_or_null("PanelContainer/VBoxContainer/TurnLabel")
+	var turn_lbl = get_node_or_null("PanelContainer/VBoxContainer/TurnLabel")
 	var container = get_node_or_null("PanelContainer/VBoxContainer/ScrollContainer/ReportContainer")
-	if turn_lbl == null or container == null: return
+	if turn_lbl == null or container == null:
+		return
 
 	turn_lbl.text = (
 		"Pre-mission briefing — awaiting deployment"
@@ -95,7 +104,8 @@ func _rebuild_reports() -> void:
 		else "Surface intel — Turn %d" % SquadManager.current_turn
 	)
 
-	for child in container.get_children(): child.queue_free()
+	for child in container.get_children():
+		child.queue_free()
 
 	var reports: Dictionary = (
 		SquadManager.get_briefings()
@@ -104,8 +114,10 @@ func _rebuild_reports() -> void:
 	)
 
 	if reports.is_empty():
-		var lbl := Label.new(); lbl.text = "No intel available."
-		container.add_child(lbl); return
+		var lbl := Label.new()
+		lbl.text = "No intel available."
+		container.add_child(lbl)
+		return
 
 	for squad_name in reports:
 		var squad_data = SquadManager.squads.get(squad_name, {})
@@ -121,6 +133,7 @@ func _add_report_card(container: Node, squad_name: String, report_text: String, 
 	vbox.add_theme_constant_override("separation", 4)
 	card.add_child(vbox)
 
+	# Header: name + status only (no need shown)
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 8)
 	vbox.add_child(header)
@@ -144,6 +157,7 @@ func _add_report_card(container: Node, squad_name: String, report_text: String, 
 		sector_lbl.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
 		header.add_child(sector_lbl)
 
+	# Report body
 	var report_lbl := Label.new()
 	report_lbl.text = report_text
 	report_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -171,15 +185,20 @@ func _card_style(squad_data: Dictionary) -> StyleBoxFlat:
 	if squad_data.has("status"):
 		match squad_data.status:
 			SquadManager.Status.ACTIVE:
-				style.bg_color = Color(0.13, 0.20, 0.13); style.border_color = Color(0.3, 0.65, 0.3)
+				style.bg_color     = Color(0.13, 0.20, 0.13)
+				style.border_color = Color(0.3, 0.65, 0.3)
 			SquadManager.Status.WOUNDED:
-				style.bg_color = Color(0.20, 0.17, 0.08); style.border_color = Color(0.85, 0.6, 0.15)
+				style.bg_color     = Color(0.20, 0.17, 0.08)
+				style.border_color = Color(0.85, 0.6, 0.15)
 			SquadManager.Status.CRITICAL:
-				style.bg_color = Color(0.22, 0.08, 0.08); style.border_color = Color(0.9, 0.2, 0.2)
+				style.bg_color     = Color(0.22, 0.08, 0.08)
+				style.border_color = Color(0.9, 0.2, 0.2)
 			SquadManager.Status.LOST:
-				style.bg_color = Color(0.10, 0.10, 0.10); style.border_color = Color(0.35, 0.35, 0.35)
+				style.bg_color     = Color(0.10, 0.10, 0.10)
+				style.border_color = Color(0.35, 0.35, 0.35)
 	else:
-		style.bg_color = Color(0.13, 0.13, 0.18); style.border_color = Color(0.4, 0.4, 0.55)
+		style.bg_color     = Color(0.13, 0.13, 0.18)
+		style.border_color = Color(0.4, 0.4, 0.55)
 	return style
 
 
