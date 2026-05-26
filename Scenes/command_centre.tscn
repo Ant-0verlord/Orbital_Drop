@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://25sqkaq4wisi"]
+[gd_scene format=3 uid="uid://bgn1a16rrkx12"]
 
 [ext_resource type="ArrayMesh" uid="uid://b2swi6la1qb04" path="res://Models/Orbital_Drop_Room_Beta.obj" id="1_7dnev"]
 [ext_resource type="Script" uid="uid://brmhi6pjtlhey" path="res://Scripts/CommandCentre.gd" id="1_r3tsr"]
@@ -150,7 +150,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.02165983, 0.99862486, 5.99
 shape = SubResource("BoxShape3D_tslkb")
 
 [node name="Player" parent="." unique_id=542213915 instance=ExtResource("2_ludm1")]
-transform = Transform3D(-3.743831e-08, 0, -0.8564885, 0, 0.8564886, 0, 0.85648865, 0, -3.74383e-08, -2.2679906, 1.0958419, 0.21827985)
+transform = Transform3D(-3.2727474e-08, 0.41592658, -0.7487174, 1.818073e-08, 0.7487173, 0.41592667, 0.8564885, -1.8959246e-16, -3.7438298e-08, -0.9663353, 14.455579, 0.21827985)
 
 [node name="Holomap" parent="." unique_id=920081661 instance=ExtResource("3_pelsp")]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.018492222, 0.68744946, 0)
