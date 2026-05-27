@@ -1,6 +1,5 @@
 [gd_scene format=3 uid="uid://bgn1a16rrkx12"]
 
-[ext_resource type="ArrayMesh" uid="uid://b2swi6la1qb04" path="res://Models/Orbital_Drop_Room_Beta.obj" id="1_7dnev"]
 [ext_resource type="Script" uid="uid://brmhi6pjtlhey" path="res://Scripts/CommandCentre.gd" id="1_r3tsr"]
 [ext_resource type="PackedScene" uid="uid://cwcetb2j4yciv" path="res://Scenes/Player.tscn" id="2_ludm1"]
 [ext_resource type="PackedScene" uid="uid://poa3ylhykd1g" path="res://Scenes/Holomap.tscn" id="3_pelsp"]
@@ -70,7 +69,6 @@ script = ExtResource("1_r3tsr")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1147768109]
 transform = Transform3D(0.6981386, 0, 0, 0, 0.628524, 0, 0, 0, 0.66599905, -0.001727581, -2.3841858e-07, -0.005193889)
-mesh = ExtResource("1_7dnev")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=1421208256]
 
