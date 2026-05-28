@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://brmhi6pjtlhey" path="res://Scripts/CommandCentre.gd" id="1_r3tsr"]
 [ext_resource type="PackedScene" uid="uid://cwcetb2j4yciv" path="res://Scenes/Player.tscn" id="2_ludm1"]
+[ext_resource type="ArrayMesh" uid="uid://cd5yolfg7busp" path="res://Models/Backup room.obj" id="2_r3tsr"]
 [ext_resource type="PackedScene" uid="uid://poa3ylhykd1g" path="res://Scenes/Holomap.tscn" id="3_pelsp"]
 [ext_resource type="PackedScene" uid="uid://bj4d3r48vrf44" path="res://Scenes/Vox-Caster_Array.tscn" id="4_23xtj"]
 [ext_resource type="PackedScene" uid="uid://dksywdr8xyjsf" path="res://Scenes/Command_Throne.tscn" id="5_5ts7m"]
@@ -69,6 +70,7 @@ script = ExtResource("1_r3tsr")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1147768109]
 transform = Transform3D(0.6981386, 0, 0, 0, 0.628524, 0, 0, 0, 0.66599905, -0.001727581, -2.3841858e-07, -0.005193889)
+mesh = ExtResource("2_r3tsr")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=1421208256]
 
@@ -157,7 +159,7 @@ transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.018492222, 0.68744946
 transform = Transform3D(-4.3711385e-08, 0, -0.99999994, 0, 1, 0, 0.99999994, 0, -4.3711385e-08, -0.03024447, 0.030961523, -3.4955354)
 
 [node name="Command Throne" parent="." unique_id=112694284 instance=ExtResource("5_5ts7m")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -6.913126, 0.8073853, -0.0857836)
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -6.9602146, 0.8073853, -0.0857836)
 
 [node name="Logistics Terminal" parent="." unique_id=1292128161 instance=ExtResource("6_23xtj")]
 transform = Transform3D(-2.076493e-08, 0, 0.47504622, 0, 0.47504622, 0, -0.47504622, 0, -2.076493e-08, 4.350984, 0.49602664, 0.47250643)
@@ -166,10 +168,10 @@ transform = Transform3D(-2.076493e-08, 0, 0.47504622, 0, 0.47504622, 0, -0.47504
 transform = Transform3D(-4.3711385e-08, 0, 0.99999994, 0, 1, 0, -0.99999994, 0, -4.3711385e-08, 0.28378534, 0.5096475, 3.4207597)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="." unique_id=1473983525]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 4.9006248, 12.464634, 0)
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -0.96145487, 14.550118, 0)
 light_energy = 25.495
 spot_range = 17.835012
-spot_angle = 81.56249
+spot_angle = 39.765095
 
 [node name="SpotLight3D2" type="SpotLight3D" parent="." unique_id=1171789347]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -6.720251, 8.329589, 0)

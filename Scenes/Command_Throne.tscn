@@ -1,24 +1,24 @@
 [gd_scene format=3 uid="uid://dksywdr8xyjsf"]
 
-[ext_resource type="ArrayMesh" uid="uid://cfp07tk0kbprt" path="res://Models/Command Throne 1.1.obj" id="1_u7idd"]
+[ext_resource type="ArrayMesh" uid="uid://dn541il6ad3tr" path="res://Models/Command Throne 2.0.obj" id="1_id48o"]
 [ext_resource type="Script" uid="uid://caj7dobn8fawx" path="res://Scripts/Consoles/CommandThrone.gd" id="2_id48o"]
 [ext_resource type="Script" uid="uid://fkuvbocfiykr" path="res://Scripts/Popups/CommandThronePopup.gd" id="3_602gn"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_oohax"]
-size = Vector3(5.431281, 4.480967, 9.567525)
+size = Vector3(20.830643, 4.480967, 23.661272)
 
 [node name="Node3D" type="Node3D" unique_id=112694284]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1662060828]
-transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.477, 0, 0, 0)
-mesh = ExtResource("1_u7idd")
+transform = Transform3D(-1.4474964e-08, 0, 0.31591576, 0, 0.29869604, 0, -0.33114856, 0, -1.38091165e-08, 0, 0, 0)
+mesh = ExtResource("1_id48o")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=43047206]
 transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.477, 0, 0, 0)
 script = ExtResource("2_id48o")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=935619825]
-transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.477, 0.012145996, 1.6691685, 0.27885818)
+transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.47700024, -0.036579013, 1.6691685, -0.042026423)
 shape = SubResource("BoxShape3D_oohax")
 
 [node name="CommandThronePopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=778375555]
