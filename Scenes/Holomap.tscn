@@ -22,6 +22,7 @@ mesh = ExtResource("1_ftbq4")
 
 [node name="SpotLight3D22" type="SpotLight3D" parent="MeshInstance3D" unique_id=517549197]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -0.00084717944, 2.5341501, -0.007659423)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -34,6 +35,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D23" type="SpotLight3D" parent="MeshInstance3D" unique_id=1466145392]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, 0.5472046, 2.5341501, -0.9569131)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -46,6 +48,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D24" type="SpotLight3D" parent="MeshInstance3D" unique_id=2035926924]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, 1.0934318, 2.5341501, -1.9030064)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -58,6 +61,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D25" type="SpotLight3D" parent="MeshInstance3D" unique_id=1702697557]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, 1.6694804, 2.5341501, -2.9007518)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -70,6 +74,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D26" type="SpotLight3D" parent="MeshInstance3D" unique_id=2022418624]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -0.5442454, 2.5341501, 0.93353415)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -82,6 +87,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D27" type="SpotLight3D" parent="MeshInstance3D" unique_id=736501890]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -1.1033103, 2.5341501, 1.901863)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -94,6 +100,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D28" type="SpotLight3D" parent="MeshInstance3D" unique_id=737197283]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -1.6154852, 2.5341501, 2.788976)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -106,6 +113,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D29" type="SpotLight3D" parent="MeshInstance3D" unique_id=1488373807]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -0.4742979, 2.5341501, -0.9363816)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -118,6 +126,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D30" type="SpotLight3D" parent="MeshInstance3D" unique_id=253192651]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, 0.07375389, 2.5341501, -1.8856354)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -130,6 +139,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D31" type="SpotLight3D" parent="MeshInstance3D" unique_id=974776944]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, 0.619981, 2.5341501, -2.8317287)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -142,6 +152,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D32" type="SpotLight3D" parent="MeshInstance3D" unique_id=137455613]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -1.0176961, 2.5341501, 0.004811883)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -154,6 +165,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D33" type="SpotLight3D" parent="MeshInstance3D" unique_id=1773398872]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -1.576761, 2.5341501, 0.97314084)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
@@ -166,6 +178,7 @@ spot_angle_attenuation = 1.3107072
 
 [node name="SpotLight3D34" type="SpotLight3D" parent="MeshInstance3D" unique_id=1439067053]
 transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -2.0889359, 2.5341501, 1.8602539)
+visible = false
 light_color = Color(0, 0.7522339, 0.7559176, 1)
 light_energy = 16.0
 light_indirect_energy = 16.0
