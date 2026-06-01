@@ -11,7 +11,7 @@ var pulse_time: float = 0.0
 const PULSE_SPEED: float = 2.5
 
 const HEX_RADIUS: float  = 38.0
-const HEX_INNER: float   = 37.0
+const HEX_INNER: float   = 38.0  # Equal to radius = no gaps
 const GRID_CENTER: Vector2 = Vector2(315, 205)
 
 var hex_entries: Array = []
@@ -160,19 +160,20 @@ func _build_hex_layout() -> void:
 	if sectors.is_empty():
 		return
 
-	# For flat-top hexagons, the correct pixel spacing from axial coords (q, r) is:
-	# x = radius * (3/2 * q)
-	# y = radius * (sqrt(3)/2 * q + sqrt(3) * r)
-	# This guarantees every edge lines up perfectly with its neighbour.
+	# Pointy-top hexagon axial coordinate to pixel:
+	# x = radius * (sqrt(3) * q  +  sqrt(3)/2 * r)
+	# y = radius * (3/2 * r)
+	# This gives a perfect gapless honeycomb grid.
 	var r = HEX_RADIUS
+	var sq3 = sqrt(3.0)
 
-	# Axial (q, r) coordinates for each hex
+	# Axial (q, r) — pointy-top hex grid
 	var axial = [
 		Vector2( 0,  0),   # 0  centre
-		Vector2( 0.6, -1.15),   # 1  ring 1
-		Vector2( 1.15,  -0.6),   # 2
-		Vector2( 0.6,  0.535),   # 3
-		Vector2(-0.55,  1.1),   # 4
+		Vector2( 1, -1),   # 1  ring 1
+		Vector2( 1,  0),   # 2
+		Vector2( 0,  1),   # 3
+		Vector2(-1,  1),   # 4
 		Vector2(-1,  0),   # 5
 		Vector2( 0, -1),   # 6
 		Vector2( 2, -2),   # 7  ring 2
@@ -188,10 +189,10 @@ func _build_hex_layout() -> void:
 
 	for i in range(min(sectors.size(), axial.size())):
 		var q = axial[i].x
-		var rv = axial[i].y
+		var s = axial[i].y
 		var pixel = Vector2(
-			r * 1.5 * q,
-			r * (sqrt(3.0) * 0.5 * q + sqrt(3.0) * rv)
+			r * (sq3 * q + sq3 * 0.5 * s),
+			r * (1.5 * s)
 		)
 		hex_entries.append({
 			"sector": sectors[i],

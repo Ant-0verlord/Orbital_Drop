@@ -69,7 +69,7 @@ size = Vector3(9.97274, 2.0305176, 0.001)
 script = ExtResource("1_r3tsr")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1147768109]
-transform = Transform3D(0.6981386, 0, 0, 0, 0.628524, 0, 0, 0, 0.66599905, -0.001727581, -2.3841858e-07, -0.005193889)
+transform = Transform3D(0.6981386, 0, 0, 0, 0.628524, 0, 0, 0, 0.66599905, -0.005318165, -2.3841858e-07, -0.029469907)
 mesh = ExtResource("2_r3tsr")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=1421208256]
