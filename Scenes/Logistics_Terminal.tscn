@@ -1,6 +1,5 @@
 [gd_scene format=3 uid="uid://ecaj1srmx3pq"]
 
-[ext_resource type="ArrayMesh" uid="uid://ckwjhi8kaqsft" path="res://Models/Logistics terminal 1.1.obj" id="1_5h3g4"]
 [ext_resource type="Script" uid="uid://d1hkamug1ie0r" path="res://Scripts/Consoles/LogisticsTerminal.gd" id="2_jyj6u"]
 [ext_resource type="Script" uid="uid://l7snwg4vd2ji" path="res://Scripts/Popups/LogisticsPopup.gd" id="3_lbbgb"]
 
@@ -10,7 +9,6 @@ size = Vector3(5.1401787, 1.9983158, 1.9859753)
 [node name="Node3D" type="Node3D" unique_id=1292128161]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1318454912]
-mesh = ExtResource("1_5h3g4")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=683507405]
 script = ExtResource("2_jyj6u")
@@ -22,6 +20,8 @@ shape = SubResource("BoxShape3D_i6nf8")
 [node name="LogisticsPopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=68396652]
 layout_mode = 3
 anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_left = -19.0
+offset_top = -19.0
+offset_right = 21.0
+offset_bottom = 21.0
 script = ExtResource("3_lbbgb")
