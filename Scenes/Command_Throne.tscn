@@ -18,7 +18,7 @@ transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.477, 0, 0, 0)
 script = ExtResource("2_id48o")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=935619825]
-transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.47700024, -0.036579013, 1.6691685, -0.042026423)
+transform = Transform3D(0.5, 0, -6.8034467e-13, 0, 0.45100012, 0, 0, 0, 0.47700024, -0.036579017, 1.6691686, -0.04202642)
 shape = SubResource("BoxShape3D_oohax")
 
 [node name="CommandThronePopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=778375555]
