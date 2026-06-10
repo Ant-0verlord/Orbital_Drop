@@ -14,8 +14,7 @@ var max_turns: int = 0
 var win_condition_hexes: int = 5
 var allocations_are_locked: bool = false
 var pending_allocations: Dictionary = {}
-var pending_enemy_list: Array = []
-var last_action_results: Dictionary = {}
+var mission_over: bool = false
 
 
 func start_mission(mission_data: Dictionary) -> void:
@@ -24,7 +23,7 @@ func start_mission(mission_data: Dictionary) -> void:
 	win_condition_hexes = mission_data.get("win_hexes", 5)
 	allocations_are_locked = false
 	pending_allocations = {}
-	last_action_results = {}
+	mission_over = false
 
 	var squad_list   = mission_data.get("squads", [])
 	var interference = mission_data.get("interference", 0.0)
@@ -35,51 +34,51 @@ func start_mission(mission_data: Dictionary) -> void:
 	if not SquadManager.squad_lost.is_connected(_on_squad_lost):
 		SquadManager.squad_lost.connect(_on_squad_lost)
 
-	# Get squad starting sectors for EnemyManager
 	var squad_sectors = []
 	for s in squad_list:
 		squad_sectors.append(s.sector)
 
 	EnemyManager.init_enemies(squad_sectors, enemy_list)
-	pending_enemy_list = enemy_list
-
 	emit_signal("turn_started", current_turn)
 
 
 func lock_allocations(allocations: Dictionary) -> void:
+	if mission_over:
+		return
 	pending_allocations = allocations.duplicate(true)
 	allocations_are_locked = true
 	emit_signal("allocations_locked")
 
 
 func end_turn() -> void:
+	if mission_over:
+		return
 	if not allocations_are_locked:
 		push_warning("TurnManager: end_turn called but allocations not locked!")
 		return
 
 	current_turn += 1
 
-	# Resolve squad actions (movement, combat, healing)
-	last_action_results = SquadManager.resolve_turn(pending_allocations)
-
-	# Enemies advance after squads act
+	SquadManager.resolve_turn(pending_allocations)
 	EnemyManager.advance_enemies()
 
 	allocations_are_locked = false
 	pending_allocations = {}
+
 	emit_signal("turn_ended", current_turn)
 
-	# Check all squads lost
-	var all_lost: bool = true
+	# --- Loss check: all squads lost ---
+	var all_lost = true
 	for squad_name in SquadManager.squads:
 		if SquadManager.squads[squad_name].status != SquadManager.Status.LOST:
 			all_lost = false
 			break
+
 	if all_lost:
-		emit_signal("mission_failed", "All squads have been lost.")
+		_end_mission(false, "All squads have been lost. No signal from the surface.")
 		return
 
-	# Check turn limit
+	# --- Turn limit reached ---
 	if max_turns > 0 and current_turn >= max_turns:
 		_check_win_condition()
 		return
@@ -87,10 +86,30 @@ func end_turn() -> void:
 	emit_signal("turn_started", current_turn)
 
 
+# -------------------------------------------------------
+# Called when turn limit is reached
+# -------------------------------------------------------
 func _check_win_condition() -> void:
 	var held = EnemyManager.get_held_count()
+	var won  = held >= win_condition_hexes
+
+	if won:
+		_end_mission(true, "")
+	else:
+		_end_mission(false,
+			"Insufficient territory held. Required %d sectors, held %d." % [win_condition_hexes, held]
+		)
+
+
+# -------------------------------------------------------
+# Single point of mission resolution
+# -------------------------------------------------------
+func _end_mission(won: bool, reason: String) -> void:
+	mission_over = true
+
+	var held         = EnemyManager.get_held_count()
 	var squads_alive = 0
-	var squads_lost = 0
+	var squads_lost  = 0
 	for squad_name in SquadManager.squads:
 		var s = SquadManager.squads[squad_name]
 		if s.status == SquadManager.Status.LOST:
@@ -98,20 +117,32 @@ func _check_win_condition() -> void:
 		else:
 			squads_alive += 1
 
-	var won = held >= win_condition_hexes
+	var score = GameManager.calculate_score(held, current_turn, win_condition_hexes)
+
 	var report = {
-		"won":           won,
-		"held_hexes":    held,
-		"required_hexes": win_condition_hexes,
-		"squads_alive":  squads_alive,
-		"squads_lost":   squads_lost,
-		"turns":         current_turn,
+		"won":             won,
+		"reason":          reason,
+		"held_hexes":      held,
+		"required_hexes":  win_condition_hexes,
+		"squads_alive":    squads_alive,
+		"squads_lost":     squads_lost,
+		"turns":           current_turn,
+		"score":           score.total,
+		"rating":          score.rating,
+		"tile_score":      score.tile_score,
+		"turn_bonus":      score.turn_bonus,
+		"supply_bonus":    score.supply_bonus,
 	}
+
+	GameManager.campaign_record.append("win" if won else "loss")
 
 	if won:
 		emit_signal("mission_complete", report)
 	else:
-		emit_signal("mission_failed", "Insufficient territory held at mission end. Required %d hexes, held %d." % [win_condition_hexes, held])
+		emit_signal("mission_failed", reason)
+		# Also emit mission_complete so UI can show the full scored report
+		# even on a loss — popups decide how to display it
+		emit_signal("mission_complete", report)
 
 
 func _on_squad_lost(squad_name: String) -> void:

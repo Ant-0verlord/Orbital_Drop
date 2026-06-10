@@ -1,8 +1,6 @@
 extends Control
 # =============================================================
 # CommandThronePopup.gd — fullscreen popup
-# Shows mission status. End Turn only available when locked.
-# On mission end shows a full report before closing.
 # =============================================================
 
 var player: Node = null
@@ -14,7 +12,7 @@ var held_label: Label
 var squad_summary: VBoxContainer
 var debrief_label: Label
 var progress_bar: ProgressBar
-var report_panel: PanelContainer  # shown on mission end
+var report_panel: PanelContainer
 
 
 func _ready() -> void:
@@ -41,14 +39,12 @@ func _on_turn_resolved() -> void:
 
 func _on_mission_complete(report: Dictionary) -> void:
 	refresh()
-	_show_report(report, true)
+	_show_report(report)
 
-func _on_mission_failed(reason: String) -> void:
-	refresh()
-	_show_report({ "won": false, "reason": reason,
-		"held_hexes": EnemyManager.get_held_count(),
-		"required_hexes": TurnManager.win_condition_hexes,
-		"squads_alive": 0, "squads_lost": 0, "turns": TurnManager.current_turn }, false)
+func _on_mission_failed(_reason: String) -> void:
+	# mission_complete is always emitted alongside mission_failed
+	# so _show_report is handled there — nothing extra needed
+	pass
 
 
 func refresh() -> void:
@@ -169,33 +165,74 @@ func _build_ui() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 	btn_row.add_child(close_btn)
 
-	# Mission report panel (hidden until mission ends)
+	# -------------------------------------------------------
+	# Mission report panel — replaces main content on end
+	# -------------------------------------------------------
 	report_panel = PanelContainer.new()
 	report_panel.name = "ReportPanel"
-	report_panel.custom_minimum_size = Vector2(520, 0)
+	report_panel.custom_minimum_size = Vector2(560, 0)
 	report_panel.set_anchors_preset(Control.PRESET_CENTER)
 	report_panel.visible = false
 	add_child(report_panel)
 
 	var rv := VBoxContainer.new()
+	rv.name = "ReportVBox"
 	rv.add_theme_constant_override("separation", 14)
 	report_panel.add_child(rv)
 
 	var rt := Label.new()
 	rt.name = "ReportTitle"
-	rt.add_theme_font_size_override("font_size", 24)
+	rt.add_theme_font_size_override("font_size", 28)
+	rt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rv.add_child(rt)
+
+	var rating_lbl := Label.new()
+	rating_lbl.name = "RatingLabel"
+	rating_lbl.add_theme_font_size_override("font_size", 48)
+	rating_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rv.add_child(rating_lbl)
+
+	rv.add_child(HSeparator.new())
+
+	var score_row := HBoxContainer.new()
+	score_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	score_row.add_theme_constant_override("separation", 24)
+	rv.add_child(score_row)
+
+	for col_name in ["TILE SCORE", "TURN BONUS", "SUPPLY BONUS", "TOTAL"]:
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 4)
+		var col_header := Label.new()
+		col_header.text = col_name
+		col_header.add_theme_font_size_override("font_size", 10)
+		col_header.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
+		col_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(col_header)
+		var col_val := Label.new()
+		col_val.name = col_name.replace(" ", "") + "Val"
+		col_val.add_theme_font_size_override("font_size", 20)
+		col_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(col_val)
+		score_row.add_child(col)
+
+	rv.add_child(HSeparator.new())
 
 	var rb := Label.new()
 	rb.name = "ReportBody"
 	rb.autowrap_mode = TextServer.AUTOWRAP_WORD
-	rb.add_theme_font_size_override("font_size", 14)
+	rb.add_theme_font_size_override("font_size", 13)
+	rb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rv.add_child(rb)
 
-	var r_btn := Button.new()
-	r_btn.text = "Acknowledge"
-	r_btn.pressed.connect(_on_report_acknowledged)
-	rv.add_child(r_btn)
+	var r_btn_row := HBoxContainer.new()
+	r_btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	r_btn_row.add_theme_constant_override("separation", 12)
+	rv.add_child(r_btn_row)
+
+	var r_close := Button.new()
+	r_close.text = "Close"
+	r_close.pressed.connect(_on_close_pressed)
+	r_btn_row.add_child(r_close)
 
 
 func _update_mission_info() -> void:
@@ -205,13 +242,16 @@ func _update_mission_info() -> void:
 	if mt: mt.text = data.get("title", "")
 	if ol:
 		var turns_left = TurnManager.max_turns - TurnManager.current_turn
-		ol.text = data.get("objective", "Hold %d sectors for %d more turns." % [TurnManager.win_condition_hexes, turns_left])
-	if turn_label: turn_label.text = "Turn %d / %d" % [TurnManager.current_turn, TurnManager.max_turns]
+		ol.text = data.get("objective",
+			"Hold %d sectors for %d more turns." % [TurnManager.win_condition_hexes, turns_left])
+	if turn_label:
+		turn_label.text = "Turn %d / %d" % [TurnManager.current_turn, TurnManager.max_turns]
 	if held_label:
 		var held = EnemyManager.get_held_count()
 		var req  = TurnManager.win_condition_hexes
 		held_label.text = "Held: %d / %d" % [held, req]
-		held_label.add_theme_color_override("font_color", Color(0.4,0.9,0.4) if held >= req else Color(0.9,0.6,0.2))
+		held_label.add_theme_color_override("font_color",
+			Color(0.4, 0.9, 0.4) if held >= req else Color(0.9, 0.6, 0.2))
 	if progress_bar:
 		progress_bar.max_value = TurnManager.max_turns
 		progress_bar.value = TurnManager.current_turn
@@ -225,9 +265,11 @@ func _update_squad_summary() -> void:
 		row.add_theme_constant_override("separation", 8)
 		var nl := Label.new(); nl.text = squad.name; nl.custom_minimum_size.x = 120
 		nl.add_theme_font_size_override("font_size", 13); row.add_child(nl)
-		var sl := Label.new(); sl.text = "%s — %s" % [SquadManager.STATUS_NAMES[squad.status], squad.sector]
+		var sl := Label.new()
+		sl.text = "%s — %s" % [SquadManager.STATUS_NAMES[squad.status], squad.sector]
 		sl.add_theme_font_size_override("font_size", 13)
-		sl.add_theme_color_override("font_color", _status_color(squad.status)); row.add_child(sl)
+		sl.add_theme_color_override("font_color", _status_color(squad.status))
+		row.add_child(sl)
 		squad_summary.add_child(row)
 		match squad.status:
 			SquadManager.Status.ACTIVE:   active += 1
@@ -248,10 +290,21 @@ func _update_squad_summary() -> void:
 
 func _update_lock_status() -> void:
 	if not lock_status_lbl or not end_turn_btn: return
+
+	# Block all input if mission is over
+	if TurnManager.mission_over:
+		lock_status_lbl.text = "Mission concluded. No further orders can be issued."
+		lock_status_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		end_turn_btn.disabled = true
+		end_turn_btn.text = "—"
+		end_turn_btn.modulate = Color(0.4, 0.4, 0.4)
+		return
+
 	if TurnManager.allocations_are_locked:
 		lock_status_lbl.text = "✓ Allocations locked. Ready to engage turn seal."
 		lock_status_lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
 		end_turn_btn.disabled = false
+		end_turn_btn.text = "ENGAGE TURN SEAL"
 		end_turn_btn.modulate = Color(1, 1, 1)
 	else:
 		lock_status_lbl.text = "⚠ Allocations not locked. Visit Logistics Terminal first."
@@ -271,48 +324,91 @@ func _update_debrief() -> void:
 			SquadManager.Status.ACTIVE:  active += 1
 			SquadManager.Status.WOUNDED: wounded += 1
 	var lines = []
-	if active > 0:   lines.append("%d squad%s operational." % [active, "s" if active > 1 else ""])
-	if wounded > 0:  lines.append("%d squad%s wounded." % [wounded, "s" if wounded > 1 else ""])
+	if active > 0:  lines.append("%d squad%s operational." % [active, "s" if active > 1 else ""])
+	if wounded > 0: lines.append("%d squad%s wounded." % [wounded, "s" if wounded > 1 else ""])
 	var held = EnemyManager.get_held_count()
 	lines.append("%d sector%s held." % [held, "s" if held != 1 else ""])
+
+	# Supply pool summary in debrief
+	var pool = GameManager.get_supply_pool()
+	lines.append("Pool remaining — Arms: %d  Meds: %d  Fuel: %d" % [
+		pool.get("Armaments", 0),
+		pool.get("Medi-Packs", 0),
+		pool.get("Fuel Cells", 0),
+	])
+
 	debrief_label.text = "\n".join(lines)
 
 
-func _show_report(report: Dictionary, won: bool) -> void:
-	# Hide main content, show report panel
-	get_node_or_null("PanelContainer").visible = false
+func _show_report(report: Dictionary) -> void:
+	# Hide main panel, show report
+	var main_panel = get_node_or_null("PanelContainer")
+	if main_panel: main_panel.visible = false
 	report_panel.visible = true
 
-	var rt = report_panel.get_node_or_null("VBoxContainer/ReportTitle")
-	var rb = report_panel.get_node_or_null("VBoxContainer/ReportBody")
+	var won     = report.get("won", false)
+	var held    = report.get("held_hexes", 0)
+	var req     = report.get("required_hexes", 0)
+	var alive   = report.get("squads_alive", 0)
+	var lost_c  = report.get("squads_lost", 0)
+	var turns   = report.get("turns", 0)
+	var rating  = report.get("rating", "—")
+	var score   = report.get("score", 0)
+	var t_score = report.get("tile_score", 0)
+	var t_bonus = report.get("turn_bonus", 0)
+	var s_bonus = report.get("supply_bonus", 0)
+
+	var rt = report_panel.get_node_or_null("ReportVBox/ReportTitle")
+	var rl = report_panel.get_node_or_null("ReportVBox/RatingLabel")
+	var rb = report_panel.get_node_or_null("ReportVBox/ReportBody")
+
+	# Score columns
+	var tile_val   = report_panel.get_node_or_null("ReportVBox/HBoxContainer/TILESCOREVal")
+	var turn_val   = report_panel.get_node_or_null("ReportVBox/HBoxContainer/TURNBONUSVal")
+	var supply_val = report_panel.get_node_or_null("ReportVBox/HBoxContainer/SUPPLYBONUSVal")
+	var total_val  = report_panel.get_node_or_null("ReportVBox/HBoxContainer/TOTALVal")
 
 	if rt:
 		rt.text = "MISSION COMPLETE" if won else "MISSION FAILED"
-		rt.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4) if won else Color(0.9, 0.3, 0.3))
+		rt.add_theme_color_override("font_color",
+			Color(0.4, 0.9, 0.4) if won else Color(0.9, 0.3, 0.3))
+
+	if rl:
+		rl.text = rating
+		rl.add_theme_color_override("font_color", _rating_color(rating))
+
+	if tile_val:   tile_val.text   = str(t_score)
+	if turn_val:   turn_val.text   = str(t_bonus)
+	if supply_val: supply_val.text = str(s_bonus)
+	if total_val:
+		total_val.text = str(score)
+		total_val.add_theme_color_override("font_color", _rating_color(rating))
 
 	if rb:
-		var held     = report.get("held_hexes", 0)
-		var required = report.get("required_hexes", 5)
-		var alive    = report.get("squads_alive", 0)
-		var lost_c   = report.get("squads_lost", 0)
-		var turns    = report.get("turns", 0)
 		if won:
-			rb.text = "Sectors held: %d / %d\nSquads operational: %d\nSquads lost: %d\nTurns taken: %d\n\nThe foothold is secured. Stand by for campaign debrief." % [held, required, alive, lost_c, turns]
+			rb.text = (
+				"Sectors held: %d / %d\nSquads operational: %d   Squads lost: %d\nTurns taken: %d\n\nThe foothold is secured."
+				% [held, req, alive, lost_c, turns]
+			)
 		else:
 			var reason = report.get("reason", "Mission objectives not met.")
-			rb.text = "%s\n\nSectors held: %d / %d required.\nSquads lost: %d" % [reason, held, required, lost_c]
+			rb.text = (
+				"%s\n\nSectors held: %d / %d required\nSquads lost: %d   Turns: %d"
+				% [reason, held, req, lost_c, turns]
+			)
 
 
-func _on_report_acknowledged() -> void:
-	# TODO: trigger next mission
-	visible = false
-	get_node_or_null("PanelContainer").visible = true
-	report_panel.visible = false
-	if player and player.has_method("on_popup_closed"):
-		player.on_popup_closed()
+func _rating_color(rating: String) -> Color:
+	match rating:
+		"S": return Color(1.0, 0.9, 0.2)
+		"A": return Color(0.4, 0.9, 0.4)
+		"B": return Color(0.4, 0.7, 1.0)
+		"C": return Color(0.9, 0.6, 0.2)
+		_:   return Color(0.6, 0.2, 0.2)
 
 
 func _on_end_turn_pressed() -> void:
+	if TurnManager.mission_over: return
 	if not TurnManager.allocations_are_locked: return
 	TurnManager.end_turn()
 	_on_close_pressed()
@@ -320,6 +416,11 @@ func _on_end_turn_pressed() -> void:
 
 func _on_close_pressed() -> void:
 	visible = false
+	# Restore main panel visibility for next open (unless mission over showing report)
+	if not TurnManager.mission_over:
+		var main_panel = get_node_or_null("PanelContainer")
+		if main_panel: main_panel.visible = true
+		report_panel.visible = false
 	if player and player.has_method("on_popup_closed"):
 		player.on_popup_closed()
 

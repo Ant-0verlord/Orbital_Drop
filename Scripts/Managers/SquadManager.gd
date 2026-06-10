@@ -56,6 +56,10 @@ func get_squad_names() -> Array:
 
 func resolve_turn(allocations: Dictionary) -> Dictionary:
 	current_turn += 1
+
+	# Consume from the mission supply pool before resolving
+	GameManager.consume_supplies(allocations)
+
 	var action_results: Dictionary = {}
 
 	for squad_name in squads:
@@ -66,12 +70,12 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 			action_results[squad_name] = { "action": "lost", "moved_to": "" }
 			continue
 
-		var alloc     = allocations.get(squad_name, {})
-		var got_arms  = alloc.get("Armaments",  0) > 0
-		var got_meds  = alloc.get("Medi-Packs", 0) > 0
-		var got_fuel  = alloc.get("Fuel Cells", 0) > 0
-		var action    = "none"
-		var moved_to  = ""
+		var alloc    = allocations.get(squad_name, {})
+		var got_arms = alloc.get("Armaments",  0) > 0
+		var got_meds = alloc.get("Medi-Packs", 0) > 0
+		var got_fuel = alloc.get("Fuel Cells", 0) > 0
+		var action   = "none"
+		var moved_to = ""
 
 		# FUEL + ARMS = move then fight
 		if got_fuel and got_arms:
@@ -84,7 +88,6 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 				action = "moved_and_fought"
 				squad.turns_unsupplied = 0
 			else:
-				# No enemies adjacent — just move
 				target = EnemyManager.get_best_move_target(squad.sector)
 				if target != "":
 					squad.sector = target
@@ -110,18 +113,17 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 				action = "fought"
 				squad.turns_unsupplied = 0
 			else:
-				# No enemies here — still hold the tile
 				action = "held"
 				squad.turns_unsupplied = 0
 
-		# MEDI-PACKS = heal
+		# MEDI-PACKS = heal (can stack with movement/combat)
 		if got_meds:
 			_heal(squad)
 			if action == "none":
 				action = "healed"
 			squad.turns_unsupplied = 0
 
-		# Nothing sent
+		# Nothing sent this turn
 		if not got_arms and not got_meds and not got_fuel:
 			squad.turns_unsupplied += 1
 			if squad.turns_unsupplied >= 2:
@@ -142,7 +144,11 @@ func get_reports() -> Dictionary:
 	var result: Dictionary = {}
 	for squad_name in squads:
 		var squad = squads[squad_name]
-		result[squad_name] = _apply_interference(squad.report) if squad.status != Status.LOST else squad.report
+		result[squad_name] = (
+			_apply_interference(squad.report)
+			if squad.status != Status.LOST
+			else squad.report
+		)
 	return result
 
 
@@ -164,6 +170,9 @@ func get_need_display(squad_name: String) -> String:
 	return NEED_NAMES[squad.need]
 
 
+# -------------------------------------------------------
+# Helpers
+# -------------------------------------------------------
 func _heal(squad: Dictionary) -> void:
 	match squad.status:
 		Status.CRITICAL: squad.status = Status.WOUNDED
@@ -179,7 +188,8 @@ func _worsen_status(squad: Dictionary) -> void:
 
 func _next_need(squad: Dictionary, last_action: String) -> int:
 	if squad.status == Status.CRITICAL: return Need.MEDI_PACKS
-	if squad.status == Status.WOUNDED:  return Need.MEDI_PACKS if randf() > 0.4 else Need.ARMAMENTS
+	if squad.status == Status.WOUNDED:
+		return Need.MEDI_PACKS if randf() > 0.4 else Need.ARMAMENTS
 	match last_action:
 		"moved":            return Need.ARMAMENTS
 		"fought":           return Need.MEDI_PACKS

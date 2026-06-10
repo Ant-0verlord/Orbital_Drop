@@ -13,12 +13,14 @@ var squad_rows: Array = []
 var budget_label:  Label
 var warning_label: Label
 var lock_btn: Button
+var pool_label: Label
 
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	TurnManager.turn_started.connect(_on_turn_started)
 	TurnManager.allocations_locked.connect(_on_allocations_locked)
+	TurnManager.mission_complete.connect(_on_mission_complete)
 	_build_ui()
 
 
@@ -36,28 +38,30 @@ func _on_allocations_locked() -> void:
 		lock_btn.disabled = true
 
 
+func _on_mission_complete(report: Dictionary) -> void:
+	_show_mission_end(report)
+
+
 func refresh() -> void:
 	if SquadManager.squads.is_empty(): return
 	_sync_allocations()
 	_rebuild_squad_rows()
 	_refresh_budget()
-	if lock_btn:
+	_refresh_pool()
+	if lock_btn and not TurnManager.mission_over:
 		lock_btn.text = "Lock Allocations"
 		lock_btn.disabled = false
 
 
 func _build_ui() -> void:
-	# Fullscreen
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
-	# Dark overlay background
 	var bg := ColorRect.new()
 	bg.name = "BG"
 	bg.color = Color(0, 0, 0, 0.88)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	# Centred content panel
 	var panel := PanelContainer.new()
 	panel.name = "PanelContainer"
 	panel.custom_minimum_size = Vector2(680, 0)
@@ -69,7 +73,7 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 10)
 	panel.add_child(vbox)
 
-	# Title bar
+	# Title
 	var title_row := HBoxContainer.new()
 	vbox.add_child(title_row)
 	var title := Label.new()
@@ -120,14 +124,21 @@ func _build_ui() -> void:
 		lv.add_child(r)
 
 	var instr := Label.new()
-	instr.text = "Each supply costs 2 pts. Lock allocations, then end turn at the Command Throne."
+	instr.text = "Each supply costs 2 pts. Supplies are drawn from the mission pool — manage carefully."
 	instr.add_theme_font_size_override("font_size", 11)
 	instr.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
 	instr.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(instr)
 
+	# Mission supply pool display
+	pool_label = Label.new()
+	pool_label.name = "PoolLabel"
+	pool_label.add_theme_font_size_override("font_size", 13)
+	pool_label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+	vbox.add_child(pool_label)
+
 	budget_label = Label.new()
-	budget_label.add_theme_font_size_override("font_size", 15)
+	budget_label.add_theme_font_size_override("font_size", 13)
 	vbox.add_child(budget_label)
 
 	warning_label = Label.new()
@@ -172,9 +183,41 @@ func _build_ui() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 	btn_row.add_child(close_btn)
 
+	# Mission end overlay — hidden until mission resolves
+	var end_overlay := ColorRect.new()
+	end_overlay.name = "EndOverlay"
+	end_overlay.color = Color(0, 0, 0, 0.82)
+	end_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	end_overlay.visible = false
+	add_child(end_overlay)
+
+	var end_vbox := VBoxContainer.new()
+	end_vbox.name = "EndVBox"
+	end_vbox.set_anchors_preset(Control.PRESET_CENTER)
+	end_vbox.add_theme_constant_override("separation", 16)
+	end_overlay.add_child(end_vbox)
+
+	var end_title := Label.new()
+	end_title.name = "EndTitle"
+	end_title.add_theme_font_size_override("font_size", 32)
+	end_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	end_vbox.add_child(end_title)
+
+	var end_body := Label.new()
+	end_body.name = "EndBody"
+	end_body.add_theme_font_size_override("font_size", 15)
+	end_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	end_body.autowrap_mode = TextServer.AUTOWRAP_WORD
+	end_body.custom_minimum_size.x = 420
+	end_vbox.add_child(end_body)
+
+	var end_close := Button.new()
+	end_close.text = "Close"
+	end_close.pressed.connect(_on_close_pressed)
+	end_vbox.add_child(end_close)
+
 
 func _rebuild_squad_rows() -> void:
-	# Update turn/held labels
 	var turn_lbl = get_node_or_null("PanelContainer/VBoxContainer/TurnLabel")
 	var held_lbl = get_node_or_null("PanelContainer/VBoxContainer/HeldLabel")
 	if turn_lbl: turn_lbl.text = "Turn %d / %d" % [TurnManager.current_turn, TurnManager.max_turns]
@@ -182,7 +225,8 @@ func _rebuild_squad_rows() -> void:
 		var held = EnemyManager.get_held_count()
 		var req  = TurnManager.win_condition_hexes
 		held_lbl.text = "Held: %d / %d required" % [held, req]
-		held_lbl.add_theme_color_override("font_color", Color(0.4,0.9,0.4) if held >= req else Color(0.9,0.6,0.2))
+		held_lbl.add_theme_color_override("font_color",
+			Color(0.4, 0.9, 0.4) if held >= req else Color(0.9, 0.6, 0.2))
 
 	squad_rows.clear()
 	var container = get_node_or_null("PanelContainer/VBoxContainer/SquadContainer")
@@ -222,6 +266,9 @@ func _build_squad_row(squad: Dictionary, container: Node) -> Dictionary:
 			if SUPPLY_COST[SUPPLY_OPTIONS[i]] == saved and saved > 0:
 				opt.selected = i; break
 		opt.item_selected.connect(_on_supply_changed.bind(squad.name, supply, opt))
+
+		# Disable dropdown if mission is over
+		opt.disabled = TurnManager.mission_over
 		row.add_child(opt)
 		dropdowns[supply] = opt
 
@@ -236,38 +283,122 @@ func _sync_allocations() -> void:
 
 
 func _on_supply_changed(_index: int, squad_name: String, supply: String, opt: OptionButton) -> void:
+	if TurnManager.mission_over:
+		return
 	if not allocations.has(squad_name):
 		allocations[squad_name] = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	allocations[squad_name][supply] = SUPPLY_COST[SUPPLY_OPTIONS[opt.selected]]
 	if TurnManager.allocations_are_locked:
 		TurnManager.allocations_are_locked = false
-		if lock_btn: lock_btn.text = "Lock Allocations"; lock_btn.disabled = false
+		if lock_btn:
+			lock_btn.text = "Lock Allocations"
+			lock_btn.disabled = false
 	_refresh_budget()
 
 
+func _refresh_pool() -> void:
+	if pool_label == null:
+		return
+	var pool = GameManager.get_supply_pool()
+	pool_label.text = "Mission Pool — Armaments: %d  |  Medi-Packs: %d  |  Fuel Cells: %d" % [
+		pool.get("Armaments", 0),
+		pool.get("Medi-Packs", 0),
+		pool.get("Fuel Cells", 0),
+	]
+	# Warn if any supply type is running low
+	var low = []
+	for s in pool:
+		if pool[s] <= 2 and pool[s] > 0:
+			low.append(s)
+		elif pool[s] == 0:
+			low.append(s + " DEPLETED")
+	if low.size() > 0:
+		pool_label.add_theme_color_override("font_color", Color(0.9, 0.5, 0.2))
+	else:
+		pool_label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+
+
 func _refresh_budget() -> void:
-	var total = GameManager.get_current_mission_data().get("budget", 8)
-	var spent: int = 0
+	# Budget now shows this turn's pending spend vs what remains in the pool
+	var pool = GameManager.get_supply_pool()
+	var pending: Dictionary = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	for sn in allocations:
-		for s in allocations[sn]: spent += allocations[sn][s]
-	var rem = total - spent
-	budget_label.text = "Budget:  %d / %d  (%d remaining)" % [spent, total, rem]
-	if rem < 0:
-		budget_label.add_theme_color_override("font_color", Color(1,0.3,0.3))
-		warning_label.text = "Over budget!"
+		for s in allocations[sn]:
+			if pending.has(s):
+				pending[s] += allocations[sn][s]
+
+	var over = false
+	var parts = []
+	for s in ["Armaments", "Medi-Packs", "Fuel Cells"]:
+		var p   = pool.get(s, 0)
+		var pen = pending.get(s, 0)
+		parts.append("%s: %d/%d" % [s, pen, p])
+		if pen > p:
+			over = true
+
+	budget_label.text = "This turn:  " + "   ".join(parts)
+
+	if over:
+		budget_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+		warning_label.text = "Over pool limit on one or more supply types!"
 	else:
 		budget_label.remove_theme_color_override("font_color")
 		warning_label.text = ""
 
 
 func _on_lock_pressed() -> void:
-	var total = GameManager.get_current_mission_data().get("budget", 8)
-	var spent: int = 0
+	if TurnManager.mission_over:
+		return
+	# Check pending spend doesn't exceed pool for any type
+	var pool = GameManager.get_supply_pool()
+	var pending: Dictionary = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	for sn in allocations:
-		for s in allocations[sn]: spent += allocations[sn][s]
-	if spent > total: warning_label.text = "Cannot lock — over budget!"; return
+		for s in allocations[sn]:
+			if pending.has(s):
+				pending[s] += allocations[sn][s]
+	for s in pending:
+		if pending[s] > pool.get(s, 0):
+			warning_label.text = "Cannot lock — %s exceeds mission pool!" % s
+			return
 	warning_label.text = ""
 	TurnManager.lock_allocations(allocations)
+
+
+func _show_mission_end(report: Dictionary) -> void:
+	var overlay = get_node_or_null("EndOverlay")
+	if overlay == null:
+		return
+
+	# Disable lock button
+	if lock_btn:
+		lock_btn.disabled = true
+		lock_btn.text = "—"
+
+	overlay.visible = true
+
+	var end_title = overlay.get_node_or_null("EndVBox/EndTitle")
+	var end_body  = overlay.get_node_or_null("EndVBox/EndBody")
+
+	var won = report.get("won", false)
+
+	if end_title:
+		end_title.text = "MISSION COMPLETE" if won else "MISSION FAILED"
+		end_title.add_theme_color_override("font_color",
+			Color(0.4, 0.9, 0.4) if won else Color(0.9, 0.3, 0.3))
+
+	if end_body:
+		var held    = report.get("held_hexes", 0)
+		var req     = report.get("required_hexes", 0)
+		var rating  = report.get("rating", "—")
+		var score   = report.get("score", 0)
+		var t_score = report.get("tile_score", 0)
+		var t_bonus = report.get("turn_bonus", 0)
+		var s_bonus = report.get("supply_bonus", 0)
+		var turns   = report.get("turns", 0)
+		end_body.text = (
+			"Rating: %s  |  Score: %d\n\nTile score: %d   Turn bonus: %d   Supply bonus: %d\nSectors held: %d / %d   Turns: %d\n\nConsult the Command Throne for full debrief."
+			% [rating, score, t_score, t_bonus, s_bonus, held, req, turns]
+		)
 
 
 func _on_close_pressed() -> void:
