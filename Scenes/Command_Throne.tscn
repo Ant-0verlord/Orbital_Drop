@@ -23,9 +23,12 @@ shape = SubResource("BoxShape3D_oohax")
 
 [node name="CommandThronePopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=778375555]
 layout_mode = 3
-anchors_preset = 0
-offset_left = -20.0
-offset_top = -19.0
-offset_right = 20.0
-offset_bottom = 21.0
+anchor_right = 0.13900001
+anchor_bottom = 0.24700001
+offset_left = -407.0
+offset_top = -261.0
+offset_right = 584.87195
+offset_bottom = 226.944
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("3_602gn")

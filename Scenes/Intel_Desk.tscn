@@ -23,7 +23,9 @@ shape = SubResource("BoxShape3D_oohax")
 
 [node name="IntelConsolePopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=1946253231]
 layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("3_l8jtb")
