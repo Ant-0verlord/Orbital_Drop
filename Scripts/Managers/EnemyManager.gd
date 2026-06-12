@@ -44,8 +44,8 @@ func init_enemies(squad_sectors: Array, enemy_list: Array) -> void:
 		enemy_units.append({
 			"id":       id,
 			"sector":   e.get("sector", "Iota-8"),
-			"hp":       2,       # Takes 2 hits to eliminate
-			"pushes":   0,       # Times pushed this turn
+			"hp":       2,
+			"cooldown": 0,   # turns remaining before can enter held/squad tiles
 		})
 		id += 1
 
@@ -57,46 +57,78 @@ func init_enemies(squad_sectors: Array, enemy_list: Array) -> void:
 # -------------------------------------------------------
 func get_best_move_target(from_sector: String) -> String:
 	var neighbors = adjacency.get(from_sector, [])
-	# First: unoccupied enemy tile (capture)
 	for n in neighbors:
 		if not _has_enemy_unit(n) and hex_control.get(n, "") == "enemy":
 			return n
-	# Second: any tile with no enemy
 	for n in neighbors:
 		if not _has_enemy_unit(n):
 			return n
 	return ""
 
 
-# Squad uses Armaments — fight at current sector
+# -------------------------------------------------------
+# Squad fights at sector WITH armaments — guaranteed win
 # Returns true if enemies were present
+# -------------------------------------------------------
 func fight_at(sector: String, _squad_name: String) -> bool:
-	var enemies_here = []
-	for unit in enemy_units:
-		if unit.sector == sector:
-			enemies_here.append(unit)
-
+	var enemies_here = _get_enemies_at(sector)
 	if enemies_here.is_empty():
 		return false
 
 	for unit in enemies_here:
 		unit.hp -= 1
 		if unit.hp <= 0:
-			# Eliminated — remove from field
 			enemy_units.erase(unit)
 		else:
-			# Still alive — push back 2 tiles if possible
+			# Push back 2 tiles and apply cooldown
 			var pushed = _push_enemy_deep(unit, sector)
 			if pushed != "":
 				unit.sector = pushed
+			unit.cooldown = 2
 
 	hex_control[sector] = "held"
 	emit_signal("enemies_updated")
 	return true
 
 
+# -------------------------------------------------------
+# Squad fights WITHOUT armaments — 50/50
+# Returns Dictionary: { "squad_won": bool, "enemies_present": bool }
+# -------------------------------------------------------
+func fight_at_unarmed(sector: String) -> Dictionary:
+	var enemies_here = _get_enemies_at(sector)
+	if enemies_here.is_empty():
+		return { "squad_won": false, "enemies_present": false }
+
+	var squad_won = randf() > 0.5
+
+	if squad_won:
+		# Enemy pushed back 1 tile with cooldown
+		for unit in enemies_here:
+			var pushed = _push_enemy_back(unit, sector)
+			if pushed != "":
+				unit.sector = pushed
+			unit.cooldown = 1
+		hex_control[sector] = "held"
+	else:
+		# Squad gets pushed back — caller handles status worsening
+		pass
+
+	emit_signal("enemies_updated")
+	return { "squad_won": squad_won, "enemies_present": true }
+
+
 # Squad uses Fuel + Arms — best adjacent enemy-occupied tile
 func get_best_attack_target(from_sector: String) -> String:
+	var neighbors = adjacency.get(from_sector, [])
+	for n in neighbors:
+		if _has_enemy_unit(n):
+			return n
+	return ""
+
+
+# Squad uses Fuel only — best adjacent enemy tile to move into and fight unarmed
+func get_best_move_into_enemy(from_sector: String) -> String:
 	var neighbors = adjacency.get(from_sector, [])
 	for n in neighbors:
 		if _has_enemy_unit(n):
@@ -121,12 +153,15 @@ func advance_enemies() -> void:
 	if squad_sectors.is_empty():
 		return
 
-	# Shuffle order so enemies don't always move in the same priority
+	# Tick down cooldowns first
+	for unit in enemy_units:
+		if unit.cooldown > 0:
+			unit.cooldown -= 1
+
 	var units_copy = enemy_units.duplicate()
 	units_copy.shuffle()
 
 	for unit in units_copy:
-		# Find actual unit reference (may have been removed by fight_at)
 		if not enemy_units.has(unit):
 			continue
 
@@ -134,11 +169,16 @@ func advance_enemies() -> void:
 		var best_score = _movement_score(unit.sector, squad_sectors, unit.id)
 
 		var candidates = adjacency.get(unit.sector, []).duplicate()
-		candidates.shuffle()  # Break ties randomly for less predictable movement
+		candidates.shuffle()
 
 		for n in candidates:
 			if _has_enemy_unit_excluding(n, unit.id):
 				continue
+			# Respect cooldown — can't move into held or squad tiles
+			if unit.cooldown > 0:
+				var control = hex_control.get(n, "enemy")
+				if control == "held" or control == "contested" or n in squad_sectors:
+					continue
 			var score = _movement_score(n, squad_sectors, unit.id)
 			if score > best_score:
 				best_score = score
@@ -151,26 +191,20 @@ func advance_enemies() -> void:
 
 
 # -------------------------------------------------------
-# Score a tile for enemy movement decision-making.
-# Higher = more desirable to move to.
-# Enemies prefer: closing on squads, taking held tiles,
-# spreading out (not clustering), flanking
+# Movement scoring
 # -------------------------------------------------------
 func _movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
 	var score = 0
 
-	# Closing on nearest squad (primary drive)
 	var dist = _bfs_distance_to_nearest(sector, squad_sectors)
 	score += (10 - min(dist, 10)) * 20
 
-	# Bonus for stepping onto a held tile (recapture pressure)
 	var control = hex_control.get(sector, "enemy")
 	if control == "held":
 		score += 40
 	elif control == "contested":
 		score += 20
 
-	# Penalty for clustering with other enemies (spread out)
 	var nearby_enemies = 0
 	for n in adjacency.get(sector, []):
 		for unit in enemy_units:
@@ -178,7 +212,6 @@ func _movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
 				nearby_enemies += 1
 	score -= nearby_enemies * 15
 
-	# Small bonus for being adjacent to multiple squad tiles (flanking)
 	var adj_squad_tiles = 0
 	for n in adjacency.get(sector, []):
 		if n in squad_sectors:
@@ -189,10 +222,9 @@ func _movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
 
 
 # -------------------------------------------------------
-# Push enemy back 2 tiles deep if possible, else 1
+# Push back 2 tiles deep
 # -------------------------------------------------------
 func _push_enemy_deep(unit: Dictionary, away_from: String) -> String:
-	# Try to find a tile 2 steps away from away_from
 	var first_ring = []
 	for n in adjacency.get(unit.sector, []):
 		if n == away_from:
@@ -201,14 +233,11 @@ func _push_enemy_deep(unit: Dictionary, away_from: String) -> String:
 			continue
 		first_ring.append(n)
 
-	# From each first-ring tile, try to go one step further
 	var best_deep = ""
 	var best_dist = -1
 	for mid in first_ring:
 		for n2 in adjacency.get(mid, []):
-			if n2 == away_from:
-				continue
-			if n2 == unit.sector:
+			if n2 == away_from or n2 == unit.sector:
 				continue
 			if _has_enemy_unit_excluding(n2, unit.id):
 				continue
@@ -219,13 +248,11 @@ func _push_enemy_deep(unit: Dictionary, away_from: String) -> String:
 
 	if best_deep != "":
 		return best_deep
-
-	# Fall back to 1-tile push
 	return _push_enemy_back(unit, away_from)
 
 
 # -------------------------------------------------------
-# Rebuild hex_control after enemy movement
+# Rebuild hex_control
 # -------------------------------------------------------
 func _rebuild_hex_control(squad_sectors: Array) -> void:
 	var enemy_sectors = []
@@ -247,7 +274,6 @@ func _rebuild_hex_control(squad_sectors: Array) -> void:
 		else:
 			if current == "contested":
 				hex_control[sector] = "enemy"
-			# held stays held, enemy stays enemy
 
 
 func get_hex_control() -> Dictionary:
@@ -273,6 +299,14 @@ func get_enemy_count_at(sector: String) -> int:
 # -------------------------------------------------------
 # Helpers
 # -------------------------------------------------------
+func _get_enemies_at(sector: String) -> Array:
+	var result = []
+	for unit in enemy_units:
+		if unit.sector == sector:
+			result.append(unit)
+	return result
+
+
 func _has_enemy_unit(sector: String) -> bool:
 	for unit in enemy_units:
 		if unit.sector == sector:

@@ -25,10 +25,176 @@ shape = SubResource("BoxShape3D_oohax")
 layout_mode = 3
 anchor_right = 0.13900001
 anchor_bottom = 0.24700001
-offset_left = -407.0
-offset_top = -261.0
-offset_right = 584.87195
-offset_bottom = 226.944
+offset_right = 991.87195
+offset_bottom = 487.944
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_602gn")
+
+[node name="BG" type="ColorRect" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=1593960409]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.95686275)
+
+[node name="PanelContainer" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=1867094879]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer" unique_id=498110406]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=2138956816]
+layout_mode = 2
+
+[node name="MissionTitle" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=345012100]
+layout_mode = 2
+
+[node name="InfoRow" type="HBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=1923558046]
+layout_mode = 2
+
+[node name="TurnLabel" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer/InfoRow" unique_id=1054527074]
+layout_mode = 2
+
+[node name="HeldLabel" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer/InfoRow" unique_id=1802207620]
+layout_mode = 2
+
+[node name="ProgressBar" type="ProgressBar" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=188506807]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=1978725892]
+layout_mode = 2
+
+[node name="ObjHeader" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=290166210]
+layout_mode = 2
+text = "CURRENT OBJECTIVE"
+
+[node name="ObjectiveLabel" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=2079001247]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=1538748596]
+layout_mode = 2
+
+[node name="SquadHeader" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=148518838]
+layout_mode = 2
+text = "SQUAD STATUS"
+
+[node name="SquadSummary" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=649958200]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="HSeparator3" type="HSeparator" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=1681150914]
+layout_mode = 2
+
+[node name="DebriefHeader" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=18146388]
+layout_mode = 2
+text = "LAST TURN DEBRIEF"
+
+[node name="DebriefLabel" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=538906022]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="HSeparator4" type="HSeparator" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=1222640095]
+layout_mode = 2
+
+[node name="LockStatusLabel" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=197111492]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=76057768]
+layout_mode = 2
+
+[node name="EndTurnBtn" type="Button" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=232257745]
+layout_mode = 2
+text = "ENGAGE TURN SEAL"
+
+[node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=751594385]
+layout_mode = 2
+text = "Close  [Esc]"
+
+[node name="ReportPanel" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=1722529338]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ReportVBox" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel" unique_id=932848970]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="ReportTitle" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=288588973]
+layout_mode = 2
+
+[node name="RatingLabel" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=1463514135]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=1277628037]
+layout_mode = 2
+
+[node name="ScoreRow" type="HBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=453802282]
+layout_mode = 2
+alignment = 1
+
+[node name="TileCol" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow" unique_id=798067447]
+layout_mode = 2
+
+[node name="TileHeader" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow/TileCol" unique_id=699874457]
+layout_mode = 2
+text = "TILE SCORE"
+
+[node name="TileVal" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow/TileCol" unique_id=2016534767]
+layout_mode = 2
+
+[node name="TurnCol" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow" unique_id=1817188820]
+layout_mode = 2
+
+[node name="TurnHeader" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow/TurnCol" unique_id=1218548249]
+layout_mode = 2
+text = "TURN BONUS"
+
+[node name="TurnVal" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow/TurnCol" unique_id=1365775295]
+layout_mode = 2
+
+[node name="SupplyCol" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow" unique_id=706840372]
+layout_mode = 2
+
+[node name="SupplyHeader" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow/SupplyCol" unique_id=1872927775]
+layout_mode = 2
+text = "SUPPLY BONUS"
+
+[node name="SupplyVal" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow/SupplyCol" unique_id=1148649443]
+layout_mode = 2
+
+[node name="TotalCol" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow" unique_id=1325699291]
+layout_mode = 2
+
+[node name="TotalHeader" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow/TotalCol" unique_id=2122328061]
+layout_mode = 2
+text = "TOTAL"
+
+[node name="TotalVal" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox/ScoreRow/TotalCol" unique_id=2048278754]
+layout_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=471852200]
+layout_mode = 2
+
+[node name="ReportBody" type="Label" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=1296183486]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="ReportClose" type="Button" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=1742993541]
+layout_mode = 2
+text = "Close"

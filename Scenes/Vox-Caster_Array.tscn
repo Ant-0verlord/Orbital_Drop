@@ -28,3 +28,55 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_ch73s")
+
+[node name="ColorRect" type="ColorRect" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup" unique_id=1138432562]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8784314)
+
+[node name="PanelContainer" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup" unique_id=408917421]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer" unique_id=1001421499]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer" unique_id=170124636]
+layout_mode = 2
+
+[node name="Subtitle" type="Label" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer" unique_id=703744187]
+layout_mode = 2
+
+[node name="TurnLabel" type="Label" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer" unique_id=1060140536]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer" unique_id=1362625744]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer" unique_id=441036143]
+custom_minimum_size = Vector2(0, 340)
+layout_mode = 2
+
+[node name="TransmissionContainer" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer/ScrollContainer" unique_id=1418106562]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HSeparator2" type="HSeparator" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer" unique_id=2093875316]
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer" unique_id=32916897]
+layout_mode = 2
+alignment = 2
+
+[node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=2009053580]
+layout_mode = 2
+text = "Close  [Esc]"

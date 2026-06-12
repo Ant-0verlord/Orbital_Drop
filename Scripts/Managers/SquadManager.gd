@@ -57,7 +57,7 @@ func get_squad_names() -> Array:
 func resolve_turn(allocations: Dictionary) -> Dictionary:
 	current_turn += 1
 
-	# Consume from the mission supply pool before resolving
+	# Consume from mission supply pool
 	GameManager.consume_supplies(allocations)
 
 	var action_results: Dictionary = {}
@@ -77,7 +77,9 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 		var action   = "none"
 		var moved_to = ""
 
-		# FUEL + ARMS = move then fight
+		# -------------------------------------------------------
+		# FUEL + ARMS — move into enemy tile and fight (armed)
+		# -------------------------------------------------------
 		if got_fuel and got_arms:
 			var target = EnemyManager.get_best_attack_target(squad.sector)
 			if target != "":
@@ -85,9 +87,10 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 				moved_to = target
 				EnemyManager.fight_at(squad.sector, squad_name)
 				EnemyManager.capture_tile(squad.sector)
-				action = "moved_and_fought"
+				action = "moved_and_fought_armed"
 				squad.turns_unsupplied = 0
 			else:
+				# No enemies adjacent — move and capture
 				target = EnemyManager.get_best_move_target(squad.sector)
 				if target != "":
 					squad.sector = target
@@ -96,38 +99,82 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 					action = "moved"
 					squad.turns_unsupplied = 0
 
-		# FUEL CELLS only = move and capture
+		# -------------------------------------------------------
+		# FUEL only — move, fight unarmed if enemy present
+		# -------------------------------------------------------
 		elif got_fuel:
-			var target = EnemyManager.get_best_move_target(squad.sector)
-			if target != "":
-				squad.sector = target
-				moved_to = target
-				EnemyManager.capture_tile(squad.sector)
-				action = "moved"
+			# Try to move into enemy tile first
+			var enemy_target = EnemyManager.get_best_move_into_enemy(squad.sector)
+			if enemy_target != "":
+				squad.sector = enemy_target
+				moved_to = enemy_target
+				var result = EnemyManager.fight_at_unarmed(squad.sector)
+				if result.squad_won:
+					EnemyManager.capture_tile(squad.sector)
+					action = "moved_and_fought_unarmed_won"
+				else:
+					# Squad pushed back — find safe tile to retreat to
+					var retreat = EnemyManager.get_best_move_target(enemy_target)
+					if retreat != "":
+						squad.sector = retreat
+						moved_to = retreat
+					else:
+						# No retreat — stay and take the hit
+						squad.sector = enemy_target
+					_worsen_status(squad)
+					action = "moved_and_fought_unarmed_lost"
 				squad.turns_unsupplied = 0
+			else:
+				# No enemies adjacent — safe move
+				var target = EnemyManager.get_best_move_target(squad.sector)
+				if target != "":
+					squad.sector = target
+					moved_to = target
+					EnemyManager.capture_tile(squad.sector)
+					action = "moved"
+					squad.turns_unsupplied = 0
 
-		# ARMAMENTS only = fight at current tile
+		# -------------------------------------------------------
+		# ARMS only — fight at current tile
+		# -------------------------------------------------------
 		elif got_arms:
 			var fought = EnemyManager.fight_at(squad.sector, squad_name)
 			if fought:
-				action = "fought"
+				action = "fought_armed"
 				squad.turns_unsupplied = 0
 			else:
+				# No enemies here — hold tile
 				action = "held"
 				squad.turns_unsupplied = 0
 
-		# MEDI-PACKS = heal (can stack with movement/combat)
+		# -------------------------------------------------------
+		# NO SUPPLIES — squad still acts but risks a loss
+		# If enemies present at current tile, unarmed fight
+		# -------------------------------------------------------
+		else:
+			var enemies_here = EnemyManager.get_enemy_count_at(squad.sector) > 0
+			if enemies_here:
+				var result = EnemyManager.fight_at_unarmed(squad.sector)
+				if result.squad_won:
+					EnemyManager.capture_tile(squad.sector)
+					action = "fought_unarmed_won"
+				else:
+					_worsen_status(squad)
+					action = "fought_unarmed_lost"
+			else:
+				action = "held_no_supply"
+			squad.turns_unsupplied += 1
+			if squad.turns_unsupplied >= 2:
+				_worsen_status(squad)
+
+		# -------------------------------------------------------
+		# MEDI-PACKS — heal regardless of other actions
+		# -------------------------------------------------------
 		if got_meds:
 			_heal(squad)
 			if action == "none":
 				action = "healed"
 			squad.turns_unsupplied = 0
-
-		# Nothing sent this turn
-		if not got_arms and not got_meds and not got_fuel:
-			squad.turns_unsupplied += 1
-			if squad.turns_unsupplied >= 2:
-				_worsen_status(squad)
 
 		squad.report = _generate_report(squad, action, moved_to)
 		squad.need   = _next_need(squad, action)
@@ -191,9 +238,13 @@ func _next_need(squad: Dictionary, last_action: String) -> int:
 	if squad.status == Status.WOUNDED:
 		return Need.MEDI_PACKS if randf() > 0.4 else Need.ARMAMENTS
 	match last_action:
-		"moved":            return Need.ARMAMENTS
-		"fought":           return Need.MEDI_PACKS
-		"moved_and_fought": return Need.MEDI_PACKS
+		"moved":                      return Need.ARMAMENTS
+		"fought_armed":               return Need.MEDI_PACKS
+		"moved_and_fought_armed":     return Need.MEDI_PACKS
+		"moved_and_fought_unarmed_won":  return Need.ARMAMENTS
+		"moved_and_fought_unarmed_lost": return Need.MEDI_PACKS
+		"fought_unarmed_won":         return Need.ARMAMENTS
+		"fought_unarmed_lost":        return Need.MEDI_PACKS
 	return Need.FUEL_CELLS if randf() > 0.5 else Need.ARMAMENTS
 
 
@@ -229,18 +280,27 @@ func _lost_line(squad: Dictionary) -> String:
 func _generate_report(squad: Dictionary, action: String, moved_to: String) -> String:
 	var n = squad.name
 	var s = squad.sector
+	var m = moved_to if moved_to != "" else s
 	match action:
 		"moved":
-			return "%s advanced to %s using fuel cells. Sector secured." % [n, s]
-		"fought":
-			return "%s engaged enemy forces at %s. Armaments expended — sector held." % [n, s]
-		"moved_and_fought":
-			return "%s pushed into %s and engaged enemy contact. Sector taken." % [n, moved_to if moved_to != "" else s]
+			return "%s advanced to %s. Sector secured." % [n, s]
+		"fought_armed":
+			return "%s engaged and suppressed enemy forces at %s. Sector held." % [n, s]
+		"moved_and_fought_armed":
+			return "%s pushed into %s and neutralised enemy contact. Sector taken." % [n, m]
+		"moved_and_fought_unarmed_won":
+			return "%s moved into %s without armaments and held their ground. Lucky." % [n, m]
+		"moved_and_fought_unarmed_lost":
+			return "%s engaged at %s without armaments and were pushed back. Casualties taken." % [n, m]
+		"fought_unarmed_won":
+			return "%s repelled enemy contact at %s without armaments. Barely held." % [n, s]
+		"fought_unarmed_lost":
+			return "%s overrun at %s — no armaments, no support. Casualties critical." % [n, s]
 		"healed":
 			return "%s received medical supplies at %s. Casualties stabilising." % [n, s]
 		"held":
 			return "%s is holding position at %s." % [n, s]
-		"none":
+		"held_no_supply":
 			match squad.status:
 				Status.ACTIVE:   return "%s holding at %s. No supplies this turn." % [n, s]
 				Status.WOUNDED:  return "%s taking losses at %s. Needs support." % [n, s]
