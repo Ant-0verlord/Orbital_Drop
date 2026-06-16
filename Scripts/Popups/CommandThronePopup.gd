@@ -6,25 +6,28 @@ extends Control
 
 var player: Node = null
 
-@onready var turn_label: Label        = $PanelContainer/VBoxContainer/InfoRow/TurnLabel
-@onready var held_label: Label        = $PanelContainer/VBoxContainer/InfoRow/HeldLabel
-@onready var progress_bar: ProgressBar = $PanelContainer/VBoxContainer/ProgressBar
-@onready var mission_title: Label     = $PanelContainer/VBoxContainer/MissionTitle
-@onready var objective_label: Label   = $PanelContainer/VBoxContainer/ObjectiveLabel
+@onready var turn_label: Label            = $PanelContainer/VBoxContainer/InfoRow/TurnLabel
+@onready var held_label: Label            = $PanelContainer/VBoxContainer/InfoRow/HeldLabel
+@onready var progress_bar: ProgressBar    = $PanelContainer/VBoxContainer/ProgressBar
+@onready var mission_title: Label         = $PanelContainer/VBoxContainer/MissionTitle
+@onready var objective_label: Label       = $PanelContainer/VBoxContainer/ObjectiveLabel
 @onready var squad_summary: VBoxContainer = $PanelContainer/VBoxContainer/SquadSummary
-@onready var debrief_label: Label     = $PanelContainer/VBoxContainer/DebriefLabel
-@onready var lock_status_lbl: Label   = $PanelContainer/VBoxContainer/LockStatusLabel
-@onready var end_turn_btn: Button     = $PanelContainer/VBoxContainer/ButtonRow/EndTurnBtn
-@onready var close_btn: Button        = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
+@onready var debrief_label: Label         = $PanelContainer/VBoxContainer/DebriefLabel
+@onready var lock_status_lbl: Label       = $PanelContainer/VBoxContainer/LockStatusLabel
+@onready var end_turn_btn: Button         = $PanelContainer/VBoxContainer/ButtonRow/EndTurnBtn
+@onready var close_btn: Button            = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
 @onready var report_panel: PanelContainer = $ReportPanel
-@onready var report_title: Label      = $ReportPanel/ReportVBox/ReportTitle
-@onready var rating_label: Label      = $ReportPanel/ReportVBox/RatingLabel
-@onready var report_body: Label       = $ReportPanel/ReportVBox/ReportBody
-@onready var report_close: Button     = $ReportPanel/ReportVBox/ReportClose
-@onready var tile_val: Label          = $ReportPanel/ReportVBox/ScoreRow/TileCol/TileVal
-@onready var turn_val: Label          = $ReportPanel/ReportVBox/ScoreRow/TurnCol/TurnVal
-@onready var supply_val: Label        = $ReportPanel/ReportVBox/ScoreRow/SupplyCol/SupplyVal
-@onready var total_val: Label         = $ReportPanel/ReportVBox/ScoreRow/TotalCol/TotalVal
+@onready var report_title: Label          = $ReportPanel/ReportVBox/ReportTitle
+@onready var rating_label: Label          = $ReportPanel/ReportVBox/RatingLabel
+@onready var report_body: Label           = $ReportPanel/ReportVBox/ReportBody
+@onready var report_close: Button         = $ReportPanel/ReportVBox/ReportClose
+@onready var tile_val: Label              = $ReportPanel/ReportVBox/ScoreRow/TileCol/TileVal
+@onready var turn_val: Label              = $ReportPanel/ReportVBox/ScoreRow/TurnCol/TurnVal
+@onready var supply_val: Label            = $ReportPanel/ReportVBox/ScoreRow/SupplyCol/SupplyVal
+@onready var total_val: Label             = $ReportPanel/ReportVBox/ScoreRow/TotalCol/TotalVal
+
+# Add this button to ReportVBox in the scene, below ReportClose
+@onready var next_mission_btn: Button     = $ReportPanel/ReportVBox/NextMissionBtn
 
 
 func _ready() -> void:
@@ -37,8 +40,10 @@ func _ready() -> void:
 	end_turn_btn.pressed.connect(_on_end_turn_pressed)
 	close_btn.pressed.connect(_on_close_pressed)
 	report_close.pressed.connect(_on_close_pressed)
+	next_mission_btn.pressed.connect(_on_next_mission_pressed)
 
 	report_panel.visible = false
+	next_mission_btn.visible = false
 
 
 func _on_turn_started(_t: int) -> void:
@@ -186,6 +191,18 @@ func _show_report(report: Dictionary) -> void:
 	var t_bonus = report.get("turn_bonus", 0)
 	var s_bonus = report.get("supply_bonus", 0)
 
+	# Carry-over summary
+	var carry_pool  = report.get("supply_pool", {})
+	var carry_reinf = report.get("reinforcements", 0)
+	var carry_text  = ""
+	if not carry_pool.is_empty():
+		carry_text = "\n\nCarrying forward:\nArms %d  ·  Meds %d  ·  Fuel %d  ·  Reinf %d" % [
+			carry_pool.get("Armaments", 0),
+			carry_pool.get("Medi-Packs", 0),
+			carry_pool.get("Fuel Cells", 0),
+			carry_reinf,
+		]
+
 	if report_title:
 		report_title.text = "MISSION COMPLETE" if won else "MISSION FAILED"
 		report_title.add_theme_color_override("font_color",
@@ -200,7 +217,13 @@ func _show_report(report: Dictionary) -> void:
 
 	if tile_val:   tile_val.text   = str(t_score)
 	if turn_val:   turn_val.text   = str(t_bonus)
-	if supply_val: supply_val.text = str(s_bonus)
+	if supply_val:
+		supply_val.text = str(s_bonus)
+		# Colour supply bonus — reward for conservation
+		supply_val.add_theme_color_override("font_color",
+			Color(0.4, 0.9, 0.4) if s_bonus > 150 else
+			Color(0.9, 0.7, 0.2) if s_bonus > 50 else
+			Color(0.9, 0.3, 0.3))
 	if total_val:
 		total_val.text = str(score)
 		total_val.add_theme_color_override("font_color", _rating_color(rating))
@@ -208,17 +231,45 @@ func _show_report(report: Dictionary) -> void:
 	if report_body:
 		if won:
 			report_body.text = (
-				"Sectors held: %d / %d\nSquads operational: %d   Squads lost: %d\nTurns taken: %d\n\nThe foothold is secured."
-				% [held, req, alive, lost_c, turns]
+				"Sectors held: %d / %d\nSquads operational: %d   Squads lost: %d\nTurns taken: %d%s"
+				% [held, req, alive, lost_c, turns, carry_text]
 			)
 		else:
 			var reason = report.get("reason", "Mission objectives not met.")
 			report_body.text = (
-				"%s\n\nSectors held: %d / %d required\nSquads lost: %d   Turns: %d"
-				% [reason, held, req, lost_c, turns]
+				"%s\n\nSectors held: %d / %d required\nSquads lost: %d   Turns: %d%s"
+				% [reason, held, req, lost_c, turns, carry_text]
 			)
 		report_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		report_body.autowrap_mode = TextServer.AUTOWRAP_WORD
+
+	# Next mission button — only on win and if missions remain
+	var more_missions = GameManager.current_mission + 1 < GameManager.missions.size()
+	next_mission_btn.visible = won and more_missions
+	next_mission_btn.text = "Advance to %s  →" % _next_mission_title()
+
+
+func _next_mission_title() -> String:
+	var next_idx = GameManager.current_mission + 1
+	if next_idx < GameManager.missions.size():
+		return GameManager.missions[next_idx].get("title", "Next Mission")
+	return "Next Mission"
+
+
+func _on_next_mission_pressed() -> void:
+	# Hide report, reset popup state
+	report_panel.visible = false
+	next_mission_btn.visible = false
+	var main_panel = get_node_or_null("PanelContainer")
+	if main_panel: main_panel.visible = true
+
+	# Close popup first so player returns to the room
+	visible = false
+	if player and player.has_method("on_popup_closed"):
+		player.on_popup_closed()
+
+	# Advance campaign
+	GameManager.advance_to_next_mission()
 
 
 func _rating_color(rating: String) -> Color:

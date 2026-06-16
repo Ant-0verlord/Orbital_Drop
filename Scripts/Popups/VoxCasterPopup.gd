@@ -2,15 +2,44 @@ extends Control
 # =============================================================
 # VoxCasterPopup.gd
 # UI built in scene, not in code.
+# Mission 2+ adds transmission degradation:
+#   - Dead channel (no signal)
+#   - Echo/ghost signal (error, unreadable)
+#   - Delayed burst (patchy, partially readable)
+#   - Normal (existing garble system)
 # =============================================================
 
 var player: Node = null
 
 const STATIC_CHARS = ["—", "█", "░", "▒", "?", "#", "~", "×"]
 
-@onready var turn_label: Label                    = $PanelContainer/VBoxContainer/TurnLabel
+# Dead channel flavour lines
+const DEAD_CHANNEL = [
+	"CARRIER LOST — SIGNAL ABSENT",
+	"DEAD CHANNEL — NO RETURN",
+	"VOX SILENT — UNKNOWN STATUS",
+	"BLACKOUT — SURFACE CONTACT LOST",
+]
+
+# Error/ghost flavour lines
+const GHOST_SIGNAL = [
+	"ENCRYPTION FAULT — CONTENT UNRELIABLE",
+	"SOLAR INTERFERENCE — VERIFY BEFORE ACTION",
+	"GHOST SIGNAL — AUTHENTICITY UNCONFIRMED",
+	"CHANNEL CORRUPTION — ASSUME WORST",
+]
+
+# Delayed/patchy flavour lines
+const DELAYED_BURST = [
+	"SIGNAL DEGRADED — TRANSMISSION FRAGMENTARY",
+	"DELAYED BURST — DATA MAY BE STALE",
+	"INTERFERENCE DETECTED — PARTIAL ONLY",
+	"ECHO SIGNAL — ORIGIN UNCERTAIN",
+]
+
+@onready var turn_label: Label                     = $PanelContainer/VBoxContainer/TurnLabel
 @onready var transmission_container: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/TransmissionContainer
-@onready var close_btn: Button                    = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
+@onready var close_btn: Button                     = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
 
 
 func _ready() -> void:
@@ -47,17 +76,45 @@ func _rebuild_transmissions() -> void:
 	for child in transmission_container.get_children():
 		child.queue_free()
 
-	# Critical squads — priority distress at top
+	# Critical squads always break through — priority distress first
 	for squad_name in SquadManager.squads:
 		var squad = SquadManager.squads[squad_name]
 		if squad.status == SquadManager.Status.CRITICAL:
 			_add_distress_call(squad)
 
-	# All other squads
+	# All other squads — subject to transmission degradation
 	for squad_name in SquadManager.squads:
 		var squad = SquadManager.squads[squad_name]
 		if squad.status != SquadManager.Status.CRITICAL:
-			_add_need_transmission(squad)
+			_add_transmission(squad)
+
+
+# -------------------------------------------------------
+# Determines transmission quality for this squad this turn
+# Returns: "normal", "delayed", "ghost", "dead"
+# Critical squads always return "normal" (handled separately)
+# -------------------------------------------------------
+func _transmission_quality(squad: Dictionary) -> String:
+	var interference = SquadManager.interference
+
+	# Mission 1 (interference 0.0) — always normal
+	if interference <= 0.0:
+		return "normal"
+
+	# Lost squads always dead channel
+	if squad.status == SquadManager.Status.LOST:
+		return "dead"
+
+	# Roll against interference thresholds
+	var roll = randf()
+	if roll < interference * 0.15:
+		return "dead"
+	elif roll < interference * 0.35:
+		return "ghost"
+	elif roll < interference * 0.55:
+		return "delayed"
+	else:
+		return "normal"
 
 
 func _add_distress_call(squad: Dictionary) -> void:
@@ -68,13 +125,13 @@ func _add_distress_call(squad: Dictionary) -> void:
 	style.set_content_margin_all(10)
 	style.bg_color = Color(0.25, 0.05, 0.05)
 	style.border_color = Color(1.0, 0.2, 0.2, 0.9)
-	style.border_width_left = 3
-	style.border_width_top = 1
-	style.border_width_right = 1
+	style.border_width_left   = 3
+	style.border_width_top    = 1
+	style.border_width_right  = 1
 	style.border_width_bottom = 1
-	style.corner_radius_top_left = 3
-	style.corner_radius_top_right = 3
-	style.corner_radius_bottom_left = 3
+	style.corner_radius_top_left     = 3
+	style.corner_radius_top_right    = 3
+	style.corner_radius_bottom_left  = 3
 	style.corner_radius_bottom_right = 3
 	card.add_theme_stylebox_override("panel", style)
 
@@ -96,9 +153,166 @@ func _add_distress_call(squad: Dictionary) -> void:
 	body_lbl.add_theme_color_override("font_color", Color(1.0, 0.7, 0.7))
 	vbox.add_child(body_lbl)
 
-	# Mission over — show freeze notice
 	if TurnManager.mission_over:
 		_add_mission_over_banner(vbox)
+
+	transmission_container.add_child(card)
+
+
+# -------------------------------------------------------
+# Main transmission builder — routes by quality
+# -------------------------------------------------------
+func _add_transmission(squad: Dictionary) -> void:
+	var quality = _transmission_quality(squad)
+
+	match quality:
+		"dead":    _add_dead_channel(squad)
+		"ghost":   _add_ghost_signal(squad)
+		"delayed": _add_delayed_burst(squad)
+		"normal":  _add_need_transmission(squad)
+
+
+func _add_dead_channel(squad: Dictionary) -> void:
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var style := StyleBoxFlat.new()
+	style.set_content_margin_all(10)
+	style.bg_color = Color(0.06, 0.06, 0.08)
+	style.border_color = Color(0.25, 0.25, 0.3, 0.5)
+	style.border_width_left = 2
+	style.corner_radius_top_left     = 3
+	style.corner_radius_top_right    = 3
+	style.corner_radius_bottom_left  = 3
+	style.corner_radius_bottom_right = 3
+	card.add_theme_stylebox_override("panel", style)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+
+	var header := Label.new()
+	header.text = ">>> %s  [%s]" % [squad.name, squad.sector]
+	header.add_theme_font_size_override("font_size", 13)
+	header.add_theme_color_override("font_color", Color(0.35, 0.35, 0.4))
+	vbox.add_child(header)
+
+	var status_lbl := Label.new()
+	status_lbl.text = DEAD_CHANNEL[randi() % DEAD_CHANNEL.size()]
+	status_lbl.add_theme_font_size_override("font_size", 12)
+	status_lbl.add_theme_color_override("font_color", Color(0.3, 0.3, 0.35))
+	vbox.add_child(status_lbl)
+
+	# Static noise line
+	var noise := Label.new()
+	noise.text = _generate_static(40)
+	noise.add_theme_font_size_override("font_size", 11)
+	noise.add_theme_color_override("font_color", Color(0.2, 0.2, 0.25))
+	vbox.add_child(noise)
+
+	transmission_container.add_child(card)
+
+
+func _add_ghost_signal(squad: Dictionary) -> void:
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var style := StyleBoxFlat.new()
+	style.set_content_margin_all(10)
+	style.bg_color = Color(0.07, 0.05, 0.10)
+	style.border_color = Color(0.45, 0.2, 0.6, 0.6)
+	style.border_width_left = 2
+	style.corner_radius_top_left     = 3
+	style.corner_radius_top_right    = 3
+	style.corner_radius_bottom_left  = 3
+	style.corner_radius_bottom_right = 3
+	card.add_theme_stylebox_override("panel", style)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	vbox.add_child(header)
+
+	var source_lbl := Label.new()
+	source_lbl.text = ">>> %s  [%s]" % [squad.name, squad.sector]
+	source_lbl.add_theme_font_size_override("font_size", 13)
+	source_lbl.add_theme_color_override("font_color", Color(0.5, 0.3, 0.7))
+	header.add_child(source_lbl)
+
+	var quality_lbl := Label.new()
+	quality_lbl.text = GHOST_SIGNAL[randi() % GHOST_SIGNAL.size()]
+	quality_lbl.add_theme_font_size_override("font_size", 10)
+	quality_lbl.add_theme_color_override("font_color", Color(0.6, 0.3, 0.8))
+	header.add_child(quality_lbl)
+
+	# Need text — fully garbled, unreadable
+	var need_str = SquadManager.NEED_NAMES[squad.need]
+	var raw = "Requesting %s. Awaiting your order." % need_str
+	var garbled_lbl := Label.new()
+	garbled_lbl.text = _garble_text(raw, 0.95)
+	garbled_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	garbled_lbl.add_theme_font_size_override("font_size", 13)
+	garbled_lbl.add_theme_color_override("font_color", Color(0.4, 0.25, 0.5))
+	vbox.add_child(garbled_lbl)
+
+	transmission_container.add_child(card)
+
+
+func _add_delayed_burst(squad: Dictionary) -> void:
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var style := StyleBoxFlat.new()
+	style.set_content_margin_all(10)
+	style.bg_color = Color(0.07, 0.09, 0.13)
+	style.border_color = Color(0.5, 0.45, 0.2, 0.7)
+	style.border_width_left = 2
+	style.corner_radius_top_left     = 3
+	style.corner_radius_top_right    = 3
+	style.corner_radius_bottom_left  = 3
+	style.corner_radius_bottom_right = 3
+	card.add_theme_stylebox_override("panel", style)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	vbox.add_child(header)
+
+	var source_lbl := Label.new()
+	source_lbl.text = ">>> %s  [%s]" % [squad.name, squad.sector]
+	source_lbl.add_theme_font_size_override("font_size", 13)
+	source_lbl.add_theme_color_override("font_color", Color(0.65, 0.6, 0.3))
+	header.add_child(source_lbl)
+
+	var quality_lbl := Label.new()
+	quality_lbl.text = DELAYED_BURST[randi() % DELAYED_BURST.size()]
+	quality_lbl.add_theme_font_size_override("font_size", 10)
+	quality_lbl.add_theme_color_override("font_color", Color(0.8, 0.65, 0.2))
+	header.add_child(quality_lbl)
+
+	# Need text — partially readable, moderate garble
+	var need_str = SquadManager.NEED_NAMES[squad.need]
+	var raw = "Requesting %s. Awaiting your order." % need_str
+	var need_lbl := Label.new()
+	need_lbl.text = _garble_text(raw, 0.5)
+	need_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	need_lbl.add_theme_font_size_override("font_size", 13)
+	need_lbl.add_theme_color_override("font_color", Color(0.7, 0.65, 0.4))
+	vbox.add_child(need_lbl)
+
+	# Status context — lightly garbled
+	var status_lbl := Label.new()
+	status_lbl.text = _garble_text(_status_context(squad), 0.3)
+	status_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	status_lbl.add_theme_font_size_override("font_size", 11)
+	status_lbl.add_theme_color_override("font_color", Color(0.55, 0.5, 0.35))
+	vbox.add_child(status_lbl)
 
 	transmission_container.add_child(card)
 
@@ -117,9 +331,9 @@ func _add_need_transmission(squad: Dictionary) -> void:
 	style.bg_color = Color(0.05, 0.08, 0.12)
 	style.border_color = Color(0.3, 0.5, 0.7, 0.6)
 	style.border_width_left = 2
-	style.corner_radius_top_left = 3
-	style.corner_radius_top_right = 3
-	style.corner_radius_bottom_left = 3
+	style.corner_radius_top_left     = 3
+	style.corner_radius_top_right    = 3
+	style.corner_radius_bottom_left  = 3
 	style.corner_radius_bottom_right = 3
 	card.add_theme_stylebox_override("panel", style)
 
@@ -160,7 +374,6 @@ func _add_need_transmission(squad: Dictionary) -> void:
 	status_lbl.add_theme_color_override("font_color", Color(0.65, 0.7, 0.75))
 	vbox.add_child(status_lbl)
 
-	# Mission over — show freeze notice
 	if TurnManager.mission_over:
 		_add_mission_over_banner(vbox)
 
@@ -182,6 +395,16 @@ func _add_mission_over_banner(parent: VBoxContainer) -> void:
 	lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	parent.add_child(lbl)
+
+
+# -------------------------------------------------------
+# Generates a string of random static characters
+# -------------------------------------------------------
+func _generate_static(length: int) -> String:
+	var result = ""
+	for i in range(length):
+		result += STATIC_CHARS[randi() % STATIC_CHARS.size()]
+	return result
 
 
 func _status_context(squad: Dictionary) -> String:
