@@ -3,6 +3,7 @@
 [ext_resource type="ArrayMesh" uid="uid://u81f72ndgnjf" path="res://Models/Holomap 2.0 .obj" id="1_ftbq4"]
 [ext_resource type="Script" uid="uid://8ctke7lqmu2p" path="res://Scripts/Consoles/HoloMap.gd" id="2_ftbq4"]
 [ext_resource type="Script" uid="uid://r5yd045oo1mc" path="res://Scripts/Popups/HoloMapPopup.gd" id="3_h4dqx"]
+[ext_resource type="Script" uid="uid://cogsku6dfaxqm" path="res://Scripts/HexCanvas.gd" id="4_h4dqx"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_jvvyk"]
 size = Vector3(3.659912, 0.61828613, 2.064331)
@@ -20,192 +21,23 @@ transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 transform = Transform3D(0.6439341, 0, 0.37177548, 0, 0.74355096, 0, -0.37177548, 0, 0.6439341, 0, -1.342751, 0)
 mesh = ExtResource("1_ftbq4")
 
-[node name="SpotLight3D22" type="SpotLight3D" parent="MeshInstance3D" unique_id=517549197]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -0.00084717944, 2.5341501, -0.007659423)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D23" type="SpotLight3D" parent="MeshInstance3D" unique_id=1466145392]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, 0.5472046, 2.5341501, -0.9569131)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D24" type="SpotLight3D" parent="MeshInstance3D" unique_id=2035926924]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, 1.0934318, 2.5341501, -1.9030064)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D25" type="SpotLight3D" parent="MeshInstance3D" unique_id=1702697557]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, 1.6694804, 2.5341501, -2.9007518)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D26" type="SpotLight3D" parent="MeshInstance3D" unique_id=2022418624]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -0.5442454, 2.5341501, 0.93353415)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D27" type="SpotLight3D" parent="MeshInstance3D" unique_id=736501890]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -1.1033103, 2.5341501, 1.901863)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D28" type="SpotLight3D" parent="MeshInstance3D" unique_id=737197283]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -1.6154852, 2.5341501, 2.788976)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D29" type="SpotLight3D" parent="MeshInstance3D" unique_id=1488373807]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -0.4742979, 2.5341501, -0.9363816)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D30" type="SpotLight3D" parent="MeshInstance3D" unique_id=253192651]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, 0.07375389, 2.5341501, -1.8856354)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D31" type="SpotLight3D" parent="MeshInstance3D" unique_id=974776944]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, 0.619981, 2.5341501, -2.8317287)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D32" type="SpotLight3D" parent="MeshInstance3D" unique_id=137455613]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -1.0176961, 2.5341501, 0.004811883)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D33" type="SpotLight3D" parent="MeshInstance3D" unique_id=1773398872]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -1.576761, 2.5341501, 0.97314084)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="SpotLight3D34" type="SpotLight3D" parent="MeshInstance3D" unique_id=1439067053]
-transform = Transform3D(1.3448975, -2.329431, -1.4161837e-07, 2.832368e-07, 1.6882232e-14, 2.6897955, -2.329431, -1.3448975, 2.4529027e-07, -2.0889359, 2.5341501, 1.8602539)
-visible = false
-light_color = Color(0, 0.7522339, 0.7559176, 1)
-light_energy = 16.0
-light_indirect_energy = 16.0
-light_volumetric_fog_energy = 0.0
-light_specular = 0.0
-spot_range = 0.31209132
-spot_attenuation = 21.9
-spot_angle = 46.282158
-spot_angle_attenuation = 1.3107072
-
-[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=180638729]
-transform = Transform3D(1.6115931, 0, 0, 0, 1.6115931, 0, 0, 0, 1.6115931, 0, 0, 0)
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=180638729]
+transform = Transform3D(1.8770475, 0, -1.0837138, 0, 2.167428, 0, 1.0837138, 0, 1.8770475, 0, 1.8058628, 0)
 script = ExtResource("2_ftbq4")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=153597025]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=153597025]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.19085693, -0.0033569336)
 shape = SubResource("BoxShape3D_jvvyk")
 
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="StaticBody3D" unique_id=1687002405]
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=1687002405]
 transform = Transform3D(0.5003174, 0, -0.8658421, 0, 1, 0, 0.8658421, 0, 0.5003174, 0, -0.19067383, -0.0033569336)
 shape = SubResource("BoxShape3D_ftbq4")
 
-[node name="CollisionShape3D3" type="CollisionShape3D" parent="StaticBody3D" unique_id=808513259]
+[node name="CollisionShape3D3" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=808513259]
 transform = Transform3D(-0.49617103, 0, -0.8682248, 0, 1, 0, 0.8682248, 0, -0.49617103, 0, -0.18023682, -0.0033569336)
 shape = SubResource("BoxShape3D_h4dqx")
 
-[node name="HoloMapPopup" type="Control" parent="StaticBody3D" unique_id=957230676]
+[node name="HoloMapPopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=957230676]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -213,3 +45,83 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_h4dqx")
+
+[node name="BG" type="ColorRect" parent="MeshInstance3D/StaticBody3D/HoloMapPopup" unique_id=1188904705]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8784314)
+
+[node name="PanelContainer" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/HoloMapPopup" unique_id=921516246]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer" unique_id=1728770422]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer" unique_id=220809821]
+layout_mode = 2
+text = "HOLO-MAP — PLANETARY THEATRE"
+
+[node name="InfoRow" type="HBoxContainer" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer" unique_id=1201248603]
+layout_mode = 2
+
+[node name="TurnLabel" type="Label" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/InfoRow" unique_id=776218247]
+layout_mode = 2
+
+[node name="HeldLabel" type="Label" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/InfoRow" unique_id=1765434590]
+layout_mode = 2
+
+[node name="Legend" type="HBoxContainer" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer" unique_id=1212921461]
+layout_mode = 2
+
+[node name="LegendHeld" type="Label" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/Legend" unique_id=613267374]
+layout_mode = 2
+text = "● Held"
+
+[node name="LegendContested" type="Label" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/Legend" unique_id=2076842981]
+layout_mode = 2
+text = "● Contested"
+
+[node name="LegendEnemy" type="Label" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/Legend" unique_id=675494917]
+layout_mode = 2
+text = "● Enemy"
+
+[node name="LegendNeutral" type="Label" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/Legend" unique_id=1610525548]
+layout_mode = 2
+text = "● Neutral"
+
+[node name="HexCanvas" type="Control" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer" unique_id=1489805019]
+custom_minimum_size = Vector2(630, 410)
+layout_mode = 2
+script = ExtResource("4_h4dqx")
+
+[node name="HSeparator" type="HSeparator" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer" unique_id=657191286]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer" unique_id=776587145]
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+
+[node name="SectorList" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/ScrollContainer" unique_id=627167771]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="HSeparator2" type="HSeparator" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer" unique_id=1736004128]
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer" unique_id=447326955]
+layout_mode = 2
+alignment = 2
+
+[node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=1417490459]
+layout_mode = 2
+text = "Close  [Esc]"

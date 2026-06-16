@@ -60,14 +60,13 @@ func end_turn() -> void:
 	current_turn += 1
 
 	SquadManager.resolve_turn(pending_allocations)
-	EnemyManager.advance_enemies()
+	EnemyManager.advance_enemies(pending_allocations)  # ← pass allocations
 
 	allocations_are_locked = false
 	pending_allocations = {}
 
 	emit_signal("turn_ended", current_turn)
 
-	# --- Loss check: all squads lost ---
 	var all_lost = true
 	for squad_name in SquadManager.squads:
 		if SquadManager.squads[squad_name].status != SquadManager.Status.LOST:
@@ -78,7 +77,6 @@ func end_turn() -> void:
 		_end_mission(false, "All squads have been lost. No signal from the surface.")
 		return
 
-	# --- Turn limit reached ---
 	if max_turns > 0 and current_turn >= max_turns:
 		_check_win_condition()
 		return

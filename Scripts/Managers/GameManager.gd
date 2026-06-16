@@ -6,14 +6,12 @@ extends Node
 var current_mission: int = 0
 var campaign_record: Array = []
 
-# Tracks remaining supplies for the current mission (drawn down each turn)
 var supply_pool: Dictionary = {
 	"Armaments":  0,
 	"Medi-Packs": 0,
 	"Fuel Cells": 0,
 }
 
-# Tracks total spent this mission for scoring
 var supply_spent: Dictionary = {
 	"Armaments":  0,
 	"Medi-Packs": 0,
@@ -24,19 +22,18 @@ var missions: Array = [
 	{
 		"title":        "Mission 1 — Planetary Insertion",
 		"turns":        5,
-		"win_hexes":    5,
+		"win_hexes":    4,
 		"interference": 0.0,
-		"objective":    "Capture and hold 5 sectors by the end of Turn 5.",
+		"objective":    "Capture and hold 4 sectors by the end of Turn 5.",
 		"supply_pool": { "Armaments": 8, "Medi-Packs": 6, "Fuel Cells": 8 },
 		"squads": [
 			{ "name": "Squad Varro", "sector": "Alpha-7", "status": SquadManager.Status.ACTIVE,  "need": SquadManager.Need.FUEL_CELLS },
 			{ "name": "Squad Kael",  "sector": "Beta-2",  "status": SquadManager.Status.WOUNDED, "need": SquadManager.Need.MEDI_PACKS },
 		],
 		"enemies": [
-			{ "sector": "Zeta-3"   },
-			{ "sector": "Delta-9"  },
-			{ "sector": "Iota-8"   },
-			{ "sector": "Lambda-4" },
+			{ "sector": "Zeta-3"  },
+			{ "sector": "Delta-9" },
+			{ "sector": "Iota-8"  },
 		],
 	},
 	{
@@ -57,7 +54,6 @@ var missions: Array = [
 			{ "sector": "Kappa-1"  },
 			{ "sector": "Lambda-4" },
 			{ "sector": "Mu-6"     },
-			{ "sector": "Xi-7"     },
 		],
 	},
 	{
@@ -80,8 +76,6 @@ var missions: Array = [
 			{ "sector": "Mu-6"     },
 			{ "sector": "Nu-2"     },
 			{ "sector": "Xi-7"     },
-			{ "sector": "Theta-3"  },
-			{ "sector": "Eta-6"    },
 		],
 	},
 	{
@@ -105,9 +99,6 @@ var missions: Array = [
 			{ "sector": "Nu-2"     },
 			{ "sector": "Xi-7"     },
 			{ "sector": "Theta-3"  },
-			{ "sector": "Eta-6"    },
-			{ "sector": "Zeta-3"   },
-			{ "sector": "Delta-9"  },
 		],
 	},
 	{
@@ -133,10 +124,6 @@ var missions: Array = [
 			{ "sector": "Xi-7"     },
 			{ "sector": "Theta-3"  },
 			{ "sector": "Eta-6"    },
-			{ "sector": "Zeta-3"   },
-			{ "sector": "Delta-9"  },
-			{ "sector": "Epsilon-1"},
-			{ "sector": "Beta-2"   },
 		],
 	},
 ]
@@ -154,7 +141,6 @@ func start_current_mission() -> void:
 		push_error("GameManager: No mission data for index %d" % current_mission)
 		return
 
-	# Reset supply pool and spending tracker
 	var pool = data.get("supply_pool", { "Armaments": 8, "Medi-Packs": 6, "Fuel Cells": 8 })
 	supply_pool = pool.duplicate()
 	supply_spent = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
@@ -163,7 +149,6 @@ func start_current_mission() -> void:
 
 
 func consume_supplies(allocations: Dictionary) -> void:
-	# allocations: { squad_name: { "Armaments": int, "Medi-Packs": int, "Fuel Cells": int } }
 	for squad_name in allocations:
 		for supply_type in allocations[squad_name]:
 			var amount = allocations[squad_name][supply_type]
@@ -181,14 +166,11 @@ func get_supply_spent() -> Dictionary:
 
 
 func calculate_score(held_hexes: int, turns_taken: int, win_hexes: int) -> Dictionary:
-	# Base score: tiles held as % of required
 	var tile_score   = int((float(held_hexes) / float(win_hexes)) * 400)
 
-	# Turn bonus: full 5 turns = 0 bonus, 1 turn = 300 bonus
 	var max_turns    = get_current_mission_data().get("turns", 5)
 	var turn_bonus   = int((float(max_turns - turns_taken) / float(max_turns)) * 300)
 
-	# Supply bonus: fewer spent = better. Max possible spend is sum of pool.
 	var pool         = get_current_mission_data().get("supply_pool", {})
 	var max_supplies = 0
 	for s in pool: max_supplies += pool[s]

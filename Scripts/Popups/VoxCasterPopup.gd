@@ -1,33 +1,33 @@
 extends Control
 # =============================================================
 # VoxCasterPopup.gd
-# Attach to: Control node named "VoxCasterPopup" inside
-#            Vox-Caster_Array.tscn > StaticBody3D
-#
-# THE ONLY PLACE squad needs are shown.
-# Normal transmissions are garbled by interference.
-# Critical squads break through with priority distress calls.
+# UI built in scene, not in code.
 # =============================================================
 
 var player: Node = null
 
 const STATIC_CHARS = ["—", "█", "░", "▒", "?", "#", "~", "×"]
 
+@onready var turn_label: Label                    = $PanelContainer/VBoxContainer/TurnLabel
+@onready var transmission_container: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/TransmissionContainer
+@onready var close_btn: Button                    = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
+
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	TurnManager.turn_started.connect(_on_turn_started)
-	_build_ui()
+	TurnManager.mission_complete.connect(_on_mission_complete)
+	close_btn.pressed.connect(_on_close_pressed)
 
 
 func _on_turn_started(_turn: int) -> void:
-	if visible:
-		refresh()
-
+	if visible: refresh()
 
 func _on_turn_resolved() -> void:
-	if visible:
-		refresh()
+	if visible: refresh()
+
+func _on_mission_complete(_report: Dictionary) -> void:
+	if visible: refresh()
 
 
 func refresh() -> void:
@@ -36,94 +36,31 @@ func refresh() -> void:
 	_rebuild_transmissions()
 
 
-func _build_ui() -> void:
-	custom_minimum_size = Vector2(520, 0)
-	set_anchors_preset(Control.PRESET_CENTER)
-
-	var panel := PanelContainer.new()
-	panel.name = "PanelContainer"
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_child(panel)
-
-	var vbox := VBoxContainer.new()
-	vbox.name = "VBoxContainer"
-	vbox.add_theme_constant_override("separation", 10)
-	panel.add_child(vbox)
-
-	var title := Label.new()
-	title.text = "VOX-CASTER ARRAY"
-	title.add_theme_font_size_override("font_size", 18)
-	vbox.add_child(title)
-
-	var subtitle := Label.new()
-	subtitle.text = "Incoming surface transmissions — signal quality varies"
-	subtitle.add_theme_font_size_override("font_size", 12)
-	subtitle.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
-	vbox.add_child(subtitle)
-
-	var turn_lbl := Label.new()
-	turn_lbl.name = "TurnLabel"
-	turn_lbl.add_theme_font_size_override("font_size", 12)
-	turn_lbl.add_theme_color_override("font_color", Color(0.5, 0.75, 0.9))
-	vbox.add_child(turn_lbl)
-
-	vbox.add_child(HSeparator.new())
-
-	var scroll := ScrollContainer.new()
-	scroll.name = "ScrollContainer"
-	scroll.custom_minimum_size.y = 340
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(scroll)
-
-	var container := VBoxContainer.new()
-	container.name = "TransmissionContainer"
-	container.add_theme_constant_override("separation", 10)
-	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(container)
-
-	vbox.add_child(HSeparator.new())
-
-	var btn_row := HBoxContainer.new()
-	btn_row.alignment = BoxContainer.ALIGNMENT_END
-	vbox.add_child(btn_row)
-
-	var close_btn := Button.new()
-	close_btn.text = "Close  [Esc]"
-	close_btn.pressed.connect(_on_close_pressed)
-	btn_row.add_child(close_btn)
-
-
 func _rebuild_transmissions() -> void:
-	var turn_lbl = get_node_or_null("PanelContainer/VBoxContainer/TurnLabel")
-	var container = get_node_or_null("PanelContainer/VBoxContainer/ScrollContainer/TransmissionContainer")
-	if container == null:
-		return
-
-	if turn_lbl:
-		turn_lbl.text = (
+	if turn_label:
+		turn_label.text = (
 			"Pre-mission — awaiting drop confirmation"
 			if SquadManager.current_turn == 0
 			else "Turn %d transmissions" % SquadManager.current_turn
 		)
 
-	for child in container.get_children():
+	for child in transmission_container.get_children():
 		child.queue_free()
 
-	# Critical squads get priority distress calls at the top
+	# Critical squads — priority distress at top
 	for squad_name in SquadManager.squads:
 		var squad = SquadManager.squads[squad_name]
 		if squad.status == SquadManager.Status.CRITICAL:
-			_add_distress_call(container, squad)
+			_add_distress_call(squad)
 
-	# All squads get a need transmission (garbled by interference)
+	# All other squads
 	for squad_name in SquadManager.squads:
 		var squad = SquadManager.squads[squad_name]
-		if squad.status == SquadManager.Status.CRITICAL:
-			continue  # Already shown as distress call above
-		_add_need_transmission(container, squad)
+		if squad.status != SquadManager.Status.CRITICAL:
+			_add_need_transmission(squad)
 
 
-func _add_distress_call(container: Node, squad: Dictionary) -> void:
+func _add_distress_call(squad: Dictionary) -> void:
 	var card := PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
@@ -145,29 +82,30 @@ func _add_distress_call(container: Node, squad: Dictionary) -> void:
 	vbox.add_theme_constant_override("separation", 4)
 	card.add_child(vbox)
 
-	# Priority header
 	var priority_lbl := Label.new()
 	priority_lbl.text = "⚠ PRIORITY DISTRESS — %s [%s]" % [squad.name, squad.sector]
 	priority_lbl.add_theme_font_size_override("font_size", 13)
 	priority_lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	vbox.add_child(priority_lbl)
 
-	# Distress message — mostly clear even at high interference
 	var need_str = SquadManager.NEED_NAMES[squad.need]
-	var msg = "%s — we are losing men. Send %s immediately or we will not hold." % [squad.name, need_str]
 	var body_lbl := Label.new()
-	body_lbl.text = msg
+	body_lbl.text = "%s — we are losing men. Send %s immediately or we will not hold." % [squad.name, need_str]
 	body_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	body_lbl.add_theme_font_size_override("font_size", 12)
 	body_lbl.add_theme_color_override("font_color", Color(1.0, 0.7, 0.7))
 	vbox.add_child(body_lbl)
 
-	container.add_child(card)
+	# Mission over — show freeze notice
+	if TurnManager.mission_over:
+		_add_mission_over_banner(vbox)
+
+	transmission_container.add_child(card)
 
 
-func _add_need_transmission(container: Node, squad: Dictionary) -> void:
+func _add_need_transmission(squad: Dictionary) -> void:
 	if squad.status == SquadManager.Status.LOST:
-		_add_lost_signal(container, squad)
+		_add_lost_signal(squad)
 		return
 
 	var card := PanelContainer.new()
@@ -189,7 +127,6 @@ func _add_need_transmission(container: Node, squad: Dictionary) -> void:
 	vbox.add_theme_constant_override("separation", 4)
 	card.add_child(vbox)
 
-	# Header
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 8)
 	vbox.add_child(header)
@@ -206,39 +143,45 @@ func _add_need_transmission(container: Node, squad: Dictionary) -> void:
 	quality_lbl.add_theme_color_override("font_color", _signal_quality_color(interference))
 	header.add_child(quality_lbl)
 
-	# Need line — this is what the player needs to interpret
 	var need_str = SquadManager.NEED_NAMES[squad.need]
 	var raw_need_msg = "Requesting %s. Awaiting your order." % need_str
-	var garbled_need = _garble_text(raw_need_msg, interference)
-
 	var need_lbl := Label.new()
-	need_lbl.text = garbled_need
+	need_lbl.text = _garble_text(raw_need_msg, interference)
 	need_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	need_lbl.add_theme_font_size_override("font_size", 13)
 	need_lbl.add_theme_color_override("font_color",
-		Color(0.9, 0.8, 0.4) if interference < 0.5 else Color(0.6, 0.6, 0.5)
-	)
+		Color(0.9, 0.8, 0.4) if interference < 0.5 else Color(0.6, 0.6, 0.5))
 	vbox.add_child(need_lbl)
 
-	# Status context line — also garbled
-	var status_msg = _status_context(squad)
-	var garbled_status = _garble_text(status_msg, interference * 0.6)
 	var status_lbl := Label.new()
-	status_lbl.text = garbled_status
+	status_lbl.text = _garble_text(_status_context(squad), interference * 0.6)
 	status_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	status_lbl.add_theme_font_size_override("font_size", 11)
 	status_lbl.add_theme_color_override("font_color", Color(0.65, 0.7, 0.75))
 	vbox.add_child(status_lbl)
 
-	container.add_child(card)
+	# Mission over — show freeze notice
+	if TurnManager.mission_over:
+		_add_mission_over_banner(vbox)
+
+	transmission_container.add_child(card)
 
 
-func _add_lost_signal(container: Node, squad: Dictionary) -> void:
+func _add_lost_signal(squad: Dictionary) -> void:
 	var lbl := Label.new()
 	lbl.text = ">>> %s [%s] — CARRIER LOST — NO SIGNAL" % [squad.name, squad.sector]
 	lbl.add_theme_font_size_override("font_size", 12)
 	lbl.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
-	container.add_child(lbl)
+	transmission_container.add_child(lbl)
+
+
+func _add_mission_over_banner(parent: VBoxContainer) -> void:
+	var lbl := Label.new()
+	lbl.text = "— CHANNEL CLOSED — MISSION CONCLUDED —"
+	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	parent.add_child(lbl)
 
 
 func _status_context(squad: Dictionary) -> String:

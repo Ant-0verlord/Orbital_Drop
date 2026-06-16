@@ -29,3 +29,57 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_l8jtb")
+
+[node name="BG" type="ColorRect" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup" unique_id=1345136154]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8784314)
+
+[node name="PanelContainer" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup" unique_id=2087767772]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer" unique_id=1338908794]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer" unique_id=558282598]
+layout_mode = 2
+text = "INTEL CONSOLE"
+
+[node name="Subtitle" type="Label" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer" unique_id=1558641826]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="TurnLabel" type="Label" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer" unique_id=52290410]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer" unique_id=1420724484]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer" unique_id=434425759]
+custom_minimum_size = Vector2(0, 340)
+layout_mode = 2
+
+[node name="ReportContainer" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer/ScrollContainer" unique_id=1566648049]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HSeparator2" type="HSeparator" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer" unique_id=156164161]
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer" unique_id=1213968157]
+layout_mode = 2
+alignment = 2
+
+[node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=821681410]
+layout_mode = 2
+text = "Close  [Esc]"

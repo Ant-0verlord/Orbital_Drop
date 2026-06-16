@@ -44,8 +44,8 @@ func init_enemies(squad_sectors: Array, enemy_list: Array) -> void:
 		enemy_units.append({
 			"id":       id,
 			"sector":   e.get("sector", "Iota-8"),
-			"hp":       2,
-			"cooldown": 0,   # turns remaining before can enter held/squad tiles
+			"hp":       1,
+			"cooldown": 0,
 		})
 		id += 1
 
@@ -67,24 +67,15 @@ func get_best_move_target(from_sector: String) -> String:
 
 
 # -------------------------------------------------------
-# Squad fights at sector WITH armaments — guaranteed win
-# Returns true if enemies were present
+# Armed fight — always kills enemy instantly
 # -------------------------------------------------------
 func fight_at(sector: String, _squad_name: String) -> bool:
 	var enemies_here = _get_enemies_at(sector)
 	if enemies_here.is_empty():
 		return false
 
-	for unit in enemies_here:
-		unit.hp -= 1
-		if unit.hp <= 0:
-			enemy_units.erase(unit)
-		else:
-			# Push back 2 tiles and apply cooldown
-			var pushed = _push_enemy_deep(unit, sector)
-			if pushed != "":
-				unit.sector = pushed
-			unit.cooldown = 2
+	for unit in enemies_here.duplicate():
+		enemy_units.erase(unit)
 
 	hex_control[sector] = "held"
 	emit_signal("enemies_updated")
@@ -92,27 +83,22 @@ func fight_at(sector: String, _squad_name: String) -> bool:
 
 
 # -------------------------------------------------------
-# Squad fights WITHOUT armaments — 50/50
-# Returns Dictionary: { "squad_won": bool, "enemies_present": bool }
+# Unarmed fight — 60/40 in squad's favour
 # -------------------------------------------------------
 func fight_at_unarmed(sector: String) -> Dictionary:
 	var enemies_here = _get_enemies_at(sector)
 	if enemies_here.is_empty():
 		return { "squad_won": false, "enemies_present": false }
 
-	var squad_won = randf() > 0.5
+	var squad_won = randf() > 0.4
 
 	if squad_won:
-		# Enemy pushed back 1 tile with cooldown
 		for unit in enemies_here:
 			var pushed = _push_enemy_back(unit, sector)
 			if pushed != "":
 				unit.sector = pushed
-			unit.cooldown = 1
+			unit.cooldown = 2
 		hex_control[sector] = "held"
-	else:
-		# Squad gets pushed back — caller handles status worsening
-		pass
 
 	emit_signal("enemies_updated")
 	return { "squad_won": squad_won, "enemies_present": true }
@@ -127,7 +113,7 @@ func get_best_attack_target(from_sector: String) -> String:
 	return ""
 
 
-# Squad uses Fuel only — best adjacent enemy tile to move into and fight unarmed
+# Squad uses Fuel only — best adjacent enemy tile to move into
 func get_best_move_into_enemy(from_sector: String) -> String:
 	var neighbors = adjacency.get(from_sector, [])
 	for n in neighbors:
@@ -143,17 +129,22 @@ func capture_tile(sector: String) -> void:
 
 # -------------------------------------------------------
 # Called by TurnManager after squad resolution
+# allocations: { squad_name: { "Armaments": int, ... } }
+# After enemies move, any that land on an armed squad's
+# tile are instantly eliminated
 # -------------------------------------------------------
-func advance_enemies() -> void:
-	var squad_sectors = []
+func advance_enemies(allocations: Dictionary) -> void:
+	var squad_map: Dictionary = {}
 	for squad in SquadManager.get_squads_for_ui():
 		if squad.status != SquadManager.Status.LOST:
-			squad_sectors.append(squad.sector)
+			squad_map[squad.sector] = squad.name
+
+	var squad_sectors = squad_map.keys()
 
 	if squad_sectors.is_empty():
 		return
 
-	# Tick down cooldowns first
+	# Tick down cooldowns
 	for unit in enemy_units:
 		if unit.cooldown > 0:
 			unit.cooldown -= 1
@@ -174,7 +165,6 @@ func advance_enemies() -> void:
 		for n in candidates:
 			if _has_enemy_unit_excluding(n, unit.id):
 				continue
-			# Respect cooldown — can't move into held or squad tiles
 			if unit.cooldown > 0:
 				var control = hex_control.get(n, "enemy")
 				if control == "held" or control == "contested" or n in squad_sectors:
@@ -185,6 +175,20 @@ func advance_enemies() -> void:
 				best = n
 
 		unit.sector = best
+
+	# -------------------------------------------------------
+	# Post-movement check: enemy walked onto an armed squad
+	# -------------------------------------------------------
+	for unit in enemy_units.duplicate():
+		var landed_on = unit.sector
+		if landed_on in squad_map:
+			var squad_name = squad_map[landed_on]
+			var alloc = allocations.get(squad_name, {})
+			var has_arms = alloc.get("Armaments", 0) > 0
+			if has_arms:
+				# Armed squad eliminates the intruder
+				enemy_units.erase(unit)
+				hex_control[landed_on] = "held"
 
 	_rebuild_hex_control(squad_sectors)
 	emit_signal("enemies_updated")
@@ -201,7 +205,7 @@ func _movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
 
 	var control = hex_control.get(sector, "enemy")
 	if control == "held":
-		score += 40
+		score += 20
 	elif control == "contested":
 		score += 20
 

@@ -1,8 +1,7 @@
 extends Control
 # =============================================================
 # IntelConsolePopup.gd
-# Attach to: Control node named "IntelConsolePopup" inside
-#            Intel_Desk.tscn > StaticBody3D
+# UI built in scene, not in code.
 #
 # Shows what happened last turn and squad status.
 # Squad NEEDS are NOT shown here — check the Vox-Caster.
@@ -10,11 +9,15 @@ extends Control
 
 var player: Node = null
 
+@onready var turn_label: Label              = $PanelContainer/VBoxContainer/TurnLabel
+@onready var report_container: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/ReportContainer
+@onready var close_btn: Button              = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
+
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	TurnManager.turn_started.connect(_on_turn_started)
-	_build_ui()
+	close_btn.pressed.connect(_on_close_pressed)
 
 
 func _on_turn_started(_turn: int) -> void:
@@ -31,80 +34,18 @@ func refresh() -> void:
 	_rebuild_reports()
 
 
-func _build_ui() -> void:
-	custom_minimum_size = Vector2(580, 0)
-	set_anchors_preset(Control.PRESET_CENTER)
-
-	var panel := PanelContainer.new()
-	panel.name = "PanelContainer"
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_child(panel)
-
-	var vbox := VBoxContainer.new()
-	vbox.name = "VBoxContainer"
-	vbox.add_theme_constant_override("separation", 10)
-	panel.add_child(vbox)
-
-	var title := Label.new()
-	title.text = "INTEL CONSOLE"
-	title.add_theme_font_size_override("font_size", 18)
-	vbox.add_child(title)
-
-	var subtitle := Label.new()
-	subtitle.text = "Squad status and outcome reports. For supply requests, consult the Vox-Caster."
-	subtitle.add_theme_font_size_override("font_size", 11)
-	subtitle.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
-	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD
-	vbox.add_child(subtitle)
-
-	var turn_lbl := Label.new()
-	turn_lbl.name = "TurnLabel"
-	turn_lbl.add_theme_font_size_override("font_size", 13)
-	turn_lbl.add_theme_color_override("font_color", Color(0.6, 0.8, 0.6))
-	vbox.add_child(turn_lbl)
-
-	vbox.add_child(HSeparator.new())
-
-	var scroll := ScrollContainer.new()
-	scroll.name = "ScrollContainer"
-	scroll.custom_minimum_size.y = 340
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(scroll)
-
-	var report_container := VBoxContainer.new()
-	report_container.name = "ReportContainer"
-	report_container.add_theme_constant_override("separation", 8)
-	report_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(report_container)
-
-	vbox.add_child(HSeparator.new())
-
-	var btn_row := HBoxContainer.new()
-	btn_row.alignment = BoxContainer.ALIGNMENT_END
-	vbox.add_child(btn_row)
-
-	var close_btn := Button.new()
-	close_btn.text = "Close  [Esc]"
-	close_btn.pressed.connect(_on_close_pressed)
-	btn_row.add_child(close_btn)
-
-
 func _rebuild_reports() -> void:
 	if SquadManager.squads.is_empty():
 		return
 
-	var turn_lbl = get_node_or_null("PanelContainer/VBoxContainer/TurnLabel")
-	var container = get_node_or_null("PanelContainer/VBoxContainer/ScrollContainer/ReportContainer")
-	if turn_lbl == null or container == null:
-		return
+	if turn_label:
+		turn_label.text = (
+			"Pre-mission briefing — awaiting deployment"
+			if SquadManager.current_turn == 0
+			else "Surface intel — Turn %d" % SquadManager.current_turn
+		)
 
-	turn_lbl.text = (
-		"Pre-mission briefing — awaiting deployment"
-		if SquadManager.current_turn == 0
-		else "Surface intel — Turn %d" % SquadManager.current_turn
-	)
-
-	for child in container.get_children():
+	for child in report_container.get_children():
 		child.queue_free()
 
 	var reports: Dictionary = (
@@ -116,15 +57,15 @@ func _rebuild_reports() -> void:
 	if reports.is_empty():
 		var lbl := Label.new()
 		lbl.text = "No intel available."
-		container.add_child(lbl)
+		report_container.add_child(lbl)
 		return
 
 	for squad_name in reports:
 		var squad_data = SquadManager.squads.get(squad_name, {})
-		_add_report_card(container, squad_name, reports[squad_name], squad_data)
+		_add_report_card(squad_name, reports[squad_name], squad_data)
 
 
-func _add_report_card(container: Node, squad_name: String, report_text: String, squad_data: Dictionary) -> void:
+func _add_report_card(squad_name: String, report_text: String, squad_data: Dictionary) -> void:
 	var card := PanelContainer.new()
 	card.add_theme_stylebox_override("panel", _card_style(squad_data))
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -133,7 +74,6 @@ func _add_report_card(container: Node, squad_name: String, report_text: String, 
 	vbox.add_theme_constant_override("separation", 4)
 	card.add_child(vbox)
 
-	# Header: name + status only (no need shown)
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 8)
 	vbox.add_child(header)
@@ -157,18 +97,17 @@ func _add_report_card(container: Node, squad_name: String, report_text: String, 
 		sector_lbl.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
 		header.add_child(sector_lbl)
 
-	# Report body
 	var report_lbl := Label.new()
 	report_lbl.text = report_text
 	report_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	report_lbl.add_theme_font_size_override("font_size", 13)
 	vbox.add_child(report_lbl)
 
-	container.add_child(card)
+	report_container.add_child(card)
 
 	var spacer := Control.new()
 	spacer.custom_minimum_size.y = 4
-	container.add_child(spacer)
+	report_container.add_child(spacer)
 
 
 func _card_style(squad_data: Dictionary) -> StyleBoxFlat:
