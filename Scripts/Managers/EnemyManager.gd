@@ -134,6 +134,7 @@ func capture_tile(sector: String) -> void:
 # tile are instantly eliminated
 # -------------------------------------------------------
 func advance_enemies(allocations: Dictionary) -> void:
+	# Build squad map: sector -> squad name
 	var squad_map: Dictionary = {}
 	for squad in SquadManager.get_squads_for_ui():
 		if squad.status != SquadManager.Status.LOST:
@@ -177,18 +178,50 @@ func advance_enemies(allocations: Dictionary) -> void:
 		unit.sector = best
 
 	# -------------------------------------------------------
-	# Post-movement check: enemy walked onto an armed squad
+	# Post-movement: enemy walked onto an armed squad's tile
+	# OR onto a reinforcement squad with surprise bonus
+	# Both result in instant enemy elimination
 	# -------------------------------------------------------
 	for unit in enemy_units.duplicate():
 		var landed_on = unit.sector
 		if landed_on in squad_map:
 			var squad_name = squad_map[landed_on]
-			var alloc = allocations.get(squad_name, {})
-			var has_arms = alloc.get("Armaments", 0) > 0
-			if has_arms:
-				# Armed squad eliminates the intruder
+			var squad_data = SquadManager.squads.get(squad_name, {})
+			var alloc      = allocations.get(squad_name, {})
+			var has_arms   = alloc.get("Armaments", 0) > 0
+			var has_surprise = squad_data.get("surprise_bonus", false)
+
+			if has_arms or has_surprise:
 				enemy_units.erase(unit)
 				hex_control[landed_on] = "held"
+
+	# -------------------------------------------------------
+	# Process pending reinforcement drop
+	# Happens after enemy movement so surprise bonus applies
+	# correctly to any enemies already on the target hex
+	# -------------------------------------------------------
+	if GameManager.has_pending_reinforcement():
+		var drop = GameManager.get_pending_reinforcement()
+		var target_sector = drop.get("sector", "")
+		var squad_name    = drop.get("squad_name", "")
+
+		if target_sector != "" and squad_name != "":
+			# Check if landing on enemy — surprise bonus
+			var surprise = _has_enemy_unit(target_sector)
+
+			# Add squad to roster
+			SquadManager.add_squad(squad_name, target_sector, surprise)
+
+			if surprise:
+				# Eliminate all enemies on the landing hex
+				for unit in enemy_units.duplicate():
+					if unit.sector == target_sector:
+						enemy_units.erase(unit)
+				hex_control[target_sector] = "held"
+			else:
+				hex_control[target_sector] = "held"
+
+		GameManager.clear_pending_reinforcement()
 
 	_rebuild_hex_control(squad_sectors)
 	emit_signal("enemies_updated")

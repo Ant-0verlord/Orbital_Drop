@@ -10,6 +10,7 @@ const SUPPLY_COST: int = 2
 
 var allocations: Dictionary = {}
 var squad_rows: Array = []
+var pending_reinforcement_name: String = ""
 
 @onready var turn_label: Label              = $PanelContainer/VBoxContainer/TurnLabel
 @onready var held_label: Label              = $PanelContainer/VBoxContainer/HeldLabel
@@ -24,6 +25,13 @@ var squad_rows: Array = []
 @onready var end_body: Label                = $EndOverlay/EndVBox/EndBody
 @onready var end_close: Button              = $EndOverlay/EndVBox/EndClose
 
+# Reinforcement section nodes — added to scene under VBoxContainer
+@onready var reinforcement_panel: PanelContainer = $PanelContainer/VBoxContainer/ReinforcementPanel
+@onready var reinforcement_pool_label: Label     = $PanelContainer/VBoxContainer/ReinforcementPanel/RVBox/ReinforcementPoolLabel
+@onready var reinforcement_name_btn: OptionButton = $PanelContainer/VBoxContainer/ReinforcementPanel/RVBox/ReinforcementNameBtn
+@onready var call_reinforcement_btn: Button      = $PanelContainer/VBoxContainer/ReinforcementPanel/RVBox/CallReinforcementBtn
+@onready var reinforcement_status_label: Label   = $PanelContainer/VBoxContainer/ReinforcementPanel/RVBox/ReinforcementStatusLabel
+
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
@@ -34,9 +42,12 @@ func _ready() -> void:
 	lock_btn.pressed.connect(_on_lock_pressed)
 	close_btn.pressed.connect(_on_close_pressed)
 	end_close.pressed.connect(_on_close_pressed)
+	call_reinforcement_btn.pressed.connect(_on_call_reinforcement_pressed)
 
 	end_overlay.visible = false
 	warning_label.text = ""
+
+	_refresh_reinforcement_panel()
 
 
 func _on_turn_started(_turn: int) -> void:
@@ -59,6 +70,7 @@ func refresh() -> void:
 	_rebuild_squad_rows()
 	_refresh_pool()
 	_refresh_budget()
+	_refresh_reinforcement_panel()
 	if not TurnManager.mission_over:
 		lock_btn.text = "Lock Allocations"
 		lock_btn.disabled = false
@@ -87,14 +99,12 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 
-	# Squad name
 	var name_lbl := Label.new()
 	name_lbl.text = squad.name
 	name_lbl.custom_minimum_size.x = 120
 	name_lbl.add_theme_font_size_override("font_size", 13)
 	row.add_child(name_lbl)
 
-	# Status + sector
 	var info_lbl := Label.new()
 	info_lbl.text = "%s\n%s" % [SquadManager.STATUS_NAMES[squad.status], squad.sector]
 	info_lbl.custom_minimum_size.x = 130
@@ -102,7 +112,6 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 	info_lbl.add_theme_color_override("font_color", _status_color(squad.status))
 	row.add_child(info_lbl)
 
-	# One checkbox per supply type
 	var checkboxes: Dictionary = {}
 	for supply in ["Armaments", "Medi-Packs", "Fuel Cells"]:
 		var col := VBoxContainer.new()
@@ -113,14 +122,11 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 		cb.add_theme_font_size_override("font_size", 12)
 		cb.disabled = TurnManager.mission_over
 
-		# Restore saved state
 		var saved = allocations.get(squad.name, {}).get(supply, 0)
 		cb.button_pressed = saved > 0
 
-		cb.toggled.connect(_on_supply_toggled.bind(squad.name, supply))
 		col.add_child(cb)
 
-		# Show cost hint
 		var cost_lbl := Label.new()
 		cost_lbl.text = "(%d pts)" % SUPPLY_COST
 		cost_lbl.add_theme_font_size_override("font_size", 10)
@@ -130,9 +136,27 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 		row.add_child(col)
 		checkboxes[supply] = cb
 
-	squad_container.add_child(row)
+	# Wire up mutual exclusion AFTER all checkboxes exist
+	for supply in checkboxes:
+		var cb = checkboxes[supply]
+		cb.toggled.connect(
+			_on_supply_toggled.bind(squad.name, supply, checkboxes)
+		)
 
-	# Divider between squads
+	# Apply initial disabled state if one is already ticked
+	var any_ticked = false
+	var ticked_supply = ""
+	for supply in checkboxes:
+		if checkboxes[supply].button_pressed:
+			any_ticked = true
+			ticked_supply = supply
+			break
+	if any_ticked:
+		for supply in checkboxes:
+			if supply != ticked_supply:
+				checkboxes[supply].disabled = true
+
+	squad_container.add_child(row)
 	var sep := HSeparator.new()
 	squad_container.add_child(sep)
 
@@ -145,16 +169,101 @@ func _sync_allocations() -> void:
 			allocations[squad.name] = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 
 
-func _on_supply_toggled(pressed: bool, squad_name: String, supply: String) -> void:
+func _on_supply_toggled(pressed: bool, squad_name: String, supply: String, checkboxes: Dictionary) -> void:
 	if TurnManager.mission_over: return
 	if not allocations.has(squad_name):
 		allocations[squad_name] = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
-	allocations[squad_name][supply] = SUPPLY_COST if pressed else 0
+
+	if pressed:
+		# Record this supply, zero the others
+		for s in allocations[squad_name]:
+			allocations[squad_name][s] = 0
+		allocations[squad_name][supply] = SUPPLY_COST
+
+		# Disable other checkboxes for this squad
+		for s in checkboxes:
+			if s != supply:
+				checkboxes[s].disabled = true
+				checkboxes[s].button_pressed = false
+	else:
+		# Unticked — clear allocation, re-enable all
+		allocations[squad_name][supply] = 0
+		for s in checkboxes:
+			checkboxes[s].disabled = TurnManager.mission_over
+
 	if TurnManager.allocations_are_locked:
 		TurnManager.allocations_are_locked = false
 		lock_btn.text = "Lock Allocations"
 		lock_btn.disabled = false
+
 	_refresh_budget()
+
+
+# -------------------------------------------------------
+# Reinforcement panel
+# -------------------------------------------------------
+func _refresh_reinforcement_panel() -> void:
+	if reinforcement_panel == null:
+		return
+
+	var pool = GameManager.get_reinforcement_pool()
+	var has_pending = not GameManager.get_pending_reinforcement().is_empty()
+
+	# Hide panel entirely if no reinforcements available and none pending
+	reinforcement_panel.visible = pool > 0 or has_pending
+
+	if reinforcement_pool_label:
+		reinforcement_pool_label.text = "Reinforcement Drops Available: %d" % pool
+		reinforcement_pool_label.add_theme_color_override("font_color",
+			Color(0.4, 0.9, 0.4) if pool > 0 else Color(0.5, 0.5, 0.5))
+
+	# Populate name picker
+	if reinforcement_name_btn:
+		reinforcement_name_btn.clear()
+		var available = GameManager.get_available_reinforcement_names()
+		for n in available:
+			reinforcement_name_btn.add_item(n)
+		reinforcement_name_btn.disabled = pool <= 0 or has_pending or TurnManager.mission_over
+
+	if call_reinforcement_btn:
+		call_reinforcement_btn.disabled = pool <= 0 or has_pending or TurnManager.mission_over
+
+	if reinforcement_status_label:
+		if has_pending:
+			var drop = GameManager.get_pending_reinforcement()
+			var placed = drop.get("placed", false)
+			var name  = drop.get("squad_name", "")
+			var sector = drop.get("sector", "")
+			if placed:
+				reinforcement_status_label.text = "✓ %s dropping to %s — visit Holo-Map to confirm" % [name, sector]
+				reinforcement_status_label.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
+			else:
+				reinforcement_status_label.text = "⚠ %s queued — visit Holo-Map to place drop zone" % name
+				reinforcement_status_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.2))
+		else:
+			reinforcement_status_label.text = ""
+
+
+func _on_call_reinforcement_pressed() -> void:
+	if TurnManager.mission_over: return
+	if GameManager.get_reinforcement_pool() <= 0: return
+	if not GameManager.get_pending_reinforcement().is_empty(): return
+
+	var idx = reinforcement_name_btn.selected
+	if idx < 0: return
+	var chosen_name = reinforcement_name_btn.get_item_text(idx)
+
+	GameManager.queue_reinforcement(chosen_name)
+	_refresh_reinforcement_panel()
+
+	# Unlock if locked — player needs to visit Holo-Map before locking
+	if TurnManager.allocations_are_locked:
+		TurnManager.allocations_are_locked = false
+		lock_btn.text = "Lock Allocations"
+		lock_btn.disabled = false
+
+	warning_label.text = "Reinforcement queued — visit Holo-Map to place drop zone before locking."
+	warning_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.2))
 
 
 func _refresh_pool() -> void:
@@ -195,23 +304,35 @@ func _refresh_budget() -> void:
 	if over:
 		budget_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
 		warning_label.text = "Over pool limit on one or more supply types!"
+		warning_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
 	else:
 		budget_label.remove_theme_color_override("font_color")
-		warning_label.text = ""
+		if warning_label.text == "Over pool limit on one or more supply types!":
+			warning_label.text = ""
 
 
 func _on_lock_pressed() -> void:
 	if TurnManager.mission_over: return
+
+	# Block locking if reinforcement queued but not placed
+	var pending = GameManager.get_pending_reinforcement()
+	if not pending.is_empty() and not pending.get("placed", false):
+		warning_label.text = "Cannot lock — place reinforcement drop zone on Holo-Map first."
+		warning_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+		return
+
 	var pool = GameManager.get_supply_pool()
-	var pending: Dictionary = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
+	var pending_supply: Dictionary = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	for sn in allocations:
 		for s in allocations[sn]:
-			if pending.has(s):
-				pending[s] += allocations[sn][s]
-	for s in pending:
-		if pending[s] > pool.get(s, 0):
+			if pending_supply.has(s):
+				pending_supply[s] += allocations[sn][s]
+	for s in pending_supply:
+		if pending_supply[s] > pool.get(s, 0):
 			warning_label.text = "Cannot lock — %s exceeds mission pool!" % s
+			warning_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
 			return
+
 	warning_label.text = ""
 	TurnManager.lock_allocations(allocations)
 
@@ -231,14 +352,26 @@ func _show_mission_end(report: Dictionary) -> void:
 	var s_bonus = report.get("supply_bonus", 0)
 	var turns   = report.get("turns", 0)
 
+	# Show carry-over supplies
+	var carry_pool = report.get("supply_pool", {})
+	var carry_reinf = report.get("reinforcements", 0)
+	var carry_text = ""
+	if not carry_pool.is_empty():
+		carry_text = "\n\nCarrying forward — Arms: %d  Meds: %d  Fuel: %d  Reinf: %d" % [
+			carry_pool.get("Armaments", 0),
+			carry_pool.get("Medi-Packs", 0),
+			carry_pool.get("Fuel Cells", 0),
+			carry_reinf,
+		]
+
 	end_title.text = "MISSION COMPLETE" if won else "MISSION FAILED"
 	end_title.add_theme_color_override("font_color",
 		Color(0.4, 0.9, 0.4) if won else Color(0.9, 0.3, 0.3))
 	end_title.add_theme_font_size_override("font_size", 32)
 
 	end_body.text = (
-		"Rating: %s  |  Score: %d\n\nTile: %d   Turn bonus: %d   Supply bonus: %d\nSectors held: %d / %d   Turns: %d\n\nSee Command Throne for full debrief."
-		% [rating, score, t_score, t_bonus, s_bonus, held, req, turns]
+		"Rating: %s  |  Score: %d\n\nTile: %d   Turn bonus: %d   Supply bonus: %d\nSectors held: %d / %d   Turns: %d%s\n\nSee Command Throne for full debrief."
+		% [rating, score, t_score, t_bonus, s_bonus, held, req, turns, carry_text]
 	)
 	end_body.add_theme_font_size_override("font_size", 14)
 	end_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

@@ -75,6 +75,26 @@ layout_mode = 2
 [node name="WarningLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1401171810]
 layout_mode = 2
 
+[node name="ReinforcementPanel" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1346934888]
+layout_mode = 2
+
+[node name="RVBox" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel" unique_id=2000479483]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ReinforcementPoolLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=774455002]
+layout_mode = 2
+
+[node name="ReinforcementNameBtn" type="OptionButton" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=740426796]
+layout_mode = 2
+
+[node name="CallReinforcementBtn" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=1712340325]
+layout_mode = 2
+text = "Call Reinforcement Drop"
+
+[node name="ReinforcementStatusLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=1201652903]
+layout_mode = 2
+
 [node name="HSeparator" type="HSeparator" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=406368883]
 layout_mode = 2
 

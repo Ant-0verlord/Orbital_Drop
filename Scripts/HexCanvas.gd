@@ -10,6 +10,13 @@ var hex_entries: Array = []
 var flicker_states: Dictionary = {}
 var pulse_time: float = 0.0
 
+# Reinforcement placement mode
+var placement_mode: bool = false
+var hovered_sector: String = ""
+var placed_sector: String = ""
+
+signal hex_clicked(sector: String)
+
 const PULSE_SPEED: float = 2.5
 const HEX_RADIUS: float  = 38.0
 const HEX_INNER: float   = 38.0
@@ -24,6 +31,9 @@ const COLOR_BORDER:       Color = Color(0.4,  0.9,  1.0,  0.9)
 const COLOR_ENEMY_BORDER: Color = Color(1.0,  0.3,  0.3,  1.0)
 const COLOR_BG:           Color = Color(0.03, 0.06, 0.12, 1.0)
 const COLOR_LABEL:        Color = Color(0.8,  1.0,  1.0,  1.0)
+const COLOR_PLACEMENT:    Color = Color(0.2,  0.6,  1.0,  0.9)
+const COLOR_PLACEMENT_HOVER: Color = Color(0.4, 0.85, 1.0, 1.0)
+const COLOR_PLACED:       Color = Color(0.1,  1.0,  0.5,  0.95)
 
 
 func _process(delta: float) -> void:
@@ -44,10 +54,70 @@ func refresh(new_zone_states: Dictionary) -> void:
 	queue_redraw()
 
 
+func enter_placement_mode() -> void:
+	placement_mode = true
+	hovered_sector = ""
+	placed_sector  = ""
+	mouse_filter   = Control.MOUSE_FILTER_STOP
+	queue_redraw()
+
+
+func exit_placement_mode() -> void:
+	placement_mode = false
+	hovered_sector = ""
+	mouse_filter   = Control.MOUSE_FILTER_IGNORE
+	queue_redraw()
+
+
 # -------------------------------------------------------
-# 14-hex flat-top layout using axial coordinates
-# Centre + Ring 1 (6) + Ring 2 (7)
-# Coordinates are relative to THIS control's top-left (0,0)
+# Mouse input — only active in placement mode
+# -------------------------------------------------------
+func _gui_input(event: InputEvent) -> void:
+	if not placement_mode:
+		return
+
+	if event is InputEventMouseMotion:
+		var sector = _sector_at(event.position)
+		if sector != hovered_sector:
+			hovered_sector = sector
+			queue_redraw()
+
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			var sector = _sector_at(event.position)
+			if sector != "":
+				placed_sector = sector
+				emit_signal("hex_clicked", sector)
+				queue_redraw()
+
+
+# -------------------------------------------------------
+# Returns sector name at a given local pixel position
+# -------------------------------------------------------
+func _sector_at(pos: Vector2) -> String:
+	for entry in hex_entries:
+		if _point_in_hex(pos, entry.center, HEX_INNER):
+			return entry.sector
+	return ""
+
+
+func _point_in_hex(point: Vector2, center: Vector2, radius: float) -> bool:
+	var local = point - center
+	# Pointy-top hex containment check
+	var q = (2.0 / 3.0 * local.x) / radius
+	var r = (-1.0 / 3.0 * local.x + sqrt(3.0) / 3.0 * local.y) / radius
+	var s = -q - r
+	var rq = round(q); var rr = round(r); var rs = round(s)
+	var dq = abs(rq - q); var dr = abs(rr - r); var ds = abs(rs - s)
+	if dq > dr and dq > ds:
+		rq = -rr - rs
+	elif dr > ds:
+		rr = -rq - rs
+	return rq == 0 and rr == 0
+
+
+# -------------------------------------------------------
+# 14-hex layout — coordinates relative to this control
 # -------------------------------------------------------
 func _build_hex_layout() -> void:
 	hex_entries.clear()
@@ -55,7 +125,7 @@ func _build_hex_layout() -> void:
 	if sectors.is_empty():
 		return
 
-	var r = HEX_RADIUS
+	var r   = HEX_RADIUS
 	var sq3 = sqrt(3.0)
 
 	var axial = [
@@ -92,11 +162,9 @@ func _draw() -> void:
 	if not visible:
 		return
 
-	# Fill the whole canvas
 	draw_rect(Rect2(Vector2.ZERO, size), COLOR_BG, true)
 	draw_rect(Rect2(Vector2.ZERO, size), COLOR_BORDER * Color(1, 1, 1, 0.2), false, 1.0)
 
-	# Grid lines
 	for x in range(0, int(size.x), 36):
 		draw_line(Vector2(x, 0), Vector2(x, size.y), Color(0.2, 0.4, 0.5, 0.08), 0.5)
 	for y in range(0, int(size.y), 36):
@@ -116,24 +184,41 @@ func _draw() -> void:
 		if enemy_count > 0 and interference > 0.2:
 			enemy_visible = flicker_states.get(sector, true)
 
-		var fill = _state_color(state)
-
-		if enemy_count > 0 and enemy_visible:
-			fill = fill.lerp(COLOR_ENEMY, 0.55) if state in ["held", "contested"] else COLOR_ENEMY
-
-		if state == "contested" and enemy_count == 0:
-			var pulse = sin(pulse_time) * 0.5 + 0.5
-			fill.a = lerp(0.5, 0.95, pulse)
-			fill = fill.lerp(Color(1.0, 0.95, 0.4, fill.a), pulse * 0.25)
-
-		if enemy_count > 0 and enemy_visible:
-			var pulse = sin(pulse_time * 1.6) * 0.5 + 0.5
-			fill.a = lerp(0.6, 1.0, pulse)
+		# -------------------------------------------------------
+		# Placement mode overrides fill colour
+		# -------------------------------------------------------
+		var fill: Color
+		if placement_mode:
+			if sector == placed_sector:
+				fill = COLOR_PLACED
+			elif sector == hovered_sector:
+				fill = COLOR_PLACEMENT_HOVER
+			else:
+				fill = _state_color(state).lerp(COLOR_PLACEMENT, 0.35)
+		else:
+			fill = _state_color(state)
+			if enemy_count > 0 and enemy_visible:
+				fill = fill.lerp(COLOR_ENEMY, 0.55) if state in ["held", "contested"] else COLOR_ENEMY
+			if state == "contested" and enemy_count == 0:
+				var pulse = sin(pulse_time) * 0.5 + 0.5
+				fill.a = lerp(0.5, 0.95, pulse)
+				fill = fill.lerp(Color(1.0, 0.95, 0.4, fill.a), pulse * 0.25)
+			if enemy_count > 0 and enemy_visible:
+				var pulse = sin(pulse_time * 1.6) * 0.5 + 0.5
+				fill.a = lerp(0.6, 1.0, pulse)
 
 		draw_colored_polygon(_hex_points(center, HEX_INNER), fill)
 
+		# Border
 		var border = COLOR_BORDER
-		if enemy_count > 0 and enemy_visible:
+		if placement_mode:
+			if sector == placed_sector:
+				border = COLOR_PLACED
+			elif sector == hovered_sector:
+				border = COLOR_PLACEMENT_HOVER
+			else:
+				border = COLOR_PLACEMENT * Color(1, 1, 1, 0.5)
+		elif enemy_count > 0 and enemy_visible:
 			border = COLOR_ENEMY_BORDER.lerp(Color(1, 0.5, 0.5, 1), sin(pulse_time * 1.6) * 0.3)
 		elif state == "contested":
 			border = Color(1.0, 0.85, 0.2, 0.9)
@@ -141,6 +226,7 @@ func _draw() -> void:
 			border = Color(0.3, 0.4, 0.5, 0.5)
 		_draw_hex_border(center, HEX_RADIUS - 1.0, border, 1.5)
 
+		# Labels
 		var lc = COLOR_LABEL if state not in ["enemy", "neutral"] else Color(0.55, 0.65, 0.7)
 		draw_string(ThemeDB.fallback_font,
 			center + Vector2(-len(sector) * 3.0, -7),
@@ -152,15 +238,26 @@ func _draw() -> void:
 				center + Vector2(-len(short) * 2.8, 4),
 				short, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 1, 1, 0.7))
 
-		if enemy_count > 0 and enemy_visible:
-			var marker = "✕" if enemy_count == 1 else "✕×%d" % enemy_count
-			draw_string(ThemeDB.fallback_font,
-				center + Vector2(-len(marker) * 3.5, 16),
-				marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.95))
-		elif enemy_count > 0 and not enemy_visible:
-			draw_string(ThemeDB.fallback_font,
-				center + Vector2(-6, 16),
-				"░░", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.5, 0.3, 0.3, 0.35))
+		if not placement_mode:
+			if enemy_count > 0 and enemy_visible:
+				var marker = "✕" if enemy_count == 1 else "✕×%d" % enemy_count
+				draw_string(ThemeDB.fallback_font,
+					center + Vector2(-len(marker) * 3.5, 16),
+					marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.95))
+			elif enemy_count > 0 and not enemy_visible:
+				draw_string(ThemeDB.fallback_font,
+					center + Vector2(-6, 16),
+					"░░", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.5, 0.3, 0.3, 0.35))
+		else:
+			# Placement mode — show drop indicator on hovered/placed hex
+			if sector == placed_sector:
+				draw_string(ThemeDB.fallback_font,
+					center + Vector2(-8, 16),
+					"▼ DROP", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, COLOR_PLACED)
+			elif sector == hovered_sector:
+				draw_string(ThemeDB.fallback_font,
+					center + Vector2(-8, 16),
+					"▼", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, COLOR_PLACEMENT_HOVER)
 
 
 func _hex_points(center: Vector2, radius: float) -> PackedVector2Array:

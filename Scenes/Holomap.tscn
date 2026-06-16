@@ -104,6 +104,24 @@ custom_minimum_size = Vector2(630, 410)
 layout_mode = 2
 script = ExtResource("4_h4dqx")
 
+[node name="PlacementBanner" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer" unique_id=1793494037]
+layout_mode = 2
+
+[node name="PlacementLabel" type="Label" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/PlacementBanner" unique_id=1787868872]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/PlacementBanner" unique_id=245442650]
+layout_mode = 2
+
+[node name="PlacementConfirmBtn" type="Button" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/PlacementBanner/HBoxContainer" unique_id=1489196804]
+layout_mode = 2
+text = "Confirm Drop Zone"
+
+[node name="PlacementCancelBtn" type="Button" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/PlacementBanner/HBoxContainer" unique_id=1671318311]
+layout_mode = 2
+text = "Cancel"
+
 [node name="HSeparator" type="HSeparator" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer" unique_id=657191286]
 layout_mode = 2
 

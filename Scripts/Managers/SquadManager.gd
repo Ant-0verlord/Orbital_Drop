@@ -28,19 +28,57 @@ var interference: float = 0.0
 
 
 func init_squads(squad_list: Array, mission_interference: float) -> void:
-	squads.clear()
+	# Reset status to ACTIVE for all existing squads (they come back full)
+	for key in squads:
+		squads[key].status = Status.ACTIVE
+		squads[key].turns_unsupplied = 0
+		squads[key].report = ""
+		squads[key]["first_turn_bonus"] = false
+		squads[key]["surprise_bonus"] = false
+
 	current_turn = 0
 	interference = mission_interference
+
+	# Add mission-defined squads — skip if already in roster (carry-over)
 	for s in squad_list:
-		squads[s.name] = {
-			"name":             s.name,
-			"sector":           s.sector,
-			"status":           s.get("status", Status.ACTIVE),
-			"need":             s.get("need", Need.ARMAMENTS),
-			"report":           "",
-			"turns_unsupplied": 0,
-		}
+		if not squads.has(s.name):
+			squads[s.name] = _make_squad(s)
+		else:
+			# Update sector to mission starting position
+			squads[s.name].sector = s.sector
+
 	_generate_briefings()
+
+
+func _make_squad(s: Dictionary) -> Dictionary:
+	return {
+		"name":             s.name,
+		"sector":           s.sector,
+		"status":           s.get("status", Status.ACTIVE),
+		"need":             s.get("need", Need.ARMAMENTS),
+		"report":           "",
+		"turns_unsupplied": 0,
+		"first_turn_bonus": false,
+		"surprise_bonus":   false,
+	}
+
+
+# -------------------------------------------------------
+# Add a reinforcement squad mid-mission
+# Called by TurnManager when processing pending drop
+# -------------------------------------------------------
+func add_squad(squad_name: String, sector: String, surprise: bool) -> void:
+	squads[squad_name] = {
+		"name":             squad_name,
+		"sector":           sector,
+		"status":           Status.ACTIVE,
+		"need":             Need.ARMAMENTS,
+		"report":           "",
+		"turns_unsupplied": 0,
+		"first_turn_bonus": true,    # First full turn fights as armed regardless
+		"surprise_bonus":   surprise, # Landing on enemy = guaranteed kill on arrival
+	}
+	GameManager.register_reinforcement_name(squad_name)
 
 
 func get_squads_for_ui() -> Array:
@@ -57,7 +95,6 @@ func get_squad_names() -> Array:
 func resolve_turn(allocations: Dictionary) -> Dictionary:
 	current_turn += 1
 
-	# Consume from mission supply pool
 	GameManager.consume_supplies(allocations)
 
 	var action_results: Dictionary = {}
@@ -74,13 +111,17 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 		var got_arms = alloc.get("Armaments",  0) > 0
 		var got_meds = alloc.get("Medi-Packs", 0) > 0
 		var got_fuel = alloc.get("Fuel Cells", 0) > 0
+
+		# First turn bonus — treat as armed regardless
+		var effective_arms = got_arms or squad.get("first_turn_bonus", false)
+
 		var action   = "none"
 		var moved_to = ""
 
 		# -------------------------------------------------------
-		# FUEL + ARMS — move into enemy tile and fight (armed)
+		# FUEL + ARMS (or first turn bonus) — move and fight armed
 		# -------------------------------------------------------
-		if got_fuel and got_arms:
+		if got_fuel and effective_arms:
 			var target = EnemyManager.get_best_attack_target(squad.sector)
 			if target != "":
 				squad.sector = target
@@ -90,11 +131,10 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 				action = "moved_and_fought_armed"
 				squad.turns_unsupplied = 0
 			else:
-				# No enemies adjacent — move and capture
-				target = EnemyManager.get_best_move_target(squad.sector)
-				if target != "":
-					squad.sector = target
-					moved_to = target
+				var move_target = EnemyManager.get_best_move_target(squad.sector)
+				if move_target != "":
+					squad.sector = move_target
+					moved_to = move_target
 					EnemyManager.capture_tile(squad.sector)
 					action = "moved"
 					squad.turns_unsupplied = 0
@@ -103,7 +143,6 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 		# FUEL only — move, fight unarmed if enemy present
 		# -------------------------------------------------------
 		elif got_fuel:
-			# Try to move into enemy tile first
 			var enemy_target = EnemyManager.get_best_move_into_enemy(squad.sector)
 			if enemy_target != "":
 				squad.sector = enemy_target
@@ -113,19 +152,14 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 					EnemyManager.capture_tile(squad.sector)
 					action = "moved_and_fought_unarmed_won"
 				else:
-					# Squad pushed back — find safe tile to retreat to
 					var retreat = EnemyManager.get_best_move_target(enemy_target)
 					if retreat != "":
 						squad.sector = retreat
 						moved_to = retreat
-					else:
-						# No retreat — stay and take the hit
-						squad.sector = enemy_target
 					_worsen_status(squad)
 					action = "moved_and_fought_unarmed_lost"
 				squad.turns_unsupplied = 0
 			else:
-				# No enemies adjacent — safe move
 				var target = EnemyManager.get_best_move_target(squad.sector)
 				if target != "":
 					squad.sector = target
@@ -135,21 +169,19 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 					squad.turns_unsupplied = 0
 
 		# -------------------------------------------------------
-		# ARMS only — fight at current tile
+		# ARMS only (or first turn bonus) — fight at current tile
 		# -------------------------------------------------------
-		elif got_arms:
+		elif effective_arms:
 			var fought = EnemyManager.fight_at(squad.sector, squad_name)
 			if fought:
 				action = "fought_armed"
 				squad.turns_unsupplied = 0
 			else:
-				# No enemies here — hold tile
 				action = "held"
 				squad.turns_unsupplied = 0
 
 		# -------------------------------------------------------
-		# NO SUPPLIES — squad still acts but risks a loss
-		# If enemies present at current tile, unarmed fight
+		# NO SUPPLIES — unarmed fight if enemies present
 		# -------------------------------------------------------
 		else:
 			var enemies_here = EnemyManager.get_enemy_count_at(squad.sector) > 0
@@ -175,6 +207,10 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 			if action == "none":
 				action = "healed"
 			squad.turns_unsupplied = 0
+
+		# Clear bonuses after first turn
+		squad["first_turn_bonus"] = false
+		squad["surprise_bonus"]   = false
 
 		squad.report = _generate_report(squad, action, moved_to)
 		squad.need   = _next_need(squad, action)
@@ -238,13 +274,13 @@ func _next_need(squad: Dictionary, last_action: String) -> int:
 	if squad.status == Status.WOUNDED:
 		return Need.MEDI_PACKS if randf() > 0.4 else Need.ARMAMENTS
 	match last_action:
-		"moved":                      return Need.ARMAMENTS
-		"fought_armed":               return Need.MEDI_PACKS
-		"moved_and_fought_armed":     return Need.MEDI_PACKS
+		"moved":                         return Need.ARMAMENTS
+		"fought_armed":                  return Need.MEDI_PACKS
+		"moved_and_fought_armed":        return Need.MEDI_PACKS
 		"moved_and_fought_unarmed_won":  return Need.ARMAMENTS
 		"moved_and_fought_unarmed_lost": return Need.MEDI_PACKS
-		"fought_unarmed_won":         return Need.ARMAMENTS
-		"fought_unarmed_lost":        return Need.MEDI_PACKS
+		"fought_unarmed_won":            return Need.ARMAMENTS
+		"fought_unarmed_lost":           return Need.MEDI_PACKS
 	return Need.FUEL_CELLS if randf() > 0.5 else Need.ARMAMENTS
 
 
@@ -285,7 +321,7 @@ func _generate_report(squad: Dictionary, action: String, moved_to: String) -> St
 		"moved":
 			return "%s advanced to %s. Sector secured." % [n, s]
 		"fought_armed":
-			return "%s engaged and suppressed enemy forces at %s. Sector held." % [n, s]
+			return "%s engaged and eliminated enemy forces at %s. Sector held." % [n, s]
 		"moved_and_fought_armed":
 			return "%s pushed into %s and neutralised enemy contact. Sector taken." % [n, m]
 		"moved_and_fought_unarmed_won":

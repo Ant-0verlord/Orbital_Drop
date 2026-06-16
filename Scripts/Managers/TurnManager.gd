@@ -34,9 +34,12 @@ func start_mission(mission_data: Dictionary) -> void:
 	if not SquadManager.squad_lost.is_connected(_on_squad_lost):
 		SquadManager.squad_lost.connect(_on_squad_lost)
 
+	# Build squad starting sectors for EnemyManager
+	# Include carry-over squads not in mission list
 	var squad_sectors = []
-	for s in squad_list:
-		squad_sectors.append(s.sector)
+	for squad in SquadManager.get_squads_for_ui():
+		if not squad_sectors.has(squad.sector):
+			squad_sectors.append(squad.sector)
 
 	EnemyManager.init_enemies(squad_sectors, enemy_list)
 	emit_signal("turn_started", current_turn)
@@ -59,14 +62,19 @@ func end_turn() -> void:
 
 	current_turn += 1
 
+	# Squads act first
 	SquadManager.resolve_turn(pending_allocations)
-	EnemyManager.advance_enemies(pending_allocations)  # ← pass allocations
+
+	# Enemies advance — pass allocations for armed defence check
+	# Reinforcement drop also processed inside advance_enemies()
+	EnemyManager.advance_enemies(pending_allocations)
 
 	allocations_are_locked = false
 	pending_allocations = {}
 
 	emit_signal("turn_ended", current_turn)
 
+	# Loss check: all squads lost
 	var all_lost = true
 	for squad_name in SquadManager.squads:
 		if SquadManager.squads[squad_name].status != SquadManager.Status.LOST:
@@ -77,6 +85,7 @@ func end_turn() -> void:
 		_end_mission(false, "All squads have been lost. No signal from the surface.")
 		return
 
+	# Turn limit reached
 	if max_turns > 0 and current_turn >= max_turns:
 		_check_win_condition()
 		return
@@ -84,24 +93,16 @@ func end_turn() -> void:
 	emit_signal("turn_started", current_turn)
 
 
-# -------------------------------------------------------
-# Called when turn limit is reached
-# -------------------------------------------------------
 func _check_win_condition() -> void:
 	var held = EnemyManager.get_held_count()
 	var won  = held >= win_condition_hexes
-
 	if won:
 		_end_mission(true, "")
 	else:
 		_end_mission(false,
-			"Insufficient territory held. Required %d sectors, held %d." % [win_condition_hexes, held]
-		)
+			"Insufficient territory held. Required %d sectors, held %d." % [win_condition_hexes, held])
 
 
-# -------------------------------------------------------
-# Single point of mission resolution
-# -------------------------------------------------------
 func _end_mission(won: bool, reason: String) -> void:
 	mission_over = true
 
@@ -118,29 +119,34 @@ func _end_mission(won: bool, reason: String) -> void:
 	var score = GameManager.calculate_score(held, current_turn, win_condition_hexes)
 
 	var report = {
-		"won":             won,
-		"reason":          reason,
-		"held_hexes":      held,
-		"required_hexes":  win_condition_hexes,
-		"squads_alive":    squads_alive,
-		"squads_lost":     squads_lost,
-		"turns":           current_turn,
-		"score":           score.total,
-		"rating":          score.rating,
-		"tile_score":      score.tile_score,
-		"turn_bonus":      score.turn_bonus,
-		"supply_bonus":    score.supply_bonus,
+		"won":            won,
+		"reason":         reason,
+		"held_hexes":     held,
+		"required_hexes": win_condition_hexes,
+		"squads_alive":   squads_alive,
+		"squads_lost":    squads_lost,
+		"turns":          current_turn,
+		"score":          score.total,
+		"rating":         score.rating,
+		"tile_score":     score.tile_score,
+		"turn_bonus":     score.turn_bonus,
+		"supply_bonus":   score.supply_bonus,
+		"supply_pool":    GameManager.get_supply_pool().duplicate(),
+		"reinforcements": GameManager.get_reinforcement_pool(),
 	}
 
-	GameManager.campaign_record.append("win" if won else "loss")
+	GameManager.campaign_record.append({
+		"mission": GameManager.current_mission,
+		"won":     won,
+		"score":   score.total,
+		"rating":  score.rating,
+	})
 
 	if won:
 		emit_signal("mission_complete", report)
 	else:
 		emit_signal("mission_failed", reason)
-		# Also emit mission_complete so UI can show the full scored report
-		# even on a loss — popups decide how to display it
-		emit_signal("mission_complete", report)
+	emit_signal("mission_complete", report)
 
 
 func _on_squad_lost(squad_name: String) -> void:
