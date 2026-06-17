@@ -24,8 +24,8 @@ const COLOR_NEUTRAL:   Color = Color(0.12, 0.18, 0.25, 0.7)
 # under VBoxContainer, above ButtonRow
 @onready var placement_banner: PanelContainer = $PanelContainer/VBoxContainer/PlacementBanner
 @onready var placement_label: Label           = $PanelContainer/VBoxContainer/PlacementBanner/PlacementLabel
-@onready var placement_confirm_btn: Button    = $PanelContainer/VBoxContainer/PlacementBanner/PlacementConfirmBtn
-@onready var placement_cancel_btn: Button     = $PanelContainer/VBoxContainer/PlacementBanner/PlacementCancelBtn
+@onready var placement_confirm_btn: Button    = $PanelContainer/VBoxContainer/PlacementBanner/HBoxContainer/PlacementConfirmBtn
+@onready var placement_cancel_btn: Button     = $PanelContainer/VBoxContainer/PlacementBanner/HBoxContainer/PlacementCancelBtn
 
 
 func _ready() -> void:

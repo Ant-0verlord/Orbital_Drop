@@ -198,3 +198,7 @@ autowrap_mode = 2
 [node name="ReportClose" type="Button" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=1742993541]
 layout_mode = 2
 text = "Close"
+
+[node name="NextMissionBtn" type="Button" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=2051750176]
+visible = false
+layout_mode = 2
