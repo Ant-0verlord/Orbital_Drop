@@ -8,6 +8,8 @@ signal turn_ended(turn_number: int)
 signal allocations_locked
 signal mission_complete(report: Dictionary)
 signal mission_failed(reason: String)
+signal enemy_reinforcements_incoming(turn: int, count: int)
+signal enemy_reinforcements_landed(sectors: Array)
 
 var current_turn: int = 0
 var max_turns: int = 0
@@ -15,6 +17,7 @@ var win_condition_hexes: int = 5
 var allocations_are_locked: bool = false
 var pending_allocations: Dictionary = {}
 var mission_over: bool = false
+var reinforcement_schedule: Dictionary = {}
 
 
 func start_mission(mission_data: Dictionary) -> void:
@@ -24,24 +27,30 @@ func start_mission(mission_data: Dictionary) -> void:
 	allocations_are_locked = false
 	pending_allocations = {}
 	mission_over = false
+	reinforcement_schedule = mission_data.get("reinforcement_schedule", {})
 
 	var squad_list   = mission_data.get("squads", [])
 	var interference = mission_data.get("interference", 0.0)
 	var enemy_list   = mission_data.get("enemies", [])
+	var sectors      = mission_data.get("sectors", [])
+	var adj          = mission_data.get("adjacency", {})
 
 	SquadManager.init_squads(squad_list, interference)
 
 	if not SquadManager.squad_lost.is_connected(_on_squad_lost):
 		SquadManager.squad_lost.connect(_on_squad_lost)
 
-	# Build squad starting sectors for EnemyManager
-	# Include carry-over squads not in mission list
+	# Build squad starting sectors including carry-over squads
 	var squad_sectors = []
 	for squad in SquadManager.get_squads_for_ui():
 		if not squad_sectors.has(squad.sector):
 			squad_sectors.append(squad.sector)
 
-	EnemyManager.init_enemies(squad_sectors, enemy_list)
+	EnemyManager.init_enemies(squad_sectors, enemy_list, sectors, adj)
+
+	# Warn about first reinforcement wave if scheduled
+	_check_reinforcement_warning(0)
+
 	emit_signal("turn_started", current_turn)
 
 
@@ -62,12 +71,18 @@ func end_turn() -> void:
 
 	current_turn += 1
 
-	# Squads act first
+	# Squads act
 	SquadManager.resolve_turn(pending_allocations)
 
-	# Enemies advance — pass allocations for armed defence check
-	# Reinforcement drop also processed inside advance_enemies()
+	# Spawn enemy reinforcements for this turn if scheduled
+	var spawned_sectors = _process_reinforcement_schedule()
+
+	# Enemies advance
 	EnemyManager.advance_enemies(pending_allocations)
+
+	# Notify Intel Console of where reinforcements landed
+	if spawned_sectors.size() > 0:
+		emit_signal("enemy_reinforcements_landed", spawned_sectors)
 
 	allocations_are_locked = false
 	pending_allocations = {}
@@ -90,7 +105,41 @@ func end_turn() -> void:
 		_check_win_condition()
 		return
 
+	# Warn about upcoming reinforcements next turn
+	_check_reinforcement_warning(current_turn)
+
 	emit_signal("turn_started", current_turn)
+
+
+# -------------------------------------------------------
+# Spawn reinforcements scheduled for current_turn
+# Returns list of sectors where enemies spawned
+# -------------------------------------------------------
+func _process_reinforcement_schedule() -> Array:
+	if not reinforcement_schedule.has(current_turn):
+		return []
+
+	var count = reinforcement_schedule[current_turn]
+	if count <= 0:
+		return []
+
+	var squad_sectors = []
+	for squad in SquadManager.get_squads_for_ui():
+		if squad.status != SquadManager.Status.LOST:
+			squad_sectors.append(squad.sector)
+
+	return EnemyManager.spawn_reinforcements(count, squad_sectors)
+
+
+# -------------------------------------------------------
+# Check if next turn has a reinforcement wave
+# and emit a warning signal for Intel Console
+# -------------------------------------------------------
+func _check_reinforcement_warning(after_turn: int) -> void:
+	var next_turn = after_turn + 1
+	if reinforcement_schedule.has(next_turn):
+		var count = reinforcement_schedule[next_turn]
+		emit_signal("enemy_reinforcements_incoming", next_turn, count)
 
 
 func _check_win_condition() -> void:

@@ -10,27 +10,12 @@ var enemy_units: Array = []
 var all_sectors: Array = []
 var adjacency: Dictionary = {}
 
-const ALL_SECTORS_14 = [
-	"Alpha-7",   # 0
-	"Beta-2",    # 1
-	"Gamma-5",   # 2
-	"Delta-9",   # 3
-	"Epsilon-1", # 4
-	"Zeta-3",    # 5
-	"Eta-6",     # 6
-	"Theta-3",   # 7
-	"Iota-8",    # 8
-	"Kappa-1",   # 9
-	"Lambda-4",  # 10
-	"Mu-6",      # 11
-	"Nu-2",      # 12
-	"Xi-7",      # 13
-]
-
-
-func init_enemies(squad_sectors: Array, enemy_list: Array) -> void:
-	all_sectors = ALL_SECTORS_14.duplicate()
-	_build_adjacency()
+# -------------------------------------------------------
+# Init — now receives sectors and adjacency from mission data
+# -------------------------------------------------------
+func init_enemies(squad_sectors: Array, enemy_list: Array, mission_sectors: Array, mission_adjacency: Dictionary) -> void:
+	all_sectors = mission_sectors.duplicate()
+	_build_adjacency(mission_adjacency)
 
 	hex_control.clear()
 	for sector in all_sectors:
@@ -43,7 +28,7 @@ func init_enemies(squad_sectors: Array, enemy_list: Array) -> void:
 	for e in enemy_list:
 		enemy_units.append({
 			"id":       id,
-			"sector":   e.get("sector", "Iota-8"),
+			"sector":   e.get("sector", all_sectors[all_sectors.size() - 1]),
 			"hp":       1,
 			"cooldown": 0,
 		})
@@ -53,17 +38,52 @@ func init_enemies(squad_sectors: Array, enemy_list: Array) -> void:
 
 
 # -------------------------------------------------------
-# Squad uses Fuel Cells — best adjacent tile to move to
+# Spawn enemy reinforcements at the sectors furthest
+# from any squad — called by TurnManager on schedule
 # -------------------------------------------------------
-func get_best_move_target(from_sector: String) -> String:
-	var neighbors = adjacency.get(from_sector, [])
-	for n in neighbors:
-		if not _has_enemy_unit(n) and hex_control.get(n, "") == "enemy":
-			return n
-	for n in neighbors:
-		if not _has_enemy_unit(n):
-			return n
-	return ""
+func spawn_reinforcements(count: int, squad_sectors: Array) -> Array:
+	var spawned_sectors = []
+
+	# Score every sector by BFS distance from nearest squad
+	var candidates = []
+	for sector in all_sectors:
+		# Don't spawn on a squad tile or already enemy-occupied
+		if sector in squad_sectors:
+			continue
+		var dist = _bfs_distance_to_nearest(sector, squad_sectors)
+		candidates.append({ "sector": sector, "dist": dist })
+
+	# Sort by distance descending — furthest first
+	candidates.sort_custom(func(a, b): return a.dist > b.dist)
+
+	var spawned = 0
+	for candidate in candidates:
+		if spawned >= count:
+			break
+		var sector = candidate.sector
+		# Don't stack on existing enemy
+		if _has_enemy_unit(sector):
+			continue
+		var new_id = _next_id()
+		enemy_units.append({
+			"id":       new_id,
+			"sector":   sector,
+			"hp":       1,
+			"cooldown": 0,
+		})
+		spawned_sectors.append(sector)
+		spawned += 1
+
+	emit_signal("enemies_updated")
+	return spawned_sectors
+
+
+func _next_id() -> int:
+	var max_id = -1
+	for unit in enemy_units:
+		if unit.id > max_id:
+			max_id = unit.id
+	return max_id + 1
 
 
 # -------------------------------------------------------
@@ -104,7 +124,17 @@ func fight_at_unarmed(sector: String) -> Dictionary:
 	return { "squad_won": squad_won, "enemies_present": true }
 
 
-# Squad uses Fuel + Arms — best adjacent enemy-occupied tile
+func get_best_move_target(from_sector: String) -> String:
+	var neighbors = adjacency.get(from_sector, [])
+	for n in neighbors:
+		if not _has_enemy_unit(n) and hex_control.get(n, "") == "enemy":
+			return n
+	for n in neighbors:
+		if not _has_enemy_unit(n):
+			return n
+	return ""
+
+
 func get_best_attack_target(from_sector: String) -> String:
 	var neighbors = adjacency.get(from_sector, [])
 	for n in neighbors:
@@ -113,7 +143,6 @@ func get_best_attack_target(from_sector: String) -> String:
 	return ""
 
 
-# Squad uses Fuel only — best adjacent enemy tile to move into
 func get_best_move_into_enemy(from_sector: String) -> String:
 	var neighbors = adjacency.get(from_sector, [])
 	for n in neighbors:
@@ -129,12 +158,8 @@ func capture_tile(sector: String) -> void:
 
 # -------------------------------------------------------
 # Called by TurnManager after squad resolution
-# allocations: { squad_name: { "Armaments": int, ... } }
-# After enemies move, any that land on an armed squad's
-# tile are instantly eliminated
 # -------------------------------------------------------
 func advance_enemies(allocations: Dictionary) -> void:
-	# Build squad map: sector -> squad name
 	var squad_map: Dictionary = {}
 	for squad in SquadManager.get_squads_for_ui():
 		if squad.status != SquadManager.Status.LOST:
@@ -177,11 +202,7 @@ func advance_enemies(allocations: Dictionary) -> void:
 
 		unit.sector = best
 
-	# -------------------------------------------------------
-	# Post-movement: enemy walked onto an armed squad's tile
-	# OR onto a reinforcement squad with surprise bonus
-	# Both result in instant enemy elimination
-	# -------------------------------------------------------
+	# Post-movement: enemy on armed squad tile or surprise bonus tile
 	for unit in enemy_units.duplicate():
 		var landed_on = unit.sector
 		if landed_on in squad_map:
@@ -190,37 +211,23 @@ func advance_enemies(allocations: Dictionary) -> void:
 			var alloc      = allocations.get(squad_name, {})
 			var has_arms   = alloc.get("Armaments", 0) > 0
 			var has_surprise = squad_data.get("surprise_bonus", false)
-
 			if has_arms or has_surprise:
 				enemy_units.erase(unit)
 				hex_control[landed_on] = "held"
 
-	# -------------------------------------------------------
-	# Process pending reinforcement drop
-	# Happens after enemy movement so surprise bonus applies
-	# correctly to any enemies already on the target hex
-	# -------------------------------------------------------
+	# Process pending player reinforcement drop
 	if GameManager.has_pending_reinforcement():
 		var drop = GameManager.get_pending_reinforcement()
 		var target_sector = drop.get("sector", "")
 		var squad_name    = drop.get("squad_name", "")
-
 		if target_sector != "" and squad_name != "":
-			# Check if landing on enemy — surprise bonus
 			var surprise = _has_enemy_unit(target_sector)
-
-			# Add squad to roster
 			SquadManager.add_squad(squad_name, target_sector, surprise)
-
 			if surprise:
-				# Eliminate all enemies on the landing hex
 				for unit in enemy_units.duplicate():
 					if unit.sector == target_sector:
 						enemy_units.erase(unit)
-				hex_control[target_sector] = "held"
-			else:
-				hex_control[target_sector] = "held"
-
+			hex_control[target_sector] = "held"
 		GameManager.clear_pending_reinforcement()
 
 	_rebuild_hex_control(squad_sectors)
@@ -259,7 +266,7 @@ func _movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
 
 
 # -------------------------------------------------------
-# Push back 2 tiles deep
+# Push helpers
 # -------------------------------------------------------
 func _push_enemy_deep(unit: Dictionary, away_from: String) -> String:
 	var first_ring = []
@@ -286,6 +293,21 @@ func _push_enemy_deep(unit: Dictionary, away_from: String) -> String:
 	if best_deep != "":
 		return best_deep
 	return _push_enemy_back(unit, away_from)
+
+
+func _push_enemy_back(unit: Dictionary, away_from: String) -> String:
+	var best = ""
+	var best_dist = -1
+	for n in adjacency.get(unit.sector, []):
+		if n == away_from:
+			continue
+		if _has_enemy_unit_excluding(n, unit.id):
+			continue
+		var d = _bfs_distance_to_nearest(n, [away_from])
+		if d > best_dist:
+			best_dist = d
+			best = n
+	return best
 
 
 # -------------------------------------------------------
@@ -333,6 +355,10 @@ func get_enemy_count_at(sector: String) -> int:
 	return count
 
 
+func get_all_sectors() -> Array:
+	return all_sectors
+
+
 # -------------------------------------------------------
 # Helpers
 # -------------------------------------------------------
@@ -356,21 +382,6 @@ func _has_enemy_unit_excluding(sector: String, exclude_id: int) -> bool:
 		if unit.sector == sector and unit.id != exclude_id:
 			return true
 	return false
-
-
-func _push_enemy_back(unit: Dictionary, away_from: String) -> String:
-	var best = ""
-	var best_dist = -1
-	for n in adjacency.get(unit.sector, []):
-		if n == away_from:
-			continue
-		if _has_enemy_unit_excluding(n, unit.id):
-			continue
-		var d = _bfs_distance_to_nearest(n, [away_from])
-		if d > best_dist:
-			best_dist = d
-			best = n
-	return best
 
 
 func _bfs_distance_to_nearest(from: String, targets: Array) -> int:
@@ -400,29 +411,13 @@ func _bfs_distance(start: String, end_sector: String) -> int:
 	return 999
 
 
-func _build_adjacency() -> void:
+func _build_adjacency(mission_adjacency: Dictionary) -> void:
 	adjacency.clear()
-	var adj_map = {
-		0:  [1, 2, 3, 4, 5, 6],
-		1:  [0, 2, 6, 8, 9],
-		2:  [0, 1, 3, 7, 8],
-		3:  [0, 2, 4, 7, 13],
-		4:  [0, 3, 5, 12, 13],
-		5:  [0, 4, 6, 11, 12],
-		6:  [0, 1, 5, 9, 11],
-		7:  [2, 3, 8, 13],
-		8:  [1, 2, 7, 9],
-		9:  [1, 6, 8, 10],
-		10: [6, 9, 11],
-		11: [5, 6, 10, 12],
-		12: [4, 5, 11, 13],
-		13: [3, 4, 7, 12],
-	}
-	for idx in adj_map:
+	for idx in mission_adjacency:
 		if idx < all_sectors.size():
 			var sector = all_sectors[idx]
 			var neighbors = []
-			for n_idx in adj_map[idx]:
+			for n_idx in mission_adjacency[idx]:
 				if n_idx < all_sectors.size():
 					neighbors.append(all_sectors[n_idx])
 			adjacency[sector] = neighbors
