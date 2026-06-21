@@ -41,9 +41,9 @@ func _ready() -> void:
 	placement_banner.visible = false
 
 
-func refresh(new_zone_states: Dictionary) -> void:
+func refresh(new_zone_states: Dictionary, axial_by_sector: Dictionary = {}) -> void:
 	zone_states = new_zone_states
-	hex_canvas.refresh(zone_states)
+	hex_canvas.refresh(zone_states, axial_by_sector)
 	_rebuild_sector_list()
 	_update_labels()
 	_check_placement_mode()

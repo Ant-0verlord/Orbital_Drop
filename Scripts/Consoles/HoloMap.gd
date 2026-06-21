@@ -17,6 +17,14 @@ func _ready() -> void:
 	TurnManager.turn_started.connect(_on_turn_started)
 	EnemyManager.enemies_updated.connect(_on_enemies_updated)
 
+func _build_axial_map() -> Dictionary:
+	var data = GameManager.get_current_mission_data()
+	var sectors = data.get("sectors", [])
+	var axial   = data.get("axial", [])
+	var map: Dictionary = {}
+	for i in range(min(sectors.size(), axial.size())):
+		map[sectors[i]] = axial[i]
+	return map
 
 func _on_turn_started(_turn: int) -> void:
 	_build_zone_states()
@@ -27,7 +35,7 @@ func _on_turn_started(_turn: int) -> void:
 func open_popup() -> void:
 	_build_zone_states()
 	popup.visible = true
-	popup.refresh(zone_states)
+	popup.refresh(zone_states, _build_axial_map())
 
 
 func close_popup() -> void:

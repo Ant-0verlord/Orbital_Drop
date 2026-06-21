@@ -532,11 +532,19 @@ var missions: Array = [
 	},
 ]
 
-
 func get_current_mission_data() -> Dictionary:
 	if current_mission < missions.size():
 		return missions[current_mission]
 	return {}
+
+func get_current_axial_map() -> Dictionary:
+	var data = get_current_mission_data()
+	var sectors = data.get("sectors", [])
+	var axial   = data.get("axial", [])
+	var map: Dictionary = {}
+	for i in range(min(sectors.size(), axial.size())):
+		map[sectors[i]] = axial[i]
+	return map
 
 
 func start_current_mission() -> void:

@@ -48,11 +48,12 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func refresh(new_zone_states: Dictionary) -> void:
+func refresh(new_zone_states: Dictionary, axial_by_sector: Dictionary = {}) -> void:
 	zone_states = new_zone_states
+	if not axial_by_sector.is_empty():
+		current_axial_by_sector = axial_by_sector
 	_build_hex_layout()
 	queue_redraw()
-
 
 func enter_placement_mode() -> void:
 	placement_mode = true
@@ -119,41 +120,22 @@ func _point_in_hex(point: Vector2, center: Vector2, radius: float) -> bool:
 # -------------------------------------------------------
 # 14-hex layout — coordinates relative to this control
 # -------------------------------------------------------
+var current_axial_by_sector: Dictionary = {}  # sector_name -> Vector2
+
 func _build_hex_layout() -> void:
 	hex_entries.clear()
-	var sectors = zone_states.keys()
-	if sectors.is_empty():
-		return
-
-	var r   = HEX_RADIUS
-	var sq3 = sqrt(3.0)
-
-	var axial = [
-		Vector2( 0,  0),
-		Vector2( 1, -1),
-		Vector2( 1,  0),
-		Vector2( 0,  1),
-		Vector2(-1,  1),
-		Vector2(-1,  0),
-		Vector2( 0, -1),
-		Vector2( 2, -2),
-		Vector2( 2, -1),
-		Vector2( 2,  0),
-		Vector2( 1,  1),
-		Vector2( 0,  2),
-		Vector2(-1,  2),
-		Vector2(-2,  1),
-	]
-
-	for i in range(min(sectors.size(), axial.size())):
-		var q = axial[i].x
-		var s = axial[i].y
+	for sector_name in zone_states.keys():
+		if not current_axial_by_sector.has(sector_name):
+			continue
+		var axial_pos: Vector2 = current_axial_by_sector[sector_name]
+		var r   = HEX_RADIUS
+		var sq3 = sqrt(3.0)
 		var pixel = Vector2(
-			r * (sq3 * q + sq3 * 0.5 * s),
-			r * (1.5 * s)
+			r * (sq3 * axial_pos.x + sq3 * 0.5 * axial_pos.y),
+			r * (1.5 * axial_pos.y)
 		)
 		hex_entries.append({
-			"sector": sectors[i],
+			"sector": sector_name,
 			"center": GRID_CENTER + pixel,
 		})
 
