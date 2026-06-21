@@ -50,7 +50,7 @@ func _build_zone_states() -> void:
 	zone_states.clear()
 	var hex_control = EnemyManager.get_hex_control()
 
-	for sector in EnemyManager.ALL_SECTORS_14:
+	for sector in EnemyManager.get_all_sectors():
 		var control = hex_control.get(sector, "enemy")
 		var squad_here = ""
 		for squad in SquadManager.get_squads_for_ui():
