@@ -175,18 +175,22 @@ func _on_supply_toggled(pressed: bool, squad_name: String, supply: String, check
 		allocations[squad_name] = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 
 	if pressed:
-		# Record this supply, zero the others
-		for s in allocations[squad_name]:
-			allocations[squad_name][s] = 0
+		# Record this supply
 		allocations[squad_name][supply] = SUPPLY_COST
 
-		# Disable other checkboxes for this squad
+		# Count how many are now ticked for this squad
+		var ticked_count = 0
 		for s in checkboxes:
-			if s != supply:
-				checkboxes[s].disabled = true
-				checkboxes[s].button_pressed = false
+			if checkboxes[s].button_pressed:
+				ticked_count += 1
+
+		# Once 2 are ticked, lock the remaining unticked one(s)
+		if ticked_count >= 2:
+			for s in checkboxes:
+				if not checkboxes[s].button_pressed:
+					checkboxes[s].disabled = true
 	else:
-		# Unticked — clear allocation, re-enable all
+		# Unticked — clear this allocation, re-enable everything else
 		allocations[squad_name][supply] = 0
 		for s in checkboxes:
 			checkboxes[s].disabled = TurnManager.mission_over
