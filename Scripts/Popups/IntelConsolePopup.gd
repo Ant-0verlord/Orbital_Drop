@@ -8,7 +8,11 @@ extends Control
 # =============================================================
 
 var player: Node = null
-
+var reinforcement_warning_turn: int  = -1
+var reinforcement_warning_count: int = 0
+var landed_sectors: Array            = []
+var landed_turn: int                 = -1
+	
 @onready var turn_label: Label              = $PanelContainer/VBoxContainer/TurnLabel
 @onready var report_container: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/ReportContainer
 @onready var close_btn: Button              = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
@@ -17,6 +21,8 @@ var player: Node = null
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	TurnManager.turn_started.connect(_on_turn_started)
+	TurnManager.enemy_reinforcements_incoming.connect(_on_reinforcements_incoming)
+	TurnManager.enemy_reinforcements_landed.connect(_on_reinforcements_landed)
 	close_btn.pressed.connect(_on_close_pressed)
 
 
@@ -44,6 +50,18 @@ func _rebuild_reports() -> void:
 			if SquadManager.current_turn == 0
 			else "Surface intel — Turn %d" % SquadManager.current_turn
 		)
+	
+	for child in report_container.get_children():
+		child.queue_free()
+
+	# Reinforcement alerts — shown above all squad reports
+	if landed_sectors.size() > 0 and landed_turn == SquadManager.current_turn:
+		_add_reinforcements_landed_card(landed_sectors)
+
+	if reinforcement_warning_turn > SquadManager.current_turn:
+		_add_reinforcements_warning_card(reinforcement_warning_count, reinforcement_warning_turn)
+
+	# Critical squads always break through — priority distress first
 
 	for child in report_container.get_children():
 		child.queue_free()
@@ -149,6 +167,90 @@ func _status_color(status: int) -> Color:
 		SquadManager.Status.LOST:     return Color(0.5, 0.5, 0.5)
 	return Color.WHITE
 
+func _on_reinforcements_incoming(turn: int, count: int) -> void:
+	reinforcement_warning_turn  = turn
+	reinforcement_warning_count = count
+	if visible:
+		refresh()
+
+func _on_reinforcements_landed(sectors: Array) -> void:
+	landed_sectors = sectors
+	landed_turn    = SquadManager.current_turn
+	if visible:
+		refresh()
+
+func _add_reinforcements_warning_card(count: int, turn: int) -> void:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _alert_style(Color(0.22, 0.15, 0.05), Color(0.9, 0.6, 0.1, 0.9)))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "⚠ SENSOR WARNING — ENEMY BUILDUP DETECTED"
+	header.add_theme_font_size_override("font_size", 13)
+	header.add_theme_color_override("font_color", Color(0.95, 0.7, 0.2))
+	vbox.add_child(header)
+
+	var body := Label.new()
+	var unit_word = "unit" if count == 1 else "units"
+	body.text = "Long-range scans show %d enemy %s massing for a push. Expected to make contact by Turn %d." % [count, unit_word, turn]
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD
+	body.add_theme_font_size_override("font_size", 12)
+	body.add_theme_color_override("font_color", Color(0.85, 0.75, 0.55))
+	vbox.add_child(body)
+
+	report_container.add_child(card)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 4
+	report_container.add_child(spacer)
+
+
+func _add_reinforcements_landed_card(sectors: Array) -> void:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _alert_style(Color(0.22, 0.06, 0.06), Color(0.9, 0.2, 0.2, 0.95)))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "⚠ ENEMY REINFORCEMENTS HAVE LANDED"
+	header.add_theme_font_size_override("font_size", 13)
+	header.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	vbox.add_child(header)
+
+	var sector_list_text = ", ".join(sectors)
+	var body := Label.new()
+	body.text = "New enemy contact confirmed at: %s." % sector_list_text
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD
+	body.add_theme_font_size_override("font_size", 12)
+	body.add_theme_color_override("font_color", Color(0.95, 0.7, 0.7))
+	vbox.add_child(body)
+
+	report_container.add_child(card)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 4
+	report_container.add_child(spacer)
+
+
+func _alert_style(bg: Color, border: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.set_content_margin_all(10)
+	style.bg_color = bg
+	style.border_color = border
+	style.border_width_left   = 3
+	style.border_width_top    = 1
+	style.border_width_right  = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left     = 3
+	style.corner_radius_top_right    = 3
+	style.corner_radius_bottom_left  = 3
+	style.corner_radius_bottom_right = 3
+	return style
 
 func _on_close_pressed() -> void:
 	visible = false
