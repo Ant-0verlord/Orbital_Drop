@@ -17,7 +17,7 @@ var pending_reinforcement_name: String = ""
 @onready var pool_label: Label              = $PanelContainer/VBoxContainer/PoolLabel
 @onready var budget_label: Label            = $PanelContainer/VBoxContainer/BudgetLabel
 @onready var warning_label: Label           = $PanelContainer/VBoxContainer/WarningLabel
-@onready var squad_container: VBoxContainer = $PanelContainer/VBoxContainer/SquadContainer
+@onready var squad_container: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/SquadContainer
 @onready var lock_btn: Button               = $PanelContainer/VBoxContainer/ButtonRow/LockBtn
 @onready var close_btn: Button              = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
 @onready var end_overlay: ColorRect         = $EndOverlay
@@ -51,6 +51,7 @@ func _ready() -> void:
 
 
 func _on_turn_started(_turn: int) -> void:
+	_reset_allocations()
 	if visible: refresh()
 
 func _on_turn_resolved() -> void:
@@ -247,6 +248,10 @@ func _refresh_reinforcement_panel() -> void:
 		else:
 			reinforcement_status_label.text = ""
 
+func _reset_allocations() -> void:
+	for squad_name in allocations:
+		for s in allocations[squad_name]:
+			allocations[squad_name][s] = 0
 
 func _on_call_reinforcement_pressed() -> void:
 	if TurnManager.mission_over: return

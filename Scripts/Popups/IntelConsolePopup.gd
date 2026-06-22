@@ -50,7 +50,7 @@ func _rebuild_reports() -> void:
 			if SquadManager.current_turn == 0
 			else "Surface intel — Turn %d" % SquadManager.current_turn
 		)
-	
+
 	for child in report_container.get_children():
 		child.queue_free()
 
@@ -62,10 +62,6 @@ func _rebuild_reports() -> void:
 		_add_reinforcements_warning_card(reinforcement_warning_count, reinforcement_warning_turn)
 
 	# Critical squads always break through — priority distress first
-
-	for child in report_container.get_children():
-		child.queue_free()
-
 	var reports: Dictionary = (
 		SquadManager.get_briefings()
 		if SquadManager.current_turn == 0
@@ -168,6 +164,7 @@ func _status_color(status: int) -> Color:
 	return Color.WHITE
 
 func _on_reinforcements_incoming(turn: int, count: int) -> void:
+	print("INTEL: incoming warning received — turn %d, count %d" % [turn, count])
 	reinforcement_warning_turn  = turn
 	reinforcement_warning_count = count
 	if visible:

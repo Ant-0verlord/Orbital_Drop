@@ -98,7 +98,11 @@ layout_mode = 2
 [node name="HSeparator" type="HSeparator" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=406368883]
 layout_mode = 2
 
-[node name="SquadContainer" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=93163363]
+[node name="ScrollContainer" type="ScrollContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1880702202]
+custom_minimum_size = Vector2(0, 300)
+layout_mode = 2
+
+[node name="SquadContainer" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ScrollContainer" unique_id=536855974]
 layout_mode = 2
 
 [node name="HSeparator3" type="HSeparator" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=82692739]
