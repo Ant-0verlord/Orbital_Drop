@@ -32,6 +32,11 @@ var pending_reinforcement_name: String = ""
 @onready var call_reinforcement_btn: Button      = $PanelContainer/VBoxContainer/ReinforcementPanel/RVBox/CallReinforcementBtn
 @onready var reinforcement_status_label: Label   = $PanelContainer/VBoxContainer/ReinforcementPanel/RVBox/ReinforcementStatusLabel
 
+@onready var bombardment_panel: PanelContainer = $PanelContainer/VBoxContainer/BombardmentPanel
+@onready var bombardment_pool_label: Label     = $PanelContainer/VBoxContainer/BombardmentPanel/BVBox/BombardmentPoolLabel
+@onready var arm_bombardment_btn: Button       = $PanelContainer/VBoxContainer/BombardmentPanel/BVBox/ArmBombardmentBtn
+@onready var bombardment_status_label: Label   = $PanelContainer/VBoxContainer/BombardmentPanel/BVBox/BombardmentStatusLabel
+
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
@@ -72,6 +77,7 @@ func refresh() -> void:
 	_refresh_pool()
 	_refresh_budget()
 	_refresh_reinforcement_panel()
+	_refresh_bombardment_panel()
 	if not TurnManager.mission_over:
 		lock_btn.text = "Lock Allocations"
 		lock_btn.disabled = false
@@ -206,47 +212,7 @@ func _on_supply_toggled(pressed: bool, squad_name: String, supply: String, check
 
 # -------------------------------------------------------
 # Reinforcement panel
-# -------------------------------------------------------
-func _refresh_reinforcement_panel() -> void:
-	if reinforcement_panel == null:
-		return
-
-	var pool = GameManager.get_reinforcement_pool()
-	var has_pending = not GameManager.get_pending_reinforcement().is_empty()
-
-	# Hide panel entirely if no reinforcements available and none pending
-	reinforcement_panel.visible = pool > 0 or has_pending
-
-	if reinforcement_pool_label:
-		reinforcement_pool_label.text = "Reinforcement Drops Available: %d" % pool
-		reinforcement_pool_label.add_theme_color_override("font_color",
-			Color(0.4, 0.9, 0.4) if pool > 0 else Color(0.5, 0.5, 0.5))
-
-	# Populate name picker
-	if reinforcement_name_btn:
-		reinforcement_name_btn.clear()
-		var available = GameManager.get_available_reinforcement_names()
-		for n in available:
-			reinforcement_name_btn.add_item(n)
-		reinforcement_name_btn.disabled = pool <= 0 or has_pending or TurnManager.mission_over
-
-	if call_reinforcement_btn:
-		call_reinforcement_btn.disabled = pool <= 0 or has_pending or TurnManager.mission_over
-
-	if reinforcement_status_label:
-		if has_pending:
-			var drop = GameManager.get_pending_reinforcement()
-			var placed = drop.get("placed", false)
-			var name  = drop.get("squad_name", "")
-			var sector = drop.get("sector", "")
-			if placed:
-				reinforcement_status_label.text = "✓ %s dropping to %s — visit Holo-Map to confirm" % [name, sector]
-				reinforcement_status_label.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
-			else:
-				reinforcement_status_label.text = "⚠ %s queued — visit Holo-Map to place drop zone" % name
-				reinforcement_status_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.2))
-		else:
-			reinforcement_status_label.text = ""
+# -------------------------------------------------------w
 
 func _reset_allocations() -> void:
 	for squad_name in allocations:
@@ -389,12 +355,96 @@ func _show_mission_end(report: Dictionary) -> void:
 	end_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	end_body.autowrap_mode = TextServer.AUTOWRAP_WORD
 
+func _on_arm_bombardment_pressed() -> void:
+	if TurnManager.mission_over: return
+	if GameManager.get_orbital_strikes_pool() <= 0: return
+	if not GameManager.get_pending_bombardment().is_empty(): return
+	if not GameManager.consume_orbital_strike(): return
+	if not GameManager.queue_bombardment():
+		return
+	_refresh_bombardment_panel()
 
 func _on_close_pressed() -> void:
 	visible = false
 	if player and player.has_method("on_popup_closed"):
 		player.on_popup_closed()
 
+func _refresh_reinforcement_panel() -> void:
+	if reinforcement_panel == null:
+		return
+
+	var pool = GameManager.get_reinforcement_pool()
+	var has_pending = not GameManager.get_pending_reinforcement().is_empty()
+	var bombardment_active = not GameManager.get_pending_bombardment().is_empty()
+
+	reinforcement_panel.visible = pool > 0 or has_pending
+
+	if reinforcement_pool_label:
+		reinforcement_pool_label.text = "Reinforcement Drops Available: %d" % pool
+		reinforcement_pool_label.add_theme_color_override("font_color",
+			Color(0.4, 0.9, 0.4) if pool > 0 else Color(0.5, 0.5, 0.5))
+
+	if reinforcement_name_btn:
+		reinforcement_name_btn.clear()
+		var available = GameManager.get_available_reinforcement_names()
+		for n in available:
+			reinforcement_name_btn.add_item(n)
+		reinforcement_name_btn.disabled = pool <= 0 or has_pending or bombardment_active or TurnManager.mission_over
+
+	if call_reinforcement_btn:
+		call_reinforcement_btn.disabled = pool <= 0 or has_pending or bombardment_active or TurnManager.mission_over
+
+	if reinforcement_status_label:
+		if has_pending:
+			var drop = GameManager.get_pending_reinforcement()
+			var placed = drop.get("placed", false)
+			var name  = drop.get("squad_name", "")
+			var sector = drop.get("sector", "")
+			if placed:
+				reinforcement_status_label.text = "✓ %s dropping to %s — visit Holo-Map to confirm" % [name, sector]
+				reinforcement_status_label.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
+			else:
+				reinforcement_status_label.text = "⚠ %s queued — visit Holo-Map to place drop zone" % name
+				reinforcement_status_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.2))
+		elif bombardment_active:
+			reinforcement_status_label.text = "— Locked while Orbital Strike is armed —"
+			reinforcement_status_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		else:
+			reinforcement_status_label.text = ""
+
+func _refresh_bombardment_panel() -> void:
+	if bombardment_panel == null:
+		return
+
+	var pool = GameManager.get_orbital_strikes_pool()
+	var has_pending = not GameManager.get_pending_bombardment().is_empty()
+	var reinforcement_active = not GameManager.get_pending_reinforcement().is_empty()
+
+	bombardment_panel.visible = pool > 0 or has_pending
+
+	if bombardment_pool_label:
+		bombardment_pool_label.text = "Orbital Strikes Available: %d" % pool
+		bombardment_pool_label.add_theme_color_override("font_color",
+			Color(0.4, 0.9, 0.4) if pool > 0 else Color(0.5, 0.5, 0.5))
+
+	if arm_bombardment_btn:
+		arm_bombardment_btn.disabled = pool <= 0 or has_pending or reinforcement_active or TurnManager.mission_over
+
+	if bombardment_status_label:
+		if has_pending:
+			var drop = GameManager.get_pending_bombardment()
+			var placed = drop.get("placed", false)
+			if placed:
+				bombardment_status_label.text = "✓ Strike resolved at %s" % drop.get("sector", "")
+				bombardment_status_label.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
+			else:
+				bombardment_status_label.text = "⚠ Strike armed — visit Holo-Map to select target"
+				bombardment_status_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.2))
+		elif reinforcement_active:
+			bombardment_status_label.text = "— Locked while Reinforcement is queued —"
+			bombardment_status_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		else:
+			bombardment_status_label.text = ""
 
 func _status_color(status: int) -> Color:
 	match status:

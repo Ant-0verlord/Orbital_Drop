@@ -30,6 +30,11 @@ const REINFORCEMENT_NAMES: Array = [
 	"Squad Orun",
 ]
 
+func get_current_mission_data() -> Dictionary:
+	if current_mission < missions.size():
+		return missions[current_mission]
+	return {}
+
 # =============================================================
 # MISSION 1 — Planetary Insertion
 # 14 sectors, compact hub, 5 turns
@@ -164,72 +169,68 @@ const M2_AXIAL = [
 # 20 sectors, branching fork
 # =============================================================
 const M3_SECTORS = [
-	"Psi-7",     # 0
-	"Omega-3",   # 1
-	"Alpha-2B",  # 2
-	"Beta-8B",   # 3
-	"Gamma-4B",  # 4
-	"Delta-6B",  # 5
-	"Epsilon-9B",# 6
-	"Zeta-1B",   # 7
-	"Eta-5B",    # 8
-	"Theta-7B",  # 9
-	"Iota-3B",   # 10
-	"Kappa-9B",  # 11
-	"Lambda-2B", # 12
-	"Mu-8B",     # 13
-	"Nu-4B",     # 14
-	"Xi-6B",     # 15
-	"Omicron-1B",# 16
-	"Pi-5B",     # 17
-	"Rho-3B",    # 18
-	"Sigma-7B",  # 19
+	"Psi-1B", "Omega-1B", "Alpha-1B", "Beta-1B", "Gamma-1B", "Delta-1B", "Epsilon-1B",
+	"Zeta-1B", "Eta-1B", "Theta-1B", "Iota-1B", "Kappa-1B", "Lambda-1B", "Mu-1B",
+	"Nu-1B", "Xi-1B", "Omicron-1B", "Pi-1B", "Rho-1B", "Sigma-1B", "Tau-1B",
+	"Upsilon-1B", "Phi-1B", "Chi-1B", "Psi-3B", "Omega-3B", "Alpha-3B", "Beta-3B",
+	"Gamma-3B", "Delta-3B", "Epsilon-3B", "Zeta-3B", "Eta-3B", "Theta-3B", "Iota-3B",
+	"Kappa-3B", "Lambda-3B", "Mu-3B", "Nu-3B", "Xi-3B", "Omicron-3B",
 ]
 
 const M3_ADJACENCY = {
-	0:  [1, 2, 3],
-	1:  [0, 2, 4],
-	2:  [0, 1, 3, 5],
-	3:  [0, 2, 6],
-	4:  [1, 5, 7],
-	5:  [2, 4, 6, 8],
-	6:  [3, 5, 9],
-	7:  [4, 8, 10],
-	8:  [5, 7, 9, 11],
-	9:  [6, 8, 12],
-	10: [7, 11, 13],
-	11: [8, 10, 12, 14],
-	12: [9, 11, 15],
-	13: [10, 14, 16],
-	14: [11, 13, 15, 17],
-	15: [12, 14, 18],
-	16: [13, 17, 19],
-	17: [14, 16, 18],
-	18: [15, 17, 19],
-	19: [16, 18],
+	0:  [1, 2, 10, 11, 14],
+	1:  [0, 11, 12],
+	2:  [0, 4, 14, 16],
+	3:  [15, 17],
+	4:  [2, 5, 16, 18, 20],
+	5:  [4, 7, 20, 22],
+	6:  [9, 21, 23],
+	7:  [5, 8, 22, 24, 25],
+	8:  [7, 9, 25, 26],
+	9:  [6, 8, 23, 26, 27],
+	10: [0, 11, 14, 28],
+	11: [0, 1, 10, 12, 28, 29],
+	12: [1, 11, 13, 29, 30],
+	13: [12, 15, 30, 31, 32],
+	14: [0, 2, 10, 16],
+	15: [3, 13, 17, 32, 33],
+	16: [2, 4, 14, 18],
+	17: [3, 15, 19, 33],
+	18: [4, 16, 20, 34],
+	19: [17, 21],
+	20: [4, 5, 18, 22, 34, 35],
+	21: [6, 19, 23],
+	22: [5, 7, 20, 24, 35, 36],
+	23: [6, 9, 21, 27],
+	24: [7, 22, 25, 36, 37, 38],
+	25: [7, 8, 24, 26, 38, 39],
+	26: [8, 9, 25, 27, 39, 40],
+	27: [9, 23, 26, 40],
+	28: [10, 11, 29],
+	29: [11, 12, 28, 30],
+	30: [12, 13, 29, 31],
+	31: [13, 30, 32],
+	32: [13, 15, 31, 33],
+	33: [15, 17, 32],
+	34: [18, 20, 35],
+	35: [20, 22, 34, 36],
+	36: [22, 24, 35, 37],
+	37: [24, 36, 38],
+	38: [24, 25, 37, 39],
+	39: [25, 26, 38, 40],
+	40: [26, 27, 39],
 }
 
 const M3_AXIAL = [
-	Vector2( 0,  0),  # Psi-7      — spine base
-	Vector2( 0,  1),  # Omega-3
-	Vector2( 1,  0),  # Alpha-2B
-	Vector2( 1,  1),  # Beta-8B
-	Vector2( 0,  2),  # Gamma-4B   — upper fork
-	Vector2( 2,  0),  # Delta-6B   — lower fork
-	Vector2( 2,  1),  # Epsilon-9B
-	Vector2(-1,  2),  # Zeta-1B
-	Vector2( 3,  0),  # Eta-5B
-	Vector2( 3,  1),  # Theta-7B
-	Vector2(-2,  3),  # Iota-3B
-	Vector2( 4,  0),  # Kappa-9B
-	Vector2( 4,  1),  # Lambda-2B
-	Vector2(-3,  4),  # Mu-8B
-	Vector2( 5,  0),  # Nu-4B
-	Vector2( 5,  1),  # Xi-6B
-	Vector2(-4,  5),  # Omicron-1B
-	Vector2( 6,  0),  # Pi-5B
-	Vector2( 6,  1),  # Rho-3B
-	Vector2(-5,  6),  # Sigma-7B
+	Vector2(-2,  0), Vector2(-2,  1), Vector2(-1, -1), Vector2(-1,  2), Vector2( 0, -2),
+	Vector2( 1, -2), Vector2( 1,  1), Vector2( 2, -2), Vector2( 2, -1), Vector2( 2,  0),
+	Vector2(-3,  0), Vector2(-3,  1), Vector2(-3,  2), Vector2(-3,  3), Vector2(-2, -1),
+	Vector2(-2,  3), Vector2(-1, -2), Vector2(-1,  3), Vector2( 0, -3), Vector2( 0,  3),
+	Vector2( 1, -3), Vector2( 1,  2), Vector2( 2, -3), Vector2( 2,  1), Vector2( 3, -3),
+	Vector2( 3, -2), Vector2( 3, -1), Vector2( 3,  0), Vector2(-4,  1), Vector2(-4,  2),
+	Vector2(-4,  3), Vector2(-4,  4), Vector2(-3,  4), Vector2(-2,  4), Vector2( 1, -4),
+	Vector2( 2, -4), Vector2( 3, -4), Vector2( 4, -4), Vector2( 4, -3), Vector2( 4, -2),
+	Vector2( 4, -1),
 ]
 
 # =============================================================
@@ -406,6 +407,7 @@ var missions: Array = [
 		"objective":    "Capture and hold 4 sectors by the end of Turn 5.",
 		"supply_pool":        { "Armaments": 8, "Medi-Packs": 6, "Fuel Cells": 8 },
 		"reinforcement_pool": 0,
+		"orbital_strikes": 0,
 		"sectors":    M1_SECTORS,
 		"adjacency":  M1_ADJACENCY,
 		"axial":      M1_AXIAL,
@@ -432,6 +434,7 @@ var missions: Array = [
 		"adjacency":  M2_ADJACENCY,
 		"axial":      M2_AXIAL,
 		"reinforcement_schedule": { 5: 1, 6: 1 },
+		"orbital_strikes": 0,
 		"squads": [
 			{ "name": "Squad Varro", "sector": "Omicron-3", "status": SquadManager.Status.ACTIVE,  "need": SquadManager.Need.FUEL_CELLS },
 			{ "name": "Squad Kael",  "sector": "Pi-7",      "status": SquadManager.Status.WOUNDED, "need": SquadManager.Need.MEDI_PACKS },
@@ -446,32 +449,33 @@ var missions: Array = [
 		],
 	},
 	{
-		"title":        "Mission 3 — The Iron Salient",
-		"turns":        5,
-		"win_hexes":    11,
-		"interference": 0.5,
-		"objective":    "Hold 11 sectors against a reinforced enemy push.",
-		"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
-		"reinforcement_pool": 1,
-		"sectors":    M3_SECTORS,
-		"adjacency":  M3_ADJACENCY,
-		"axial":      M3_AXIAL,
-		"reinforcement_schedule": { 3: 1, 4: 2 },
-		"squads": [
-			{ "name": "Squad Varro", "sector": "Psi-7",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-			{ "name": "Squad Kael",  "sector": "Omega-3", "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
-			{ "name": "Squad Orin",  "sector": "Alpha-2B","status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-			{ "name": "Squad Davan", "sector": "Beta-8B", "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
-		],
-		"enemies": [
-			{ "sector": "Nu-4B"      },
-			{ "sector": "Xi-6B"      },
-			{ "sector": "Pi-5B"      },
-			{ "sector": "Rho-3B"     },
-			{ "sector": "Sigma-7B"   },
-			{ "sector": "Omicron-1B" },
-		],
-	},
+	"title":        "Mission 3 — The Iron Salient",
+	"turns":        5,
+	"win_hexes":    22,
+	"interference": 0.5,
+	"objective":    "Hold 22 sectors against a reinforced enemy push.",
+	"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
+	"reinforcement_pool": 1,
+	"orbital_strikes":    1,
+	"sectors":    M3_SECTORS,
+	"adjacency":  M3_ADJACENCY,
+	"axial":      M3_AXIAL,
+	"reinforcement_schedule": { 3: 1, 4: 2 },
+	"squads": [
+		{ "name": "Squad Varro", "sector": "Psi-1B",  "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+		{ "name": "Squad Kael",  "sector": "Omega-1B","status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
+		{ "name": "Squad Orin",  "sector": "Nu-1B",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+		{ "name": "Squad Davan", "sector": "Iota-1B", "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
+	],
+	"enemies": [
+		{ "sector": "Theta-1B"   },
+		{ "sector": "Sigma-1B"   },
+		{ "sector": "Beta-3B"    },
+		{ "sector": "Theta-3B"   },
+		{ "sector": "Mu-3B"      },
+		{ "sector": "Omicron-3B" },
+	],
+},
 	{
 		"title":        "Mission 4 — Contested Hive Spire",
 		"turns":        5,
@@ -480,6 +484,7 @@ var missions: Array = [
 		"objective":    "Hold 13 sectors. Comms are failing — trust your instincts.",
 		"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
 		"reinforcement_pool": 1,
+		"orbital_strikes": 0,
 		"sectors":    M4_SECTORS,
 		"adjacency":  M4_ADJACENCY,
 		"axial":      M4_AXIAL,
@@ -508,6 +513,7 @@ var missions: Array = [
 		"objective":    "Hold 15 sectors. All channels compromised. The final push begins.",
 		"supply_pool":        { "Armaments": 12, "Medi-Packs": 10, "Fuel Cells": 12 },
 		"reinforcement_pool": 2,
+		"orbital_strikes": 0,
 		"sectors":    M5_SECTORS,
 		"adjacency":  M5_ADJACENCY,
 		"axial":      M5_AXIAL,
@@ -532,11 +538,6 @@ var missions: Array = [
 	},
 ]
 
-func get_current_mission_data() -> Dictionary:
-	if current_mission < missions.size():
-		return missions[current_mission]
-	return {}
-
 func get_current_axial_map() -> Dictionary:
 	var data = get_current_mission_data()
 	var sectors = data.get("sectors", [])
@@ -546,9 +547,43 @@ func get_current_axial_map() -> Dictionary:
 		map[sectors[i]] = axial[i]
 	return map
 
+var orbital_strikes_pool: int = 0
+var pending_bombardment: Dictionary = {}
+
+func consume_orbital_strike() -> bool:
+	if orbital_strikes_pool <= 0:
+		return false
+	orbital_strikes_pool -= 1
+	return true
+
+func get_orbital_strikes_pool() -> int:
+	return orbital_strikes_pool
+
+func queue_bombardment() -> bool:
+	if not pending_reinforcement.is_empty():
+		return false  # mutual exclusion with reinforcement
+	pending_bombardment = { "sector": "", "placed": false }
+	return true
+
+func place_bombardment(sector: String) -> void:
+	if pending_bombardment.is_empty():
+		return
+	pending_bombardment["sector"] = sector
+	pending_bombardment["placed"] = true
+
+func get_pending_bombardment() -> Dictionary:
+	return pending_bombardment
+
+func clear_pending_bombardment() -> void:
+	pending_bombardment = {}
+
+func has_pending_bombardment() -> bool:
+	return not pending_bombardment.is_empty()
+
 
 func start_current_mission() -> void:
 	var data = get_current_mission_data()
+	orbital_strikes_pool = data.get("orbital_strikes", 0)
 	if data.is_empty():
 		push_error("GameManager: No mission data for index %d" % current_mission)
 		return
@@ -563,6 +598,21 @@ func start_current_mission() -> void:
 
 	TurnManager.start_mission(data)
 
+func debug_jump_to_mission(index: int) -> void:
+	if index < 0 or index >= missions.size():
+		return
+
+	current_mission = index
+	supply_pool   = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
+	supply_spent  = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
+	reinforcement_pool      = 0
+	orbital_strikes_pool    = 0
+	pending_reinforcement   = {}
+	pending_bombardment     = {}
+	used_reinforcement_names = []
+
+	start_current_mission()
+	print("DEBUG: Jumped to mission %d — %s" % [index, missions[index].get("title", "")])
 
 func start_campaign() -> void:
 	current_mission = 0
@@ -623,11 +673,9 @@ func register_reinforcement_name(squad_name: String) -> void:
 
 
 func queue_reinforcement(squad_name: String) -> void:
-	pending_reinforcement = {
-		"squad_name": squad_name,
-		"sector":     "",
-		"placed":     false,
-	}
+	if not pending_bombardment.is_empty():
+		return
+	pending_reinforcement = { "squad_name": squad_name, "sector": "", "placed": false }
 
 
 func place_reinforcement(sector: String) -> void:

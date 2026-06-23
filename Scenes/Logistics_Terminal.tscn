@@ -95,6 +95,18 @@ text = "Call Reinforcement Drop"
 [node name="ReinforcementStatusLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=1201652903]
 layout_mode = 2
 
+[node name="BombardmentPanel" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1032482518]
+layout_mode = 2
+
+[node name="BombardmentPoolLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/BombardmentPanel" unique_id=140690005]
+layout_mode = 2
+
+[node name="ArmBombardmentBtn" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/BombardmentPanel" unique_id=1636552871]
+layout_mode = 2
+
+[node name="BombardmentStatusLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/BombardmentPanel" unique_id=2107017614]
+layout_mode = 2
+
 [node name="HSeparator" type="HSeparator" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=406368883]
 layout_mode = 2
 

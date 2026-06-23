@@ -120,24 +120,21 @@ func _point_in_hex(point: Vector2, center: Vector2, radius: float) -> bool:
 # -------------------------------------------------------
 # 14-hex layout — coordinates relative to this control
 # -------------------------------------------------------
-var current_axial_by_sector: Dictionary = {}  # sector_name -> Vector2
+var current_axial_by_sector: Dictionary = {}
 
 func _build_hex_layout() -> void:
 	hex_entries.clear()
 	for sector_name in zone_states.keys():
 		if not current_axial_by_sector.has(sector_name):
 			continue
-		var axial_pos: Vector2 = current_axial_by_sector[sector_name]
+		var pos: Vector2 = current_axial_by_sector[sector_name]
 		var r   = HEX_RADIUS
 		var sq3 = sqrt(3.0)
 		var pixel = Vector2(
-			r * (sq3 * axial_pos.x + sq3 * 0.5 * axial_pos.y),
-			r * (1.5 * axial_pos.y)
+			r * (sq3 * pos.x + sq3 * 0.5 * pos.y),
+			r * (1.5 * pos.y)
 		)
-		hex_entries.append({
-			"sector": sector_name,
-			"center": GRID_CENTER + pixel,
-		})
+		hex_entries.append({ "sector": sector_name, "center": GRID_CENTER + pixel })
 
 
 func _draw() -> void:

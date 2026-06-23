@@ -59,6 +59,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Close popup with Esc
 	if event.is_action_pressed("ui_cancel") and popup_open:
 		_close_popup()
+	
+	# TEMPORARY DEBUG — jump to mission by number key (remove before release)
+	if event is InputEventKey and event.pressed and not popup_open:
+		if event.keycode >= KEY_1 and event.keycode <= KEY_5:
+			var mission_index = event.keycode - KEY_1
+			GameManager.debug_jump_to_mission(mission_index)
 
 
 func _physics_process(delta: float) -> void:
@@ -92,6 +98,7 @@ func _physics_process(delta: float) -> void:
 # Called by a popup's Close button
 func on_popup_closed() -> void:
 	_close_popup()
+
 
 
 func _close_popup() -> void:

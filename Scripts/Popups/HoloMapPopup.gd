@@ -59,6 +59,31 @@ func _on_allocations_locked() -> void:
 	# When allocations are locked, check if reinforcement needs placing
 	_check_placement_mode()
 
+func _check_bombardment_mode() -> void:
+	var pending = GameManager.get_pending_bombardment()
+	if not pending.is_empty() and not pending.get("placed", false):
+		_enter_bombardment_mode()
+	else:
+		_exit_bombardment_mode()
+
+func _on_bombardment_confirmed() -> void:
+	var sector = hex_canvas.placed_sector
+	if sector == "":
+		return
+	var affected = EnemyManager.resolve_bombardment(sector)
+	for squad in SquadManager.get_squads_for_ui():
+		if squad.sector in affected and squad.status != SquadManager.Status.LOST:
+			SquadManager.apply_bombardment_casualty(squad.name)
+	GameManager.clear_pending_bombardment()
+	_exit_bombardment_mode()
+	_refresh_from_game_state()
+
+func _enter_bombardment_mode() -> void:
+	hex_canvas.enter_placement_mode()  # reuse the same hover/click visuals
+	# show your own banner here, same pattern as _enter_placement_mode()
+
+func _exit_bombardment_mode() -> void:
+	hex_canvas.exit_placement_mode()
 
 func _refresh_from_game_state() -> void:
 	var hex_control = EnemyManager.get_hex_control()
@@ -74,7 +99,8 @@ func _refresh_from_game_state() -> void:
 			"squad":       squad_sectors.get(sector, ""),
 			"enemy_count": EnemyManager.get_enemy_count_at(sector),
 		}
-	refresh(states)
+
+	refresh(states, GameManager.get_current_axial_map())
 
 
 func _update_labels() -> void:

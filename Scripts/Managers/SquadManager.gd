@@ -234,6 +234,16 @@ func get_reports() -> Dictionary:
 		)
 	return result
 
+# In SquadManager.gd
+func apply_bombardment_casualty(squad_name: String) -> void:
+	if not squads.has(squad_name):
+		return
+	var squad = squads[squad_name]
+	if squad.status == Status.LOST:
+		return
+	_worsen_status(squad)
+	if squad.status == Status.LOST:
+		emit_signal("squad_lost", squad_name)
 
 func get_briefings() -> Dictionary:
 	var result: Dictionary = {}
@@ -282,7 +292,6 @@ func _next_need(squad: Dictionary, last_action: String) -> int:
 		"fought_unarmed_won":            return Need.ARMAMENTS
 		"fought_unarmed_lost":           return Need.MEDI_PACKS
 	return Need.FUEL_CELLS if randf() > 0.5 else Need.ARMAMENTS
-
 
 func _apply_interference(text: String) -> String:
 	if interference <= 0.0:

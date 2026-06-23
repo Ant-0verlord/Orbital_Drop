@@ -410,6 +410,18 @@ func _bfs_distance(start: String, end_sector: String) -> int:
 				queue.append([neighbor, dist + 1])
 	return 999
 
+func resolve_bombardment(center: String) -> Array:
+	var affected = [center]
+	for n in adjacency.get(center, []):
+		affected.append(n)
+
+	for sector in affected:
+		for unit in _get_enemies_at(sector).duplicate():
+			enemy_units.erase(unit)
+		hex_control[sector] = "neutral"
+
+	emit_signal("enemies_updated")
+	return affected
 
 func _build_adjacency(mission_adjacency: Dictionary) -> void:
 	adjacency.clear()
