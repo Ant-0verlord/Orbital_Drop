@@ -88,7 +88,11 @@ layout_mode = 2
 layout_mode = 2
 text = "SQUAD STATUS"
 
-[node name="SquadSummary" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=649958200]
+[node name="ScrollContainer" type="ScrollContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer" unique_id=286582615]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+
+[node name="SquadSummary" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer/ScrollContainer" unique_id=649958200]
 layout_mode = 2
 theme_override_constants/separation = 4
 
