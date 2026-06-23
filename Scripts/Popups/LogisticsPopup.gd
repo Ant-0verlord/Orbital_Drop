@@ -262,6 +262,9 @@ func _on_call_reinforcement_pressed() -> void:
 	if idx < 0: return
 	var chosen_name = reinforcement_name_btn.get_item_text(idx)
 
+	if not GameManager.consume_reinforcement():
+		return  # safety guard, shouldn't happen given the check above
+
 	GameManager.queue_reinforcement(chosen_name)
 	_refresh_reinforcement_panel()
 
