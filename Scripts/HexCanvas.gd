@@ -15,6 +15,11 @@ var placement_mode: bool = false
 var hovered_sector: String = ""
 var placed_sector: String = ""
 
+var pan_offset: Vector2 = Vector2.ZERO
+var dragging: bool = false
+var drag_start_mouse: Vector2 = Vector2.ZERO
+var drag_start_offset: Vector2 = Vector2.ZERO
+
 signal hex_clicked(sector: String)
 
 const PULSE_SPEED: float = 2.5
@@ -35,10 +40,35 @@ const COLOR_PLACEMENT:    Color = Color(0.2,  0.6,  1.0,  0.9)
 const COLOR_PLACEMENT_HOVER: Color = Color(0.4, 0.85, 1.0, 1.0)
 const COLOR_PLACED:       Color = Color(0.1,  1.0,  0.5,  0.95)
 
+func _ready() -> void:
+	clip_contents = true
+	mouse_filter = Control.MOUSE_FILTER_STOP
+
+func _clamp_pan_offset() -> void:
+	if hex_entries.is_empty():
+		return
+	var min_x = INF; var max_x = -INF
+	var min_y = INF; var max_y = -INF
+	for entry in hex_entries:
+		min_x = min(min_x, entry.center.x)
+		max_x = max(max_x, entry.center.x)
+		min_y = min(min_y, entry.center.y)
+		max_y = max(max_y, entry.center.y)
+
+	var margin = HEX_RADIUS * 2.0
+	pan_offset.x = clamp(pan_offset.x, size.x - max_x - margin, -min_x + margin)
+	pan_offset.y = clamp(pan_offset.y, size.y - max_y - margin, -min_y + margin)
 
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	
+	if dragging:
+		var mouse_pos = get_local_mouse_position()
+		pan_offset = drag_start_offset + (mouse_pos - drag_start_mouse)
+		_clamp_pan_offset()
+		queue_redraw()
+	
 	pulse_time += delta * PULSE_SPEED
 	var interference = SquadManager.interference
 	if interference > 0.2:
@@ -74,6 +104,15 @@ func exit_placement_mode() -> void:
 # Mouse input — only active in placement mode
 # -------------------------------------------------------
 func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_MIDDLE:
+			if event.pressed:
+				dragging = true
+				drag_start_mouse  = event.position
+				drag_start_offset = pan_offset
+			else:
+				dragging = false
+
 	if not placement_mode:
 		return
 
@@ -97,7 +136,7 @@ func _gui_input(event: InputEvent) -> void:
 # -------------------------------------------------------
 func _sector_at(pos: Vector2) -> String:
 	for entry in hex_entries:
-		if _point_in_hex(pos, entry.center, HEX_INNER):
+		if _point_in_hex(pos - pan_offset, entry.center, HEX_INNER):
 			return entry.sector
 	return ""
 
@@ -152,7 +191,7 @@ func _draw() -> void:
 	var interference = SquadManager.interference
 
 	for entry in hex_entries:
-		var center: Vector2  = entry.center
+		var center: Vector2  = entry.center + pan_offset
 		var sector: String   = entry.sector
 		var data             = zone_states.get(sector, {})
 		var state: String    = data.get("state", "enemy")
