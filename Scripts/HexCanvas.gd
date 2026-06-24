@@ -65,7 +65,8 @@ func _process(delta: float) -> void:
 	
 	if dragging:
 		var mouse_pos = get_local_mouse_position()
-		pan_offset = drag_start_offset + (mouse_pos - drag_start_mouse)
+		var target_offset = drag_start_offset + (mouse_pos - drag_start_mouse)
+		pan_offset = pan_offset.lerp(target_offset, 0.35)  # smaller = smoother/slower follow
 		_clamp_pan_offset()
 		queue_redraw()
 	
@@ -89,14 +90,12 @@ func enter_placement_mode() -> void:
 	placement_mode = true
 	hovered_sector = ""
 	placed_sector  = ""
-	mouse_filter   = Control.MOUSE_FILTER_STOP
 	queue_redraw()
 
 
 func exit_placement_mode() -> void:
 	placement_mode = false
 	hovered_sector = ""
-	mouse_filter   = Control.MOUSE_FILTER_IGNORE
 	queue_redraw()
 
 
