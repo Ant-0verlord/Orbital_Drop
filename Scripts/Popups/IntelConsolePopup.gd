@@ -7,6 +7,8 @@ extends Control
 # Squad NEEDS are NOT shown here — check the Vox-Caster.
 # =============================================================
 
+var player_reinforcement_info: Dictionary = {}
+var bombardment_report: Dictionary = {}
 var player: Node = null
 var reinforcement_warning_turn: int  = -1
 var reinforcement_warning_count: int = 0
@@ -23,6 +25,8 @@ func _ready() -> void:
 	TurnManager.turn_started.connect(_on_turn_started)
 	TurnManager.enemy_reinforcements_incoming.connect(_on_reinforcements_incoming)
 	TurnManager.enemy_reinforcements_landed.connect(_on_reinforcements_landed)
+	EnemyManager.reinforcement_landed.connect(_on_player_reinforcement_landed)
+	TurnManager.orbital_strike_resolved.connect(_on_orbital_strike_resolved)
 	close_btn.pressed.connect(_on_close_pressed)
 
 
@@ -53,7 +57,13 @@ func _rebuild_reports() -> void:
 
 	for child in report_container.get_children():
 		child.queue_free()
+	
+	if not player_reinforcement_info.is_empty() and player_reinforcement_info.get("turn") == SquadManager.current_turn:
+		_add_player_reinforcement_card(player_reinforcement_info)
 
+	if not bombardment_report.is_empty() and bombardment_report.get("turn") == SquadManager.current_turn:
+		_add_bombardment_report_card(bombardment_report)
+	
 	# Reinforcement alerts — shown above all squad reports
 	if landed_sectors.size() > 0 and landed_turn == SquadManager.current_turn:
 		_add_reinforcements_landed_card(landed_sectors)
@@ -78,6 +88,21 @@ func _rebuild_reports() -> void:
 		var squad_data = SquadManager.squads.get(squad_name, {})
 		_add_report_card(squad_name, reports[squad_name], squad_data)
 
+
+func _on_player_reinforcement_landed(squad_name: String, sector: String, surprise: bool) -> void:
+	player_reinforcement_info = {
+		"squad_name": squad_name,
+		"sector":     sector,
+		"surprise":   surprise,
+		"turn":       SquadManager.current_turn,
+	}
+	if visible:
+		refresh()
+
+func _on_orbital_strike_resolved(report: Dictionary) -> void:
+	bombardment_report = report
+	if visible:
+		refresh()
 
 func _add_report_card(squad_name: String, report_text: String, squad_data: Dictionary) -> void:
 	var card := PanelContainer.new()
@@ -253,3 +278,71 @@ func _on_close_pressed() -> void:
 	visible = false
 	if player and player.has_method("on_popup_closed"):
 		player.on_popup_closed()
+
+func _add_player_reinforcement_card(info: Dictionary) -> void:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _alert_style(Color(0.05, 0.18, 0.1), Color(0.3, 0.85, 0.4, 0.95)))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "✓ REINFORCEMENT DEPLOYED"
+	header.add_theme_font_size_override("font_size", 13)
+	header.add_theme_color_override("font_color", Color(0.4, 0.95, 0.5))
+	vbox.add_child(header)
+
+	var body := Label.new()
+	var surprise_text = " — caught enemy forces by surprise on landing" if info.get("surprise", false) else ""
+	body.text = "%s has dropped into %s%s." % [info.get("squad_name", ""), info.get("sector", ""), surprise_text]
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD
+	body.add_theme_font_size_override("font_size", 12)
+	body.add_theme_color_override("font_color", Color(0.7, 0.9, 0.75))
+	vbox.add_child(body)
+
+	report_container.add_child(card)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 4
+	report_container.add_child(spacer)
+
+
+func _add_bombardment_report_card(report: Dictionary) -> void:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _alert_style(Color(0.2, 0.1, 0.02), Color(1.0, 0.55, 0.1, 0.95)))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "☄ ORBITAL STRIKE — IMPACT CONFIRMED"
+	header.add_theme_font_size_override("font_size", 13)
+	header.add_theme_color_override("font_color", Color(1.0, 0.65, 0.2))
+	vbox.add_child(header)
+
+	var killed = report.get("enemies_killed", 0)
+	var center = report.get("center", "")
+	var unit_word = "unit" if killed == 1 else "units"
+	var body := Label.new()
+	body.text = "Strike centred on %s eliminated %d enemy %s across the blast radius." % [center, killed, unit_word]
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD
+	body.add_theme_font_size_override("font_size", 12)
+	body.add_theme_color_override("font_color", Color(0.95, 0.8, 0.6))
+	vbox.add_child(body)
+
+	var squads_hit = report.get("squads_hit", [])
+	if squads_hit.size() > 0:
+		var ff_lbl := Label.new()
+		ff_lbl.text = "⚠ Friendly fire: %s caught in the blast radius." % ", ".join(squads_hit)
+		ff_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+		ff_lbl.add_theme_font_size_override("font_size", 12)
+		ff_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+		vbox.add_child(ff_lbl)
+
+	report_container.add_child(card)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 4
+	report_container.add_child(spacer)

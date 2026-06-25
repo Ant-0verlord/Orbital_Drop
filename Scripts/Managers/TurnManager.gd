@@ -10,6 +10,7 @@ signal mission_complete(report: Dictionary)
 signal mission_failed(reason: String)
 signal enemy_reinforcements_incoming(turn: int, count: int)
 signal enemy_reinforcements_landed(sectors: Array)
+signal orbital_strike_resolved(report: Dictionary)
 
 var current_turn: int = 0
 var max_turns: int = 0
@@ -62,7 +63,7 @@ func lock_allocations(allocations: Dictionary) -> void:
 	emit_signal("allocations_locked")
 
 
-func end_turn() -> void:
+func end_turn() -> void:	
 	if mission_over:
 		return
 	if not allocations_are_locked:
@@ -70,15 +71,20 @@ func end_turn() -> void:
 		return
 
 	current_turn += 1
-
+	
 	# Squads act
 	SquadManager.resolve_turn(pending_allocations)
-
+	
 	# Spawn enemy reinforcements for this turn if scheduled
 	var spawned_sectors = _process_reinforcement_schedule()
 
 	# Enemies advance
 	EnemyManager.advance_enemies(pending_allocations)
+
+	# Resolve any armed orbital strike
+	var bombardment_report = _process_bombardment()
+	if not bombardment_report.is_empty():
+		emit_signal("orbital_strike_resolved", bombardment_report)
 
 	# Notify Intel Console of where reinforcements landed
 	if spawned_sectors.size() > 0:
@@ -86,7 +92,7 @@ func end_turn() -> void:
 
 	allocations_are_locked = false
 	pending_allocations = {}
-
+	
 	emit_signal("turn_ended", current_turn)
 
 	# Loss check: all squads lost
@@ -200,3 +206,31 @@ func _end_mission(won: bool, reason: String) -> void:
 
 func _on_squad_lost(squad_name: String) -> void:
 	print("TurnManager: %s has been lost." % squad_name)
+
+func _process_bombardment() -> Dictionary:
+	if not GameManager.has_armed_bombardment():
+		return {}
+
+	var drop   = GameManager.get_pending_bombardment()
+	var sector = drop.get("sector", "")
+	GameManager.clear_pending_bombardment()
+	if sector == "":
+		return {}
+
+	var result      = EnemyManager.resolve_bombardment(sector)
+	var affected    = result.get("affected", [])
+	var killed      = result.get("enemies_killed", 0)
+	var squads_hit  = []
+
+	for squad in SquadManager.get_squads_for_ui():
+		if squad.sector in affected and squad.status != SquadManager.Status.LOST:
+			SquadManager.apply_bombardment_casualty(squad.name)
+			squads_hit.append(squad.name)
+
+	return {
+		"center":         sector,
+		"affected":       affected,
+		"enemies_killed": killed,
+		"squads_hit":     squads_hit,
+		"turn":           current_turn,
+	}

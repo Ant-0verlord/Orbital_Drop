@@ -718,3 +718,6 @@ func calculate_score(held_hexes: int, turns_taken: int, win_hexes: int) -> Dicti
 		"turn_bonus":   turn_bonus,
 		"supply_bonus": supply_bonus,
 	}
+
+func has_armed_bombardment() -> bool:
+	return not pending_bombardment.is_empty() and pending_bombardment.get("placed", false)

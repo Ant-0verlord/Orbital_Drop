@@ -4,6 +4,7 @@ extends Node
 # =============================================================
 
 signal enemies_updated
+signal reinforcement_landed(squad_name: String, sector: String, surprise: bool)
 
 var hex_control: Dictionary = {}
 var enemy_units: Array = []
@@ -228,8 +229,9 @@ func advance_enemies(allocations: Dictionary) -> void:
 					if unit.sector == target_sector:
 						enemy_units.erase(unit)
 			hex_control[target_sector] = "held"
+			emit_signal("reinforcement_landed", squad_name, target_sector, surprise)
 		GameManager.clear_pending_reinforcement()
-
+	
 	_rebuild_hex_control(squad_sectors)
 	emit_signal("enemies_updated")
 
@@ -410,18 +412,21 @@ func _bfs_distance(start: String, end_sector: String) -> int:
 				queue.append([neighbor, dist + 1])
 	return 999
 
-func resolve_bombardment(center: String) -> Array:
+func resolve_bombardment(center: String) -> Dictionary:
 	var affected = [center]
 	for n in adjacency.get(center, []):
 		affected.append(n)
 
+	var killed = 0
 	for sector in affected:
-		for unit in _get_enemies_at(sector).duplicate():
+		var enemies_here = _get_enemies_at(sector)
+		killed += enemies_here.size()
+		for unit in enemies_here.duplicate():
 			enemy_units.erase(unit)
 		hex_control[sector] = "neutral"
 
 	emit_signal("enemies_updated")
-	return affected
+	return { "affected": affected, "enemies_killed": killed }
 
 func _build_adjacency(mission_adjacency: Dictionary) -> void:
 	adjacency.clear()

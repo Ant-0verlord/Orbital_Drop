@@ -179,12 +179,7 @@ func _on_placement_confirmed() -> void:
 		return
 
 	if current_action_mode == "bombardment":
-		var affected = EnemyManager.resolve_bombardment(sector)
-		for squad in SquadManager.get_squads_for_ui():
-			if squad.sector in affected and squad.status != SquadManager.Status.LOST:
-				SquadManager.apply_bombardment_casualty(squad.name)
 		GameManager.place_bombardment(sector)
-		GameManager.clear_pending_bombardment()
 		current_action_mode = ""
 		_exit_placement_mode()
 		_refresh_from_game_state()
