@@ -24,6 +24,7 @@ SquadManager="*uid://dk2t47qbixjht"
 TurnManager="*uid://4rpomqt6fuke"
 GameManager="*uid://1jy5j18fq4vt"
 EnemyManager="*uid://br81g4sx2pa3f"
+SettingsManager="*uid://ursnnpijwoys"
 
 [input]
 
