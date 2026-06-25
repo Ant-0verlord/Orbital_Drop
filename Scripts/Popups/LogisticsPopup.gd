@@ -33,10 +33,9 @@ var pending_reinforcement_name: String = ""
 @onready var reinforcement_status_label: Label   = $PanelContainer/VBoxContainer/ReinforcementPanel/RVBox/ReinforcementStatusLabel
 
 @onready var bombardment_panel: PanelContainer = $PanelContainer/VBoxContainer/BombardmentPanel
-@onready var bombardment_pool_label: Label     = $PanelContainer/VBoxContainer/BombardmentPanel/BVBox/BombardmentPoolLabel
-@onready var arm_bombardment_btn: Button       = $PanelContainer/VBoxContainer/BombardmentPanel/BVBox/ArmBombardmentBtn
-@onready var bombardment_status_label: Label   = $PanelContainer/VBoxContainer/BombardmentPanel/BVBox/BombardmentStatusLabel
-
+@onready var bombardment_pool_label: Label     = $PanelContainer/VBoxContainer/BombardmentPanel/BombardmentPoolLabel
+@onready var arm_bombardment_btn: Button       = $PanelContainer/VBoxContainer/BombardmentPanel/ArmBombardmentBtn
+@onready var bombardment_status_label: Label   = $PanelContainer/VBoxContainer/BombardmentPanel/BombardmentStatusLabel
 
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
@@ -48,11 +47,13 @@ func _ready() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 	end_close.pressed.connect(_on_close_pressed)
 	call_reinforcement_btn.pressed.connect(_on_call_reinforcement_pressed)
+	arm_bombardment_btn.pressed.connect(_on_arm_bombardment_pressed)
 
 	end_overlay.visible = false
 	warning_label.text = ""
 
 	_refresh_reinforcement_panel()
+	_refresh_bombardment_panel()
 
 
 func _on_turn_started(_turn: int) -> void:

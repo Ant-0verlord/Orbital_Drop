@@ -5,6 +5,7 @@ extends Control
 # Handles reinforcement drop placement mode.
 # =============================================================
 
+var current_action_mode: String = ""  # "", "reinforcement", or "bombardment"
 var player: Node = null
 var zone_states: Dictionary = {}
 
@@ -66,6 +67,15 @@ func _check_bombardment_mode() -> void:
 	else:
 		_exit_bombardment_mode()
 
+func _enter_bombardment_mode() -> void:
+	hex_canvas.enter_placement_mode()
+	placement_banner.visible = true
+	if placement_label:
+		placement_label.text = "SELECT ORBITAL STRIKE TARGET — Click a hex to fire (hits centre + 6 surrounding hexes)"
+		placement_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+	placement_confirm_btn.disabled = true
+	close_btn.disabled = true
+
 func _on_bombardment_confirmed() -> void:
 	var sector = hex_canvas.placed_sector
 	if sector == "":
@@ -78,9 +88,6 @@ func _on_bombardment_confirmed() -> void:
 	_exit_bombardment_mode()
 	_refresh_from_game_state()
 
-func _enter_bombardment_mode() -> void:
-	hex_canvas.enter_placement_mode()  # reuse the same hover/click visuals
-	# show your own banner here, same pattern as _enter_placement_mode()
 
 func _exit_bombardment_mode() -> void:
 	hex_canvas.exit_placement_mode()
@@ -118,10 +125,17 @@ func _update_labels() -> void:
 # Placement mode — enter when pending reinforcement exists
 # -------------------------------------------------------
 func _check_placement_mode() -> void:
-	var pending = GameManager.get_pending_reinforcement()
-	if not pending.is_empty() and not pending.get("placed", false):
-		_enter_placement_mode(pending.get("squad_name", ""))
+	var pending_r = GameManager.get_pending_reinforcement()
+	var pending_b = GameManager.get_pending_bombardment()
+
+	if not pending_r.is_empty() and not pending_r.get("placed", false):
+		current_action_mode = "reinforcement"
+		_enter_placement_mode(pending_r.get("squad_name", ""))
+	elif not pending_b.is_empty() and not pending_b.get("placed", false):
+		current_action_mode = "bombardment"
+		_enter_bombardment_mode()
 	else:
+		current_action_mode = ""
 		_exit_placement_mode()
 
 
@@ -142,6 +156,13 @@ func _exit_placement_mode() -> void:
 
 
 func _on_hex_clicked(sector: String) -> void:
+	if current_action_mode == "bombardment":
+		if placement_label:
+			placement_label.text = "STRIKE TARGET: %s — Confirm to fire, or pick another hex" % sector
+			placement_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+		placement_confirm_btn.disabled = false
+		return
+
 	if placement_label:
 		var pending = GameManager.get_pending_reinforcement()
 		var squad_name = pending.get("squad_name", "")
@@ -156,13 +177,33 @@ func _on_placement_confirmed() -> void:
 	var sector = hex_canvas.placed_sector
 	if sector == "":
 		return
+
+	if current_action_mode == "bombardment":
+		var affected = EnemyManager.resolve_bombardment(sector)
+		for squad in SquadManager.get_squads_for_ui():
+			if squad.sector in affected and squad.status != SquadManager.Status.LOST:
+				SquadManager.apply_bombardment_casualty(squad.name)
+		GameManager.place_bombardment(sector)
+		GameManager.clear_pending_bombardment()
+		current_action_mode = ""
+		_exit_placement_mode()
+		_refresh_from_game_state()
+		return
+
 	GameManager.place_reinforcement(sector)
 	_exit_placement_mode()
 	_refresh_from_game_state()
 
 
 func _on_placement_cancelled() -> void:
-	# Cancel clears the pending reinforcement and refunds the pool
+	if current_action_mode == "bombardment":
+		GameManager.clear_pending_bombardment()
+		GameManager.orbital_strikes_pool += 1
+		current_action_mode = ""
+		hex_canvas.exit_placement_mode()
+		_exit_placement_mode()
+		return
+
 	GameManager.clear_pending_reinforcement()
 	GameManager.reinforcement_pool += 1
 	hex_canvas.exit_placement_mode()
