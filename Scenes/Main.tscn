@@ -1,9 +1,113 @@
 [gd_scene format=3 uid="uid://bcs0wk4jue5bi"]
 
-[node name="Control" type="Control" unique_id=856513521]
+[ext_resource type="Script" uid="uid://bsi60820lcavj" path="res://Scripts/MainMenu.gd" id="1_r150o"]
+
+[node name="MainMenu" type="Control" unique_id=856513521]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_r150o")
+
+[node name="BG" type="ColorRect" parent="." unique_id=1053861166]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=539805295]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer" unique_id=2071187900]
+layout_mode = 2
+text = "ORBITAL DROP"
+
+[node name="PlayBtn" type="Button" parent="VBoxContainer" unique_id=1112426566]
+layout_mode = 2
+text = "Play"
+
+[node name="SettingsBtn" type="Button" parent="VBoxContainer" unique_id=1248729275]
+layout_mode = 2
+text = "Settings"
+
+[node name="ExitBtn" type="Button" parent="VBoxContainer" unique_id=1202836156]
+layout_mode = 2
+text = "Exit"
+
+[node name="SettingsOverlay" type="ColorRect" parent="." unique_id=529759653]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SettingsPanel" type="PanelContainer" parent="SettingsOverlay" unique_id=514309819]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SettingsOverlay/SettingsPanel" unique_id=967494604]
+layout_mode = 2
+
+[node name="SettingsTitle" type="Label" parent="SettingsOverlay/SettingsPanel/VBoxContainer" unique_id=1032378214]
+layout_mode = 2
+text = "Settings"
+
+[node name="MasterRow" type="HBoxContainer" parent="SettingsOverlay/SettingsPanel/VBoxContainer" unique_id=1230673135]
+layout_mode = 2
+
+[node name="MasterLabel" type="Label" parent="SettingsOverlay/SettingsPanel/VBoxContainer/MasterRow" unique_id=1467480908]
+layout_mode = 2
+text = "Master Volume"
+
+[node name="MasterSlider" type="HSlider" parent="SettingsOverlay/SettingsPanel/VBoxContainer/MasterRow" unique_id=1108234507]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="MusicRow" type="HBoxContainer" parent="SettingsOverlay/SettingsPanel/VBoxContainer" unique_id=859839467]
+layout_mode = 2
+
+[node name="MusicLabel" type="Label" parent="SettingsOverlay/SettingsPanel/VBoxContainer/MusicRow" unique_id=547920104]
+layout_mode = 2
+text = "Music Volume"
+
+[node name="MusicSlider" type="HSlider" parent="SettingsOverlay/SettingsPanel/VBoxContainer/MusicRow" unique_id=2098812616]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="SFXRow" type="HBoxContainer" parent="SettingsOverlay/SettingsPanel/VBoxContainer" unique_id=537896676]
+layout_mode = 2
+
+[node name="SFXLabel" type="Label" parent="SettingsOverlay/SettingsPanel/VBoxContainer/SFXRow" unique_id=924125963]
+layout_mode = 2
+text = "SFX Volume"
+
+[node name="SFXSlider" type="HSlider" parent="SettingsOverlay/SettingsPanel/VBoxContainer/SFXRow" unique_id=1350361770]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="SettingsCloseBtn" type="Button" parent="SettingsOverlay/SettingsPanel/VBoxContainer" unique_id=502961250]
+layout_mode = 2
+text = "Back"

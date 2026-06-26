@@ -1,4 +1,4 @@
-eextends Node
+extends Node
 # =============================================================
 # SettingsManager.gd — AutoLoad singleton
 # Handles audio bus volumes and persistence to disk.
