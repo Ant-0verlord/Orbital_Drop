@@ -130,6 +130,7 @@ layout_mode = 2
 
 [node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=2142155908]
 layout_mode = 2
+text = "Close  [Esc]"
 
 [node name="EndOverlay" type="ColorRect" parent="MeshInstance3D/StaticBody3D/LogisticsPopup" unique_id=750091720]
 layout_mode = 0

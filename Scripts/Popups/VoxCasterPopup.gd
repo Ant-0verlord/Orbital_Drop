@@ -10,6 +10,11 @@ extends Control
 # =============================================================
 
 var player: Node = null
+var cached_turn: int = -1
+var cached_quality: Dictionary = {}      # squad_name -> "normal"/"delayed"/"ghost"/"dead"
+var cached_need_text: Dictionary = {}    # squad_name -> garbled need string
+var cached_status_text: Dictionary = {}  # squad_name -> garbled status string
+var cached_flavour: Dictionary = {}      # squad_name -> chosen flavour line (dead/ghost/delayed labels)
 
 const STATIC_CHARS = ["—", "█", "░", "▒", "?", "#", "~", "×"]
 
@@ -62,9 +67,49 @@ func _on_mission_complete(_report: Dictionary) -> void:
 func refresh() -> void:
 	if SquadManager.squads.is_empty():
 		return
+	_ensure_cache_for_turn()
 	_rebuild_transmissions()
 
+func _ensure_cache_for_turn() -> void:
+	if cached_turn == SquadManager.current_turn:
+		return  # already built for this turn
 
+	cached_turn = SquadManager.current_turn
+	cached_quality.clear()
+	cached_need_text.clear()
+	cached_status_text.clear()
+	cached_flavour.clear()
+
+	for squad_name in SquadManager.squads:
+		var squad = SquadManager.squads[squad_name]
+		if squad.status == SquadManager.Status.CRITICAL:
+			continue  # distress calls always render fresh, no caching needed
+
+		var quality = _transmission_quality(squad)
+		cached_quality[squad_name] = quality
+
+		match quality:
+			"dead":
+				cached_flavour[squad_name] = DEAD_CHANNEL[randi() % DEAD_CHANNEL.size()]
+			"ghost":
+				cached_flavour[squad_name] = GHOST_SIGNAL[randi() % GHOST_SIGNAL.size()]
+				var need_str = SquadManager.NEED_NAMES[squad.need]
+				var raw = "Requesting %s. Awaiting your order." % need_str
+				cached_need_text[squad_name] = _garble_text(raw, 0.95)
+			"delayed":
+				cached_flavour[squad_name] = DELAYED_BURST[randi() % DELAYED_BURST.size()]
+				var need_str = SquadManager.NEED_NAMES[squad.need]
+				var raw = "Requesting %s. Awaiting your order." % need_str
+				cached_need_text[squad_name] = _garble_text(raw, 0.5)
+				cached_status_text[squad_name] = _garble_text(_status_context(squad), 0.3)
+			"normal":
+				if squad.status != SquadManager.Status.LOST:
+					var interference = SquadManager.interference
+					var need_str = SquadManager.NEED_NAMES[squad.need]
+					var raw_need_msg = "Requesting %s. Awaiting your order." % need_str
+					cached_need_text[squad_name] = _garble_text(raw_need_msg, interference)
+					cached_status_text[squad_name] = _garble_text(_status_context(squad), interference * 0.6)
+					
 func _rebuild_transmissions() -> void:
 	if turn_label:
 		turn_label.text = (
@@ -163,8 +208,7 @@ func _add_distress_call(squad: Dictionary) -> void:
 # Main transmission builder — routes by quality
 # -------------------------------------------------------
 func _add_transmission(squad: Dictionary) -> void:
-	var quality = _transmission_quality(squad)
-
+	var quality = cached_quality.get(squad.name, "normal")
 	match quality:
 		"dead":    _add_dead_channel(squad)
 		"ghost":   _add_ghost_signal(squad)
@@ -198,12 +242,11 @@ func _add_dead_channel(squad: Dictionary) -> void:
 	vbox.add_child(header)
 
 	var status_lbl := Label.new()
-	status_lbl.text = DEAD_CHANNEL[randi() % DEAD_CHANNEL.size()]
+	status_lbl.text = cached_flavour.get(squad.name, DEAD_CHANNEL[0])
 	status_lbl.add_theme_font_size_override("font_size", 12)
 	status_lbl.add_theme_color_override("font_color", Color(0.3, 0.3, 0.35))
 	vbox.add_child(status_lbl)
 
-	# Static noise line
 	var noise := Label.new()
 	noise.text = _generate_static(40)
 	noise.add_theme_font_size_override("font_size", 11)
@@ -243,16 +286,13 @@ func _add_ghost_signal(squad: Dictionary) -> void:
 	header.add_child(source_lbl)
 
 	var quality_lbl := Label.new()
-	quality_lbl.text = GHOST_SIGNAL[randi() % GHOST_SIGNAL.size()]
+	quality_lbl.text = cached_flavour.get(squad.name, GHOST_SIGNAL[0])
 	quality_lbl.add_theme_font_size_override("font_size", 10)
 	quality_lbl.add_theme_color_override("font_color", Color(0.6, 0.3, 0.8))
 	header.add_child(quality_lbl)
 
-	# Need text — fully garbled, unreadable
-	var need_str = SquadManager.NEED_NAMES[squad.need]
-	var raw = "Requesting %s. Awaiting your order." % need_str
 	var garbled_lbl := Label.new()
-	garbled_lbl.text = _garble_text(raw, 0.95)
+	garbled_lbl.text = cached_need_text.get(squad.name, "")
 	garbled_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	garbled_lbl.add_theme_font_size_override("font_size", 13)
 	garbled_lbl.add_theme_color_override("font_color", Color(0.4, 0.25, 0.5))
@@ -291,24 +331,20 @@ func _add_delayed_burst(squad: Dictionary) -> void:
 	header.add_child(source_lbl)
 
 	var quality_lbl := Label.new()
-	quality_lbl.text = DELAYED_BURST[randi() % DELAYED_BURST.size()]
+	quality_lbl.text = cached_flavour.get(squad.name, DELAYED_BURST[0])
 	quality_lbl.add_theme_font_size_override("font_size", 10)
 	quality_lbl.add_theme_color_override("font_color", Color(0.8, 0.65, 0.2))
 	header.add_child(quality_lbl)
 
-	# Need text — partially readable, moderate garble
-	var need_str = SquadManager.NEED_NAMES[squad.need]
-	var raw = "Requesting %s. Awaiting your order." % need_str
 	var need_lbl := Label.new()
-	need_lbl.text = _garble_text(raw, 0.5)
+	need_lbl.text = cached_need_text.get(squad.name, "")
 	need_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	need_lbl.add_theme_font_size_override("font_size", 13)
 	need_lbl.add_theme_color_override("font_color", Color(0.7, 0.65, 0.4))
 	vbox.add_child(need_lbl)
 
-	# Status context — lightly garbled
 	var status_lbl := Label.new()
-	status_lbl.text = _garble_text(_status_context(squad), 0.3)
+	status_lbl.text = cached_status_text.get(squad.name, "")
 	status_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	status_lbl.add_theme_font_size_override("font_size", 11)
 	status_lbl.add_theme_color_override("font_color", Color(0.55, 0.5, 0.35))
@@ -357,10 +393,8 @@ func _add_need_transmission(squad: Dictionary) -> void:
 	quality_lbl.add_theme_color_override("font_color", _signal_quality_color(interference))
 	header.add_child(quality_lbl)
 
-	var need_str = SquadManager.NEED_NAMES[squad.need]
-	var raw_need_msg = "Requesting %s. Awaiting your order." % need_str
 	var need_lbl := Label.new()
-	need_lbl.text = _garble_text(raw_need_msg, interference)
+	need_lbl.text = cached_need_text.get(squad.name, "")
 	need_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	need_lbl.add_theme_font_size_override("font_size", 13)
 	need_lbl.add_theme_color_override("font_color",
@@ -368,7 +402,7 @@ func _add_need_transmission(squad: Dictionary) -> void:
 	vbox.add_child(need_lbl)
 
 	var status_lbl := Label.new()
-	status_lbl.text = _garble_text(_status_context(squad), interference * 0.6)
+	status_lbl.text = cached_status_text.get(squad.name, "")
 	status_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	status_lbl.add_theme_font_size_override("font_size", 11)
 	status_lbl.add_theme_color_override("font_color", Color(0.65, 0.7, 0.75))

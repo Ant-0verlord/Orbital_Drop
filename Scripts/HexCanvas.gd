@@ -22,6 +22,9 @@ var drag_start_offset: Vector2 = Vector2.ZERO
 
 signal hex_clicked(sector: String)
 
+var flicker_timer: float = 0.0
+const FLICKER_INTERVAL: float = 0.4  # seconds between flicker re-rolls
+
 const PULSE_SPEED: float = 2.5
 const HEX_RADIUS: float  = 38.0
 const HEX_INNER: float   = 38.0
@@ -65,17 +68,21 @@ func _process(delta: float) -> void:
 	
 	if dragging:
 		var mouse_pos = get_local_mouse_position()
-		var target_offset = drag_start_offset + (mouse_pos - drag_start_mouse)
-		pan_offset = pan_offset.lerp(target_offset, 0.35)  # smaller = smoother/slower follow
+		pan_offset = drag_start_offset + (mouse_pos - drag_start_mouse)
 		_clamp_pan_offset()
 		queue_redraw()
 	
 	pulse_time += delta * PULSE_SPEED
+
 	var interference = SquadManager.interference
 	if interference > 0.2:
-		for sector in zone_states:
-			if zone_states[sector].get("enemy_count", 0) > 0:
-				flicker_states[sector] = randf() > interference * 0.35
+		flicker_timer += delta
+		if flicker_timer >= FLICKER_INTERVAL:
+			flicker_timer = 0.0
+			for sector in zone_states:
+				if zone_states[sector].get("enemy_count", 0) > 0:
+					flicker_states[sector] = randf() > interference * 0.35
+
 	queue_redraw()
 
 
