@@ -64,9 +64,9 @@ func _ready() -> void:
 
 func _on_help_pressed() -> void:
 	var steps: Array[TutorialStep] = [
-		_step("This is your supply pool — shared across all squads this turn.", ^"PoolLabel"),
-		_step("Check each squad's checkboxes to allocate Armaments, Medi-Packs, or Fuel Cells.", ^"ScrollContainer/SquadContainer"),
-		_step("Once you're happy with allocations, lock them in here before ending the turn.", ^"ButtonRow/LockBtn"),
+		_step("This is your supply pool — shared across all squads this turn.", ^"PanelContainer/VBoxContainer/PoolLabel"),
+		_step("Check each squad's checkboxes to allocate Armaments, Medi-Packs, or Fuel Cells.", ^"PanelContainer/VBoxContainer/ScrollContainer/SquadContainer"),
+		_step("Once you're happy with allocations, lock them in here before ending the turn.", ^"PanelContainer/VBoxContainer/ButtonRow/LockBtn"),
 	]
 	tutorial_overlay.start(steps, self)
 
