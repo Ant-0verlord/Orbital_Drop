@@ -1,0 +1,51 @@
+[gd_scene format=3 uid="uid://dughmeacd25tq"]
+
+[ext_resource type="Script" uid="uid://fr0r5cyv4ri5" path="res://Scripts/TutorialOverlay.gd" id="1_r3j72"]
+[ext_resource type="Script" uid="uid://pmoqtqbv3c8" path="res://Scripts/Arrow.gd" id="2_56e46"]
+
+[node name="TutorialOverlay" type="Control" unique_id=45888852]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_r3j72")
+
+[node name="Dim" type="ColorRect" parent="." unique_id=849252643]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.21568628)
+
+[node name="Arrow" type="Control" parent="." unique_id=232632084]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("2_56e46")
+
+[node name="TextPanel" type="PanelContainer" parent="." unique_id=744347219]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TextPanel" unique_id=70912703]
+layout_mode = 2
+
+[node name="StepLabel" type="Label" parent="TextPanel/VBoxContainer" unique_id=1956983408]
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="TextPanel/VBoxContainer" unique_id=1324538774]
+layout_mode = 2
+
+[node name="BackBtn" type="Button" parent="TextPanel/VBoxContainer/ButtonRow" unique_id=8323792]
+layout_mode = 2
+
+[node name="NextBtn" type="Button" parent="TextPanel/VBoxContainer/ButtonRow" unique_id=1620411216]
+layout_mode = 2
+
+[node name="SkipBtn" type="Button" parent="TextPanel/VBoxContainer/ButtonRow" unique_id=750504699]
+layout_mode = 2

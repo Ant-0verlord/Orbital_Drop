@@ -37,6 +37,11 @@ var pending_reinforcement_name: String = ""
 @onready var arm_bombardment_btn: Button       = $PanelContainer/VBoxContainer/BombardmentPanel/ArmBombardmentBtn
 @onready var bombardment_status_label: Label   = $PanelContainer/VBoxContainer/BombardmentPanel/BombardmentStatusLabel
 
+@onready var help_btn: Button = $PanelContainer/VBoxContainer/ButtonRow/HelpBtn
+@onready var tutorial_overlay: Control = $TutorialOverlay  # add TutorialOverlay.tscn as a child
+
+
+
 func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	TurnManager.turn_started.connect(_on_turn_started)
@@ -54,7 +59,22 @@ func _ready() -> void:
 
 	_refresh_reinforcement_panel()
 	_refresh_bombardment_panel()
+	help_btn.pressed.connect(_on_help_pressed)
 
+
+func _on_help_pressed() -> void:
+	var steps: Array[TutorialStep] = [
+		_step("This is your supply pool — shared across all squads this turn.", ^"PoolLabel"),
+		_step("Check each squad's checkboxes to allocate Armaments, Medi-Packs, or Fuel Cells.", ^"ScrollContainer/SquadContainer"),
+		_step("Once you're happy with allocations, lock them in here before ending the turn.", ^"ButtonRow/LockBtn"),
+	]
+	tutorial_overlay.start(steps, self)
+
+func _step(text: String, path: NodePath) -> TutorialStep:
+	var s := TutorialStep.new()
+	s.text = text
+	s.target_path = path
+	return s
 
 func _on_turn_started(_turn: int) -> void:
 	_reset_allocations()
