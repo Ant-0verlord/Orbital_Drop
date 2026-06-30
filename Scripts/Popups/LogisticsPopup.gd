@@ -68,7 +68,7 @@ func _on_help_pressed() -> void:
 		_step("Check each squad's checkboxes to allocate Armaments, Medi-Packs, or Fuel Cells.", ^"PanelContainer/VBoxContainer/ScrollContainer/SquadContainer"),
 		_step("Once you're happy with allocations, lock them in here before ending the turn.", ^"PanelContainer/VBoxContainer/ButtonRow/LockBtn"),
 	]
-	tutorial_overlay.start(steps, self)
+	tutorial_overlay.start(steps, self)	
 
 func _step(text: String, path: NodePath) -> TutorialStep:
 	var s := TutorialStep.new()
