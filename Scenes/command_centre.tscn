@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://brmhi6pjtlhey" path="res://Scripts/CommandCentre.gd" id="1_r3tsr"]
 [ext_resource type="PackedScene" uid="uid://cwcetb2j4yciv" path="res://Scenes/Player.tscn" id="2_ludm1"]
-[ext_resource type="ArrayMesh" uid="uid://cd5yolfg7busp" path="res://Models/Backup room.obj" id="2_r3tsr"]
+[ext_resource type="ArrayMesh" uid="uid://cbmp2i7qglwib" path="res://Models/Orbital_Drop_Room_Beta.obj" id="2_r3tsr"]
 [ext_resource type="PackedScene" uid="uid://poa3ylhykd1g" path="res://Scenes/Holomap.tscn" id="3_pelsp"]
 [ext_resource type="PackedScene" uid="uid://bj4d3r48vrf44" path="res://Scenes/Vox-Caster_Array.tscn" id="4_23xtj"]
 [ext_resource type="PackedScene" uid="uid://dksywdr8xyjsf" path="res://Scenes/Command_Throne.tscn" id="5_5ts7m"]
