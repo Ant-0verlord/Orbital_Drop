@@ -237,79 +237,173 @@ const M3_AXIAL = [
 # MISSION 4 — Contested Hive Spire
 # 22 sectors, pincer shape
 # =============================================================
+# =============================================================
+# MISSION 4 — Contested Hive Spire
+# 103 sectors, cave maze, two entrances
+# =============================================================
 const M4_SECTORS = [
-	"Tau-2B",    # 0
-	"Upsilon-6B",# 1
-	"Phi-9B",    # 2
-	"Chi-3B",    # 3
-	"Psi-5B",    # 4
-	"Omega-8B",  # 5
-	"Alpha-4C",  # 6
-	"Beta-7C",   # 7
-	"Gamma-1C",  # 8
-	"Delta-3C",  # 9
-	"Epsilon-6C",# 10
-	"Zeta-9C",   # 11
-	"Eta-2C",    # 12
-	"Theta-5C",  # 13
-	"Iota-8C",   # 14
-	"Kappa-4C",  # 15
-	"Lambda-7C", # 16
-	"Mu-1C",     # 17
-	"Nu-6C",     # 18
-	"Xi-3C",     # 19
-	"Omicron-9C",# 20
-	"Pi-2C",     # 21
+	"Psi-1C", "Omega-1C", "Alpha-1C", "Beta-1C", "Gamma-1C", "Delta-1C",
+	"Epsilon-1C", "Zeta-1C", "Eta-1C", "Theta-1C", "Iota-1C", "Kappa-1C",
+	"Lambda-1C", "Mu-1C", "Nu-1C", "Xi-1C", "Omicron-1C", "Pi-1C",
+	"Rho-1C", "Sigma-1C", "Tau-1C", "Upsilon-1C", "Phi-1C", "Chi-1C",
+	"Psi-3C", "Omega-3C", "Alpha-3C", "Beta-3C", "Gamma-3C", "Delta-3C",
+	"Epsilon-3C", "Zeta-3C", "Eta-3C", "Theta-3C", "Iota-3C", "Kappa-3C",
+	"Lambda-3C", "Mu-3C", "Nu-3C", "Xi-3C", "Omicron-3C", "Pi-3C",
+	"Rho-3C", "Sigma-3C", "Tau-3C", "Upsilon-3C", "Phi-3C", "Chi-3C",
+	"Psi-5C", "Omega-5C", "Alpha-5C", "Beta-5C", "Gamma-5C", "Delta-5C",
+	"Epsilon-5C", "Zeta-5C", "Eta-5C", "Theta-5C", "Iota-5C", "Kappa-5C",
+	"Lambda-5C", "Mu-5C", "Nu-5C", "Xi-5C", "Omicron-5C", "Pi-5C",
+	"Rho-5C", "Sigma-5C", "Tau-5C", "Upsilon-5C", "Phi-5C", "Chi-5C",
+	"Psi-7C", "Omega-7C", "Alpha-7C", "Beta-7C", "Gamma-7C", "Delta-7C",
+	"Epsilon-7C", "Zeta-7C", "Eta-7C", "Theta-7C", "Iota-7C", "Kappa-7C",
+	"Lambda-7C", "Mu-7C", "Nu-7C", "Xi-7C", "Omicron-7C", "Pi-7C",
+	"Rho-7C", "Sigma-7C", "Tau-7C", "Upsilon-7C", "Phi-7C", "Chi-7C",
+	"Psi-9C", "Omega-9C", "Alpha-9C", "Beta-9C", "Gamma-9C", "Delta-9C",
+	"Epsilon-9C",
 ]
 
 const M4_ADJACENCY = {
-	0:  [1, 2, 6],
-	1:  [0, 3, 7],
-	2:  [0, 3, 4, 8],
-	3:  [1, 2, 5, 9],
-	4:  [2, 5, 10],
-	5:  [3, 4, 11],
-	6:  [0, 7, 12],
-	7:  [1, 6, 8, 13],
-	8:  [2, 7, 9, 14],
-	9:  [3, 8, 10, 15],
-	10: [4, 9, 11, 16],
-	11: [5, 10, 17],
-	12: [6, 13, 18],
-	13: [7, 12, 14, 18],
-	14: [8, 13, 15, 19],
-	15: [9, 14, 16, 19],
-	16: [10, 15, 17, 20],
-	17: [11, 16, 21],
-	18: [12, 13, 20],
-	19: [14, 15, 21],
-	20: [16, 18, 21],
-	21: [17, 19, 20],
+	0:  [1, 4, 5],
+	1:  [0, 2, 5],
+	2:  [1],
+	3:  [4, 9],
+	4:  [0, 3, 5, 10],
+	5:  [0, 1, 4, 10, 11],
+	6:  [7, 15, 16],
+	7:  [6, 8, 16],
+	8:  [7],
+	9:  [3, 17, 18],
+	10: [4, 5, 11, 19],
+	11: [5, 10, 12, 20],
+	12: [11, 13, 20, 21],
+	13: [12, 14, 21, 22],
+	14: [13, 15, 22, 23],
+	15: [6, 14, 16, 23, 24],
+	16: [6, 7, 15, 24, 25],
+	17: [9, 18, 29, 30],
+	18: [9, 17, 19, 30, 31],
+	19: [10, 18, 31],
+	20: [11, 12, 21, 32, 33],
+	21: [12, 13, 20, 22, 33, 34],
+	22: [13, 14, 21, 23, 34, 35],
+	23: [14, 15, 22, 24, 35, 36],
+	24: [15, 16, 23, 25, 36, 37],
+	25: [16, 24, 26, 37, 38],
+	26: [25, 27, 38],
+	27: [26],
+	28: [42, 43],
+	29: [17, 30, 44, 45],
+	30: [17, 18, 29, 31, 45, 46],
+	31: [18, 19, 30, 46, 47],
+	32: [20, 33, 48, 49],
+	33: [20, 21, 32, 34, 49, 50],
+	34: [21, 22, 33, 35, 50, 51],
+	35: [22, 23, 34, 36, 51, 52],
+	36: [23, 24, 35, 37, 52, 53],
+	37: [24, 25, 36, 38, 53, 54],
+	38: [25, 26, 37, 54, 55],
+	39: [40, 57, 58],
+	40: [39, 41, 58, 59],
+	41: [40, 59, 60],
+	42: [28, 43, 61],
+	43: [28, 42, 44, 61, 62],
+	44: [29, 43, 45, 62, 63],
+	45: [29, 30, 44, 46, 63],
+	46: [30, 31, 45, 47],
+	47: [31, 46, 48, 64],
+	48: [32, 47, 49, 64, 65],
+	49: [32, 33, 48, 50, 65, 66],
+	50: [33, 34, 49, 51, 66, 67],
+	51: [34, 35, 50, 52, 67, 68],
+	52: [35, 36, 51, 53, 68, 69],
+	53: [36, 37, 52, 54, 69, 70],
+	54: [37, 38, 53, 55, 70],
+	55: [38, 54, 56, 71],
+	56: [55, 57, 71, 72],
+	57: [39, 56, 58, 72, 73],
+	58: [39, 40, 57, 59, 73],
+	59: [40, 41, 58, 60, 74],
+	60: [41, 59, 74],
+	61: [42, 43, 62],
+	62: [43, 44, 61, 63],
+	63: [44, 45, 62],
+	64: [47, 48, 65, 76, 77],
+	65: [48, 49, 64, 66, 77, 78],
+	66: [49, 50, 65, 67, 78, 79],
+	67: [50, 51, 66, 68, 79, 80],
+	68: [51, 52, 67, 69, 80, 81],
+	69: [52, 53, 68, 70, 81, 82],
+	70: [53, 54, 69, 82, 83],
+	71: [55, 56, 72, 84, 85],
+	72: [56, 57, 71, 73, 85],
+	73: [57, 58, 72],
+	74: [59, 60],
+	75: [76],
+	76: [64, 75, 77],
+	77: [64, 65, 76, 78, 86],
+	78: [65, 66, 77, 79, 86, 87],
+	79: [66, 67, 78, 80, 87, 88],
+	80: [67, 68, 79, 81, 88, 89],
+	81: [68, 69, 80, 82, 89, 90],
+	82: [69, 70, 81, 83, 90],
+	83: [70, 82, 84],
+	84: [71, 83, 85, 91],
+	85: [71, 72, 84, 91, 92],
+	86: [77, 78, 87, 94],
+	87: [78, 79, 86, 88, 94],
+	88: [79, 80, 87, 89],
+	89: [80, 81, 88, 90],
+	90: [81, 82, 89, 95],
+	91: [84, 85, 92],
+	92: [85, 91, 93],
+	93: [92, 97],
+	94: [86, 87],
+	95: [90, 96, 100],
+	96: [95, 101],
+	97: [93],
+	98: [99],
+	99: [98, 100],
+	100: [95, 99],
+	101: [96, 102],
+	102: [101],
 }
 
 const M4_AXIAL = [
-	Vector2(-3,  0),  # Tau-2B     — left pincer top
-	Vector2(-3,  2),  # Upsilon-6B — left pincer bottom
-	Vector2(-2, -1),  # Phi-9B
-	Vector2(-2,  1),  # Chi-3B
-	Vector2(-1, -2),  # Psi-5B     — upper arm
-	Vector2(-1,  2),  # Omega-8B   — lower arm
-	Vector2(-2,  0),  # Alpha-4C
-	Vector2(-1,  0),  # Beta-7C    — centre left
-	Vector2( 0,  0),  # Gamma-1C   — contested centre
-	Vector2( 0,  1),  # Delta-3C
-	Vector2( 1, -1),  # Epsilon-6C — upper right
-	Vector2( 1,  1),  # Zeta-9C    — lower right
-	Vector2(-2,  0),  # Eta-2C
-	Vector2( 0, -1),  # Theta-5C
-	Vector2( 1,  0),  # Iota-8C
-	Vector2( 1,  1),  # Kappa-4C
-	Vector2( 2, -1),  # Lambda-7C  — right pincer
-	Vector2( 2,  1),  # Mu-1C
-	Vector2(-1, -1),  # Nu-6C
-	Vector2( 2,  0),  # Xi-3C
-	Vector2( 3, -1),  # Omicron-9C — right tip
-	Vector2( 3,  1),  # Pi-2C
+	Vector2( -1, -5), Vector2(  0, -5), Vector2(  1, -5),
+	Vector2( -3, -4), Vector2( -2, -4), Vector2( -1, -4),
+	Vector2(  4, -4), Vector2(  5, -4), Vector2(  6, -4),
+	Vector2( -4, -3), Vector2( -2, -3), Vector2( -1, -3),
+	Vector2(  0, -3), Vector2(  1, -3), Vector2(  2, -3),
+	Vector2(  3, -3), Vector2(  4, -3), Vector2( -5, -2),
+	Vector2( -4, -2), Vector2( -3, -2), Vector2( -1, -2),
+	Vector2(  0, -2), Vector2(  1, -2), Vector2(  2, -2),
+	Vector2(  3, -2), Vector2(  4, -2), Vector2(  5, -2),
+	Vector2(  6, -2), Vector2( -8, -1), Vector2( -6, -1),
+	Vector2( -5, -1), Vector2( -4, -1), Vector2( -2, -1),
+	Vector2( -1, -1), Vector2(  0, -1), Vector2(  1, -1),
+	Vector2(  2, -1), Vector2(  3, -1), Vector2(  4, -1),
+	Vector2(  7, -1), Vector2(  8, -1), Vector2(  9, -1),
+	Vector2( -9,  0), Vector2( -8,  0), Vector2( -7,  0),
+	Vector2( -6,  0), Vector2( -5,  0), Vector2( -4,  0),
+	Vector2( -3,  0), Vector2( -2,  0), Vector2( -1,  0),
+	Vector2(  0,  0), Vector2(  1,  0), Vector2(  2,  0),
+	Vector2(  3,  0), Vector2(  4,  0), Vector2(  5,  0),
+	Vector2(  6,  0), Vector2(  7,  0), Vector2(  8,  0),
+	Vector2(  9,  0), Vector2( -9,  1), Vector2( -8,  1),
+	Vector2( -7,  1), Vector2( -4,  1), Vector2( -3,  1),
+	Vector2( -2,  1), Vector2( -1,  1), Vector2(  0,  1),
+	Vector2(  1,  1), Vector2(  2,  1), Vector2(  4,  1),
+	Vector2(  5,  1), Vector2(  6,  1), Vector2(  8,  1),
+	Vector2( -6,  2), Vector2( -5,  2), Vector2( -4,  2),
+	Vector2( -3,  2), Vector2( -2,  2), Vector2( -1,  2),
+	Vector2(  0,  2), Vector2(  1,  2), Vector2(  2,  2),
+	Vector2(  3,  2), Vector2(  4,  2), Vector2( -4,  3),
+	Vector2( -3,  3), Vector2( -2,  3), Vector2( -1,  3),
+	Vector2(  0,  3), Vector2(  3,  3), Vector2(  4,  3),
+	Vector2(  5,  3), Vector2( -4,  4), Vector2(  0,  4),
+	Vector2(  1,  4), Vector2(  5,  4), Vector2( -3,  5),
+	Vector2( -2,  5), Vector2( -1,  5), Vector2(  1,  5),
+	Vector2(  2,  5),
 ]
 
 # =============================================================
@@ -475,36 +569,46 @@ var missions: Array = [
 		{ "sector": "Mu-3B"      },
 		{ "sector": "Omicron-3B" },
 	],
-},
-	{
+	},
+		{
 		"title":        "Mission 4 — Contested Hive Spire",
-		"turns":        5,
-		"win_hexes":    13,
+		"turns":        10,
+		"win_hexes":    55,
 		"interference": 0.75,
-		"objective":    "Hold 13 sectors. Comms are failing — trust your instincts.",
-		"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
+		"objective":    "Push through the cave network and hold 55 sectors. Comms are failing.",
+		"supply_pool":        { "Armaments": 12, "Medi-Packs": 10, "Fuel Cells": 12 },
 		"reinforcement_pool": 1,
-		"orbital_strikes": 0,
+		"orbital_strikes":    1,
 		"sectors":    M4_SECTORS,
 		"adjacency":  M4_ADJACENCY,
 		"axial":      M4_AXIAL,
-		"reinforcement_schedule": { 3: 1, 4: 2 },
+		"reinforcement_schedule": { 5: 1, 7: 2 },
 		"squads": [
-			{ "name": "Squad Varro", "sector": "Tau-2B",    "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-			{ "name": "Squad Kael",  "sector": "Upsilon-6B","status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
-			{ "name": "Squad Orin",  "sector": "Phi-9B",    "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-			{ "name": "Squad Davan", "sector": "Chi-3B",    "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
+			{ "name": "Squad Varro", "sector": "Rho-3C",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+			{ "name": "Squad Kael",  "sector": "Mu-5C",    "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
+			{ "name": "Squad Orin",  "sector": "Omicron-3C","status": SquadManager.Status.ACTIVE,  "need": SquadManager.Need.FUEL_CELLS },
+			{ "name": "Squad Davan", "sector": "Kappa-5C", "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
 		],
 		"enemies": [
-			{ "sector": "Omicron-9C" },
-			{ "sector": "Pi-2C"      },
-			{ "sector": "Xi-3C"      },
-			{ "sector": "Lambda-7C"  },
-			{ "sector": "Mu-1C"      },
-			{ "sector": "Nu-6C"      },
-			{ "sector": "Zeta-9C"    },
+			{ "sector": "Upsilon-1C" },
+			{ "sector": "Phi-1C"     },
+			{ "sector": "Chi-1C"     },
+			{ "sector": "Theta-3C"   },
+			{ "sector": "Iota-3C"    },
+			{ "sector": "Kappa-3C"   },
+			{ "sector": "Lambda-3C"  },
+			{ "sector": "Beta-5C"    },
+			{ "sector": "Gamma-5C"   },
+			{ "sector": "Delta-5C"   },
+			{ "sector": "Alpha-5C"   },
+			{ "sector": "Omega-5C"   },
+			{ "sector": "Sigma-5C"   },
+			{ "sector": "Tau-5C"     },
+			{ "sector": "Zeta-7C"    },
+			{ "sector": "Eta-7C"     },
+			{ "sector": "Theta-7C"   },
 		],
-	},
+	},	
 	{
 		"title":        "Mission 5 — Final Assault",
 		"turns":        5,

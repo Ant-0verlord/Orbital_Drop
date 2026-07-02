@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dughmeacd25tq"]
 
-[ext_resource type="Script" uid="uid://fr0r5cyv4ri5" path="res://Scripts/TutorialOverlay.gd" id="1_r3j72"]
-[ext_resource type="Script" uid="uid://pmoqtqbv3c8" path="res://Scripts/Arrow.gd" id="2_56e46"]
+[ext_resource type="Script" uid="uid://fr0r5cyv4ri5" path="res://Scripts/Tutorial/TutorialOverlay.gd" id="1_r3j72"]
+[ext_resource type="Script" uid="uid://pmoqtqbv3c8" path="res://Scripts/Tutorial/Arrow.gd" id="2_56e46"]
 
 [node name="TutorialOverlay" type="Control" unique_id=45888852]
 layout_mode = 3
