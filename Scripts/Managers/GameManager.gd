@@ -21,6 +21,13 @@ var supply_spent: Dictionary = {
 var reinforcement_pool: int = 0
 var pending_reinforcement: Dictionary = {}
 var used_reinforcement_names: Array = []
+var tower_powered: bool = false
+var tower_sector: String = ""
+var priority_target_alive: bool = false
+var priority_target_name: String = ""
+var data_carrier_squad: String = ""
+var extraction_zone: String = ""
+var mission_type: String = "capture"  # "capture", "eliminate", "hold_tower", "extract"
 
 const REINFORCEMENT_NAMES: Array = [
 	"Squad Taev",
@@ -494,6 +501,11 @@ const M5_AXIAL = [
 
 var missions: Array = [
 	{
+		# Mission 1
+		"mission_type":         "capture",
+		"has_priority_target":  false,
+		"priority_target_name": "",
+		"radio_tower_sector":   "",
 		"title":        "Mission 1 — Planetary Insertion",
 		"turns":        5,
 		"win_hexes":    4,
@@ -517,6 +529,11 @@ var missions: Array = [
 		],
 	},
 	{
+		# Mission 2
+		"mission_type":         "eliminate",
+		"has_priority_target":  false,
+		"priority_target_name": "",
+		"radio_tower_sector":   "",
 		"title":        "Mission 2 — Advance on Kerath-IV",
 		"turns":        7,
 		"win_hexes":    8,
@@ -543,6 +560,11 @@ var missions: Array = [
 		],
 	},
 	{
+	# Mission 3
+	"mission_type":         "hold_tower",
+	"has_priority_target":  false,
+	"priority_target_name": "",
+	"radio_tower_sector":   "Sigma-1B",  # pick a central ring sector — adjust after testing
 	"title":        "Mission 3 — The Iron Salient",
 	"turns":        5,
 	"win_hexes":    22,
@@ -571,6 +593,11 @@ var missions: Array = [
 	],
 	},
 		{
+		# Mission 4
+		"mission_type":         "eliminate_priority",
+		"has_priority_target":  true,
+		"priority_target_name": "Commander Vreth",
+		"radio_tower_sector":   "Beta-5C",   # central cave sector — adjust after testing
 		"title":        "Mission 4 — Contested Hive Spire",
 		"turns":        10,
 		"win_hexes":    55,
@@ -597,7 +624,7 @@ var missions: Array = [
 			{ "sector": "Iota-3C"    },
 			{ "sector": "Kappa-3C"   },
 			{ "sector": "Lambda-3C"  },
-			{ "sector": "Beta-5C"    },
+			{ "sector": "Beta-5C", "is_priority": true },  # Commander Vreth starts at centre
 			{ "sector": "Gamma-5C"   },
 			{ "sector": "Delta-5C"   },
 			{ "sector": "Alpha-5C"   },
@@ -610,6 +637,11 @@ var missions: Array = [
 		],
 	},	
 	{
+		# Mission 5
+		"mission_type":         "extract",
+		"has_priority_target":  false,
+		"priority_target_name": "",
+		"radio_tower_sector":   "Zeta-3D",   # adjust after testing
 		"title":        "Mission 5 — Final Assault",
 		"turns":        5,
 		"win_hexes":    15,
@@ -699,6 +731,13 @@ func start_current_mission() -> void:
 	reinforcement_pool += data.get("reinforcement_pool", 0)
 	supply_spent = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	pending_reinforcement = {}
+	tower_powered = false
+	tower_sector = data.get("radio_tower_sector", "")
+	priority_target_alive = data.get("has_priority_target", false)
+	priority_target_name = data.get("priority_target_name", "")
+	mission_type = data.get("mission_type", "capture")
+	# data_carrier_squad and extraction_zone NOT reset here —
+	# data_carrier carries across missions, extraction_zone set dynamically later
 
 	TurnManager.start_mission(data)
 
@@ -714,6 +753,13 @@ func debug_jump_to_mission(index: int) -> void:
 	pending_reinforcement   = {}
 	pending_bombardment     = {}
 	used_reinforcement_names = []
+	tower_powered = false
+	tower_sector = ""
+	priority_target_alive = false
+	priority_target_name = ""
+	data_carrier_squad = ""
+	extraction_zone = ""
+	mission_type = "capture"
 
 	start_current_mission()
 	print("DEBUG: Jumped to mission %d — %s" % [index, missions[index].get("title", "")])

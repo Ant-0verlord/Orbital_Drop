@@ -5,11 +5,13 @@ extends Node
 
 signal enemies_updated
 signal reinforcement_landed(squad_name: String, sector: String, surprise: bool)
+signal priority_target_eliminated(squad_name: String, sector: String)
 
 var hex_control: Dictionary = {}
 var enemy_units: Array = []
 var all_sectors: Array = []
 var adjacency: Dictionary = {}
+var priority_target_home: String = ""
 
 # -------------------------------------------------------
 # Init — now receives sectors and adjacency from mission data
@@ -25,14 +27,19 @@ func init_enemies(squad_sectors: Array, enemy_list: Array, mission_sectors: Arra
 		hex_control[sector] = "held"
 
 	enemy_units.clear()
+	priority_target_home = ""
 	var id = 0
 	for e in enemy_list:
-		enemy_units.append({
-			"id":       id,
-			"sector":   e.get("sector", all_sectors[all_sectors.size() - 1]),
-			"hp":       1,
-			"cooldown": 0,
-		})
+		var unit = {
+			"id":          id,
+			"sector":      e.get("sector", all_sectors[all_sectors.size() - 1]),
+			"hp":          1,
+			"cooldown":    0,
+			"is_priority": e.get("is_priority", false),
+		}
+		if unit.is_priority:
+			priority_target_home = unit.sector
+		enemy_units.append(unit)
 		id += 1
 
 	emit_signal("enemies_updated")
@@ -90,15 +97,24 @@ func _next_id() -> int:
 # -------------------------------------------------------
 # Armed fight — always kills enemy instantly
 # -------------------------------------------------------
-func fight_at(sector: String, _squad_name: String) -> bool:
+func fight_at(sector: String, squad_name: String) -> bool:
 	var enemies_here = _get_enemies_at(sector)
 	if enemies_here.is_empty():
 		return false
 
+	var priority_killed = false
 	for unit in enemies_here.duplicate():
+		if unit.get("is_priority", false):
+			priority_killed = true
 		enemy_units.erase(unit)
 
 	hex_control[sector] = "held"
+
+	if priority_killed:
+		GameManager.priority_target_alive = false
+		GameManager.data_carrier_squad = squad_name
+		emit_signal("priority_target_eliminated", squad_name, sector)
+
 	emit_signal("enemies_updated")
 	return true
 
@@ -184,7 +200,13 @@ func advance_enemies(allocations: Dictionary) -> void:
 			continue
 
 		var best       = unit.sector
-		var best_score = _movement_score(unit.sector, squad_sectors, unit.id)
+		var use_priority_scoring = unit.get("is_priority", false)
+
+		var best_score = (
+			_priority_movement_score(unit.sector, squad_sectors, unit.id)
+			if use_priority_scoring
+			else _movement_score(unit.sector, squad_sectors, unit.id)
+		)
 
 		var candidates = adjacency.get(unit.sector, []).duplicate()
 		candidates.shuffle()
@@ -196,7 +218,11 @@ func advance_enemies(allocations: Dictionary) -> void:
 				var control = hex_control.get(n, "enemy")
 				if control == "held" or control == "contested" or n in squad_sectors:
 					continue
-			var score = _movement_score(n, squad_sectors, unit.id)
+			var score = (
+				_priority_movement_score(n, squad_sectors, unit.id)
+				if use_priority_scoring
+				else _movement_score(n, squad_sectors, unit.id)
+			)
 			if score > best_score:
 				best_score = score
 				best = n
@@ -263,6 +289,35 @@ func _movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
 		if n in squad_sectors:
 			adj_squad_tiles += 1
 	score += adj_squad_tiles * 10
+
+	return score
+
+func _priority_movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
+	var score = 0
+
+	# Strongly prefer staying near home sector
+	if priority_target_home != "":
+		var dist_from_home = _bfs_distance(sector, priority_target_home)
+		score -= dist_from_home * 30  # heavy penalty for straying far
+
+	# Mild preference for enemy-controlled territory
+	var control = hex_control.get(sector, "enemy")
+	if control == "enemy":
+		score += 10
+	elif control == "held" or control == "contested":
+		score -= 20  # avoid player-held tiles unless cornered
+
+	# Don't crowd other units
+	var nearby_enemies = 0
+	for n in adjacency.get(sector, []):
+		for unit in enemy_units:
+			if unit.id != unit_id and unit.sector == n:
+				nearby_enemies += 1
+	score -= nearby_enemies * 10
+
+	# Slight awareness of squads — backs away rather than charging
+	var dist_to_nearest_squad = _bfs_distance_to_nearest(sector, squad_sectors)
+	score += min(dist_to_nearest_squad, 5) * 8  # prefers distance from squads
 
 	return score
 
@@ -438,3 +493,15 @@ func _build_adjacency(mission_adjacency: Dictionary) -> void:
 				if n_idx < all_sectors.size():
 					neighbors.append(all_sectors[n_idx])
 			adjacency[sector] = neighbors
+
+func get_priority_target_sector() -> String:
+	for unit in enemy_units:
+		if unit.get("is_priority", false):
+			return unit.sector
+	return ""
+
+func is_priority_target_alive() -> bool:
+	for unit in enemy_units:
+		if unit.get("is_priority", false):
+			return true
+	return false

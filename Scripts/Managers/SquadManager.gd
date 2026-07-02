@@ -8,6 +8,23 @@ signal squad_lost(squad_name: String)
 
 enum Status { ACTIVE, WOUNDED, CRITICAL, LOST }
 enum Need   { ARMAMENTS, MEDI_PACKS, FUEL_CELLS }
+enum Goal {
+	ADVANCE,          # default — move toward enemies/uncaptured tiles
+	ATTACK_PRIORITY,  # moving toward priority target
+	POWER_TOWER,      # stationary at tower, needs Fuel Cells
+	HOLD_TOWER,       # tower powered, holding position
+	EXTRACT,          # moving toward extraction zone
+	FALLBACK,         # abandoned tower goal, reverting to advance
+}
+
+const GOAL_NAMES: Dictionary = {
+	Goal.ADVANCE:          "Advancing",
+	Goal.ATTACK_PRIORITY:  "Targeting priority contact",
+	Goal.POWER_TOWER:      "Powering comms tower",
+	Goal.HOLD_TOWER:       "Holding comms tower",
+	Goal.EXTRACT:          "Moving to extract",
+	Goal.FALLBACK:         "Falling back",
+}
 
 const STATUS_NAMES: Dictionary = {
 	Status.ACTIVE:   "Active",
@@ -32,13 +49,15 @@ var interference: float = 0.0
 
 
 func init_squads(squad_list: Array, mission_interference: float) -> void:
-	# Reset status to ACTIVE for all existing squads (they come back full)
 	for key in squads:
 		squads[key].status = Status.ACTIVE
 		squads[key].turns_unsupplied = 0
 		squads[key].report = ""
 		squads[key]["first_turn_bonus"] = false
 		squads[key]["surprise_bonus"] = false
+		squads[key]["goal"] = Goal.ADVANCE
+		squads[key]["tower_fuel_turns"] = 0
+		# has_data intentionally NOT reset — carries over between missions
 
 	current_turn = 0
 	interference = mission_interference
@@ -56,33 +75,34 @@ func init_squads(squad_list: Array, mission_interference: float) -> void:
 
 func _make_squad(s: Dictionary) -> Dictionary:
 	return {
-		"name":             s.name,
-		"sector":           s.sector,
-		"status":           s.get("status", Status.ACTIVE),
-		"need":             s.get("need", Need.ARMAMENTS),
-		"report":           "",
-		"turns_unsupplied": 0,
-		"bank": { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 },
-		"first_turn_bonus": false,
-		"surprise_bonus":   false,
+		"name":              s.name,
+		"sector":            s.sector,
+		"status":            s.get("status", Status.ACTIVE),
+		"need":              s.get("need", Need.ARMAMENTS),
+		"report":            "",
+		"turns_unsupplied":  0,
+		"bank":              { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 },
+		"first_turn_bonus":  false,
+		"surprise_bonus":    false,
+		"goal":              Goal.ADVANCE,
+		"has_data":          false,
+		"tower_fuel_turns":  0,
 	}
 
-
-# -------------------------------------------------------
-# Add a reinforcement squad mid-mission
-# Called by TurnManager when processing pending drop
-# -------------------------------------------------------
 func add_squad(squad_name: String, sector: String, surprise: bool) -> void:
 	squads[squad_name] = {
-		"name":             squad_name,
-		"sector":           sector,
-		"status":           Status.ACTIVE,
-		"need":             Need.ARMAMENTS,
-		"report":           "",
-		"turns_unsupplied": 0,
-		"bank": { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 },
-		"first_turn_bonus": true,    # First full turn fights as armed regardless
-		"surprise_bonus":   surprise, # Landing on enemy = guaranteed kill on arrival
+		"name":              squad_name,
+		"sector":            sector,
+		"status":            Status.ACTIVE,
+		"need":              Need.ARMAMENTS,
+		"report":            "",
+		"turns_unsupplied":  0,
+		"bank":              { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 },
+		"first_turn_bonus":  true,
+		"surprise_bonus":    surprise,
+		"goal":              Goal.ADVANCE,
+		"has_data":          false,
+		"tower_fuel_turns":  0,
 	}
 	GameManager.register_reinforcement_name(squad_name)
 

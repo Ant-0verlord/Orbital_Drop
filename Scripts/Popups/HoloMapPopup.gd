@@ -44,7 +44,7 @@ func _ready() -> void:
 
 func refresh(new_zone_states: Dictionary, axial_by_sector: Dictionary = {}) -> void:
 	zone_states = new_zone_states
-	hex_canvas.refresh(zone_states, axial_by_sector)
+	hex_canvas.refresh(zone_states, axial_by_sector, _build_special_sectors())
 	_rebuild_sector_list()
 	_update_labels()
 	_check_placement_mode()
@@ -204,6 +204,28 @@ func _on_placement_cancelled() -> void:
 	hex_canvas.exit_placement_mode()
 	_exit_placement_mode()
 
+func _build_special_sectors() -> Dictionary:
+	var specials: Dictionary = {}
+
+	# Priority target location
+	var pt_sector = EnemyManager.get_priority_target_sector()
+	if pt_sector != "":
+		specials[pt_sector] = "priority"
+
+	# Radio tower
+	var tower = GameManager.tower_sector
+	if tower != "":
+		if GameManager.tower_powered:
+			specials[tower] = "tower_powered"
+		else:
+			specials[tower] = "tower"
+
+	# Extraction zone
+	var extraction = GameManager.extraction_zone
+	if extraction != "":
+		specials[extraction] = "extraction"
+
+	return specials
 
 func _rebuild_sector_list() -> void:
 	for child in sector_list.get_children():
@@ -248,6 +270,20 @@ func _rebuild_sector_list() -> void:
 		row.add_child(squad_lbl)
 
 		sector_list.add_child(row)
+
+		var special_type = _build_special_sectors().get(sector_name, "")
+		if special_type != "":
+			var tag_lbl := Label.new()
+			var tag_text = ""
+			match special_type:
+				"priority":    tag_text = "✦ PRIORITY TARGET"
+				"tower":       tag_text = "⚡ COMMS TOWER"
+				"tower_powered": tag_text = "⚡ TOWER ACTIVE"
+				"extraction":  tag_text = "▲ EXTRACTION"
+			tag_lbl.text = tag_text
+			tag_lbl.add_theme_font_size_override("font_size", 10)
+			tag_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 0.5))
+			row.add_child(tag_lbl)
 
 
 func _state_color(state: String) -> Color:

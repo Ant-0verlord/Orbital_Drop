@@ -20,6 +20,9 @@ var dragging: bool = false
 var drag_start_mouse: Vector2 = Vector2.ZERO
 var drag_start_offset: Vector2 = Vector2.ZERO
 
+var special_sectors: Dictionary = {}
+# Format: { "sector_name": "priority" / "tower" / "tower_powered" / "extraction" }
+
 signal hex_clicked(sector: String)
 
 var flicker_timer: float = 0.0
@@ -42,6 +45,10 @@ const COLOR_LABEL:        Color = Color(0.8,  1.0,  1.0,  1.0)
 const COLOR_PLACEMENT:    Color = Color(0.2,  0.6,  1.0,  0.9)
 const COLOR_PLACEMENT_HOVER: Color = Color(0.4, 0.85, 1.0, 1.0)
 const COLOR_PLACED:       Color = Color(0.1,  1.0,  0.5,  0.95)
+const COLOR_PRIORITY:     Color = Color(0.6,  0.1,  0.8,  0.9)   # purple
+const COLOR_TOWER:        Color = Color(0.1,  0.8,  0.85, 0.9)   # teal/cyan
+const COLOR_TOWER_ACTIVE: Color = Color(0.0,  1.0,  0.75, 0.95)  # bright powered teal
+const COLOR_EXTRACTION:   Color = Color(0.95, 0.8,  0.1,  0.9)   # gold
 
 func _ready() -> void:
 	clip_contents = true
@@ -86,10 +93,11 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func refresh(new_zone_states: Dictionary, axial_by_sector: Dictionary = {}) -> void:
+func refresh(new_zone_states: Dictionary, axial_by_sector: Dictionary = {}, new_special_sectors: Dictionary = {}) -> void:
 	zone_states = new_zone_states
 	if not axial_by_sector.is_empty():
 		current_axial_by_sector = axial_by_sector
+	special_sectors = new_special_sectors
 	_build_hex_layout()
 	queue_redraw()
 
@@ -232,6 +240,21 @@ func _draw() -> void:
 				fill.a = lerp(0.6, 1.0, pulse)
 
 		draw_colored_polygon(_hex_points(center, HEX_INNER), fill)
+		
+		# Special sector colour override
+		var special_type = special_sectors.get(sector, "")
+		if not placement_mode and special_type != "":
+			match special_type:
+				"priority":
+					fill = fill.lerp(COLOR_PRIORITY, 0.6)
+				"tower":
+					fill = fill.lerp(COLOR_TOWER, 0.65)
+				"tower_powered":
+					var pulse = sin(pulse_time * 2.0) * 0.5 + 0.5
+					fill = fill.lerp(COLOR_TOWER_ACTIVE, 0.65 + pulse * 0.2)
+				"extraction":
+					var pulse = sin(pulse_time * 1.5) * 0.5 + 0.5
+					fill = fill.lerp(COLOR_EXTRACTION, 0.6 + pulse * 0.2)
 
 		# Border
 		var border = COLOR_BORDER
@@ -282,6 +305,28 @@ func _draw() -> void:
 				draw_string(ThemeDB.fallback_font,
 					center + Vector2(-8, 16),
 					"▼", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, COLOR_PLACEMENT_HOVER)
+		
+		# Special sector symbols
+		if not placement_mode and special_type != "":
+			var symbol = ""
+			var sym_color = Color.WHITE
+			match special_type:
+				"priority":
+					symbol = "✦"
+					sym_color = Color(0.9, 0.6, 1.0, 0.95)
+				"tower":
+					symbol = "⚡"
+					sym_color = Color(0.5, 0.95, 1.0, 0.9)
+				"tower_powered":
+					symbol = "⚡"
+					sym_color = Color(0.0, 1.0, 0.8, 1.0)
+				"extraction":
+					symbol = "▲"
+					sym_color = Color(1.0, 0.9, 0.3, 1.0)
+			if symbol != "":
+				draw_string(ThemeDB.fallback_font,
+					center + Vector2(-6, 26),
+					symbol, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, sym_color)
 
 
 func _hex_points(center: Vector2, radius: float) -> PackedVector2Array:
