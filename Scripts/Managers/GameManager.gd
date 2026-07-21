@@ -738,11 +738,6 @@ func start_current_mission() -> void:
 	priority_target_alive = data.get("has_priority_target", false)
 	priority_target_name = data.get("priority_target_name", "")
 	mission_type = data.get("mission_type", "capture")
-	tower_powered = false
-	tower_sector = data.get("radio_tower_sector", "")
-	priority_target_alive = data.get("has_priority_target", false)
-	priority_target_name = data.get("priority_target_name", "")
-	mission_type = data.get("mission_type", "capture")
 	# data_carrier_squad and extraction_zone NOT reset here —
 	# data_carrier carries across missions, extraction_zone set dynamically later
 

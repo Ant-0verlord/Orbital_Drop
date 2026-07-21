@@ -49,11 +49,37 @@ func start_mission(mission_data: Dictionary) -> void:
 
 	EnemyManager.init_enemies(squad_sectors, enemy_list, sectors, adj)
 
+	if mission_data.get("mission_type", "") == "extract":
+		_assign_extraction_zone()
+
 	# Warn about first reinforcement wave if scheduled
 	_check_reinforcement_warning(0)
 
 	emit_signal("turn_started", current_turn)
 
+func _assign_extraction_zone() -> void:
+	var squad_sectors = []
+	for squad in SquadManager.get_squads_for_ui():
+		squad_sectors.append(squad.sector)
+
+	var enemy_sectors = []
+	for sector in EnemyManager.get_hex_control():
+		if EnemyManager.get_hex_control()[sector] == "enemy":
+			enemy_sectors.append(sector)
+
+	# Find sector furthest from enemy concentration
+	var best_sector = ""
+	var best_score = -1
+	for sector in EnemyManager.get_all_sectors():
+		if sector in squad_sectors:
+			continue
+		var dist_from_enemies = EnemyManager._bfs_distance_to_nearest(sector, enemy_sectors)
+		if dist_from_enemies > best_score:
+			best_score = dist_from_enemies
+			best_sector = sector
+
+	GameManager.extraction_zone = best_sector
+	print("Extraction zone assigned: %s" % best_sector)
 
 func lock_allocations(allocations: Dictionary) -> void:
 	if mission_over:
@@ -98,6 +124,7 @@ func end_turn() -> void:
 	# Notify Intel Console of where reinforcements landed
 	if spawned_sectors.size() > 0:
 		emit_signal("enemy_reinforcements_landed", spawned_sectors)
+	
 
 	allocations_are_locked = false
 	pending_allocations = {}
