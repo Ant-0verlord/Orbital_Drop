@@ -87,6 +87,7 @@ func _make_squad(s: Dictionary) -> Dictionary:
 		"goal":              Goal.ADVANCE,
 		"has_data":          false,
 		"tower_fuel_turns":  0,
+		"tower_fuel_turns_waited": 0,
 	}
 
 func add_squad(squad_name: String, sector: String, surprise: bool) -> void:
@@ -103,6 +104,7 @@ func add_squad(squad_name: String, sector: String, surprise: bool) -> void:
 		"goal":              Goal.ADVANCE,
 		"has_data":          false,
 		"tower_fuel_turns":  0,
+		"tower_fuel_turns_waited": 0,
 	}
 	GameManager.register_reinforcement_name(squad_name)
 
@@ -122,6 +124,8 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 	current_turn += 1
 
 	GameManager.consume_supplies(allocations)
+
+	_assign_goals()
 
 	var action_results: Dictionary = {}
 
@@ -165,6 +169,33 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 		var move_range = 2 if effective_fuel else 1
 
 		# -------------------------------------------------------
+		# TOWER POWERING — squad at tower with fuel stays put
+		# -------------------------------------------------------
+		var at_tower = (GameManager.tower_sector != "" and squad.sector == GameManager.tower_sector)
+
+		if at_tower and not GameManager.tower_powered and squad.goal == Goal.POWER_TOWER:
+			if effective_fuel:
+				squad.tower_fuel_turns += 1
+				squad.tower_fuel_turns_waited = 0
+				squad.turns_unsupplied = 0
+				if squad.tower_fuel_turns >= 2:
+					GameManager.activate_tower()
+					squad.goal = Goal.HOLD_TOWER
+					action = "powered_tower"
+				else:
+					action = "powering_tower"
+			else:
+				squad.tower_fuel_turns_waited += 1
+				squad.tower_fuel_turns = 0  # fuel supply interrupted — reset progress
+				if squad.tower_fuel_turns_waited >= 2:
+					squad.goal = Goal.FALLBACK
+					action = "abandoned_tower"
+				else:
+					action = "waiting_at_tower"
+			# Either way, skip the rest of the normal movement block
+			# Jump straight to medi-pack and banking sections below
+
+		# -------------------------------------------------------
 		# Obstacle check — only risk this when relying on the
 		# baseline move (no fuel at all)
 		# -------------------------------------------------------
@@ -198,9 +229,37 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 				if step_target == "":
 					break  # nowhere left to go
 
+				# Goal-directed targeting overrides default movement
+				if squad.goal == Goal.ATTACK_PRIORITY and GameManager.priority_target_alive:
+					var pt_sector = EnemyManager.get_priority_target_sector()
+					if pt_sector != "":
+						if pt_sector in EnemyManager.adjacency.get(current_sector, []):
+							step_target = pt_sector
+							engaging_enemy = true
+						else:
+							step_target = _path_toward(current_sector, pt_sector)
+
+				elif squad.goal == Goal.POWER_TOWER or squad.goal == Goal.HOLD_TOWER:
+					var tower = GameManager.tower_sector
+					if tower != "" and tower != current_sector:
+						if tower in EnemyManager.adjacency.get(current_sector, []):
+							step_target = tower
+						else:
+							step_target = _path_toward(current_sector, tower)
+
+				elif squad.goal == Goal.EXTRACT:
+					var ez = GameManager.extraction_zone
+					if ez != "" and ez != current_sector:
+						if ez in EnemyManager.adjacency.get(current_sector, []):
+							step_target = ez
+						else:
+							step_target = _path_toward(current_sector, ez)
+
 				squad.sector = step_target
 				moved_to = step_target
 				steps_taken += 1
+
+				
 
 				if engaging_enemy:
 					if effective_arms:
@@ -452,4 +511,80 @@ func _generate_report(squad: Dictionary, action: String, moved_to: String, used_
 				Status.ACTIVE:   return "%s holding at %s. No supplies this turn." % [n, s]
 				Status.WOUNDED:  return "%s taking losses at %s. Needs support." % [n, s]
 				Status.CRITICAL: return "%s critical at %s. Without aid they will be lost." % [n, s]
+		"powering_tower":
+			return prefix + "%s is powering the comms tower at %s. Fuel Cells required next turn to complete." % [n, s]
+		"powered_tower":
+			return prefix + "%s has activated the comms tower at %s. Tower is now operational." % [n, s]
+		"waiting_at_tower":
+			return prefix + "%s is at the tower in %s awaiting fuel supply. Will abandon in %d turn(s)." % [n, s, 2 - squad.tower_fuel_turns_waited]
+		"abandoned_tower":
+			return prefix + "%s has abandoned the comms tower at %s — no fuel received. Falling back." % [n, s]
 	return "%s — no report." % n
+
+func _assign_goals() -> void:
+	var tower_sector = GameManager.tower_sector
+	var mission_type = GameManager.mission_type
+	var has_tower = tower_sector != ""
+	var tower_powered = GameManager.tower_powered
+
+	# Count how many squads are already heading to or at the tower
+	var squads_assigned_to_tower = 0
+	for squad_name in squads:
+		var squad = squads[squad_name]
+		if squad.goal == Goal.POWER_TOWER or squad.goal == Goal.HOLD_TOWER:
+			squads_assigned_to_tower += 1
+
+	for squad_name in squads:
+		var squad = squads[squad_name]
+		if squad.status == Status.LOST:
+			continue
+
+		# Data carrier in M4/M5 tries to extract
+		if squad.get("has_data", false) and mission_type in ["eliminate_priority", "extract"]:
+			squad.goal = Goal.EXTRACT
+			continue
+
+		# Tower missions — assign 1-2 squads to tower if not yet powered
+		if has_tower and not tower_powered and mission_type in ["hold_tower", "eliminate_priority", "extract"]:
+			if squad.sector == tower_sector:
+				# Already at tower — keep powering/holding
+				squad.goal = Goal.POWER_TOWER if not tower_powered else Goal.HOLD_TOWER
+				continue
+			if squads_assigned_to_tower < 2:
+				# Assign this squad to go for the tower
+				squad.goal = Goal.POWER_TOWER
+				squads_assigned_to_tower += 1
+				continue
+
+		# Tower is powered — one squad holds it
+		if has_tower and tower_powered and squad.sector == tower_sector:
+			squad.goal = Goal.HOLD_TOWER
+			continue
+
+		# Default — advance toward enemies
+		if squad.goal not in [Goal.POWER_TOWER, Goal.HOLD_TOWER, Goal.EXTRACT]:
+			squad.goal = Goal.ADVANCE
+
+		# Priority target missions — reassign non-tower squads to hunt the target
+		if mission_type == "eliminate_priority" and GameManager.priority_target_alive:
+			if squad.goal == Goal.ADVANCE:
+				squad.goal = Goal.ATTACK_PRIORITY
+
+func _path_toward(from_sector: String, to_sector: String) -> String:
+	if from_sector == to_sector:
+		return ""
+	var visited = { from_sector: true }
+	var queue = [[from_sector, []]]
+	while queue.size() > 0:
+		var current = queue.pop_front()
+		var node = current[0]
+		var path = current[1]
+		for neighbor in EnemyManager.adjacency.get(node, []):
+			if neighbor == to_sector:
+				return path[0] if path.size() > 0 else neighbor
+			if not visited.has(neighbor):
+				visited[neighbor] = true
+				var new_path = path.duplicate()
+				new_path.append(neighbor)
+				queue.append([neighbor, new_path])
+	return ""

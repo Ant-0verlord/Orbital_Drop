@@ -103,6 +103,29 @@ func refresh() -> void:
 		lock_btn.text = "Lock Allocations"
 		lock_btn.disabled = false
 
+func _get_objective_text(data: Dictionary) -> String:
+	var mission_type = data.get("mission_type", "capture")
+	var turns_left = TurnManager.max_turns - TurnManager.current_turn
+	match mission_type:
+		"capture":
+			return "Hold %d sectors by end of Turn %d." % [TurnManager.win_condition_hexes, TurnManager.max_turns]
+		"eliminate":
+			var remaining = EnemyManager.get_total_enemy_count()
+			return "Eliminate all enemy forces. %d units remaining." % remaining
+		"hold_tower":
+			if GameManager.tower_powered:
+				return "Tower active — hold it until mission end. %d turns remaining." % turns_left
+			else:
+				return "Capture and power the comms tower. Power requires 2 turns of Fuel Cells."
+		"eliminate_priority":
+			if GameManager.priority_target_alive:
+				return "Eliminate %s. Optional: power the comms tower." % GameManager.priority_target_name
+			else:
+				return "Priority target eliminated. Data secured — extract if possible."
+		"extract":
+			var ez = GameManager.extraction_zone
+			return "Reach extraction zone (%s) by end of final turn. Data carrier must extract." % ez
+	return data.get("objective", "")
 
 func _rebuild_squad_rows() -> void:
 	if turn_label:

@@ -75,21 +75,74 @@ func _update_mission_info() -> void:
 	if mission_title:
 		mission_title.text = data.get("title", "")
 	if objective_label:
-		var turns_left = TurnManager.max_turns - TurnManager.current_turn
-		objective_label.text = data.get("objective",
-			"Hold %d sectors for %d more turns." % [TurnManager.win_condition_hexes, turns_left])
+		objective_label.text = _get_objective_text(data)
 	if turn_label:
 		turn_label.text = "Turn %d / %d" % [TurnManager.current_turn, TurnManager.max_turns]
 	if held_label:
-		var held = EnemyManager.get_held_count()
-		var req  = TurnManager.win_condition_hexes
-		held_label.text = "Held: %d / %d" % [held, req]
-		held_label.add_theme_color_override("font_color",
-			Color(0.4, 0.9, 0.4) if held >= req else Color(0.9, 0.6, 0.2))
+		_update_held_label()
 	if progress_bar:
 		progress_bar.max_value = TurnManager.max_turns
 		progress_bar.value = TurnManager.current_turn
 
+func _get_objective_text(data: Dictionary) -> String:
+	var mission_type = data.get("mission_type", "capture")
+	var turns_left = TurnManager.max_turns - TurnManager.current_turn
+	match mission_type:
+		"capture":
+			return "Hold %d sectors by end of Turn %d." % [TurnManager.win_condition_hexes, TurnManager.max_turns]
+		"eliminate":
+			var remaining = EnemyManager.get_total_enemy_count()
+			return "Eliminate all enemy forces. %d units remaining." % remaining
+		"hold_tower":
+			if GameManager.tower_powered:
+				return "Tower active — hold it until mission end. %d turns remaining." % turns_left
+			else:
+				return "Capture and power the comms tower. Power requires 2 turns of Fuel Cells."
+		"eliminate_priority":
+			if GameManager.priority_target_alive:
+				return "Eliminate %s. Optional: power the comms tower." % GameManager.priority_target_name
+			else:
+				return "Priority target eliminated. Data secured — extract if possible."
+		"extract":
+			var ez = GameManager.extraction_zone
+			return "Reach extraction zone (%s) by end of final turn. Data carrier must extract." % ez
+	return data.get("objective", "")
+
+func _update_held_label() -> void:
+	if not held_label:
+		return
+	var mission_type = GameManager.mission_type
+	match mission_type:
+		"capture":
+			var held = EnemyManager.get_held_count()
+			var req  = TurnManager.win_condition_hexes
+			held_label.text = "Held: %d / %d" % [held, req]
+			held_label.add_theme_color_override("font_color",
+				Color(0.4, 0.9, 0.4) if held >= req else Color(0.9, 0.6, 0.2))
+		"eliminate":
+			var remaining = EnemyManager.get_total_enemy_count()
+			held_label.text = "Enemies: %d remaining" % remaining
+			held_label.add_theme_color_override("font_color",
+				Color(0.4, 0.9, 0.4) if remaining == 0 else Color(0.9, 0.6, 0.2))
+		"hold_tower":
+			var powered = GameManager.tower_powered
+			held_label.text = "Tower: %s" % ("ACTIVE ⚡" if powered else "UNPOWERED")
+			held_label.add_theme_color_override("font_color",
+				Color(0.4, 0.9, 0.4) if powered else Color(0.9, 0.6, 0.2))
+		"eliminate_priority":
+			var alive = GameManager.priority_target_alive
+			held_label.text = "Target: %s" % ("ELIMINATED ✓" if not alive else "AT LARGE ✦")
+			held_label.add_theme_color_override("font_color",
+				Color(0.4, 0.9, 0.4) if not alive else Color(0.9, 0.3, 0.3))
+		"extract":
+			var ez = GameManager.extraction_zone
+			var at_ez = 0
+			for squad in SquadManager.get_squads_for_ui():
+				if squad.sector == ez and squad.status != SquadManager.Status.LOST:
+					at_ez += 1
+			held_label.text = "At extraction: %d squad(s)" % at_ez
+			held_label.add_theme_color_override("font_color",
+				Color(0.4, 0.9, 0.4) if at_ez > 0 else Color(0.9, 0.6, 0.2))
 
 func _update_squad_summary() -> void:
 	for child in squad_summary.get_children():

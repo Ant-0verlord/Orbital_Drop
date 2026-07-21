@@ -142,12 +142,45 @@ func _add_report_card(squad_name: String, report_text: String, squad_data: Dicti
 	report_lbl.add_theme_font_size_override("font_size", 13)
 	vbox.add_child(report_lbl)
 
-	report_container.add_child(card)
+	if squad_data.has("goal") and squad_data.status != SquadManager.Status.LOST:
+		var goal_text = _get_goal_text(squad_name, squad_data)
+		if goal_text != "":
+			var goal_lbl := Label.new()
+			goal_lbl.text = goal_text
+			goal_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+			goal_lbl.add_theme_font_size_override("font_size", 11)
+			goal_lbl.add_theme_color_override("font_color", Color(0.55, 0.75, 0.9))
+			vbox.add_child(goal_lbl)
 
+	report_container.add_child(card)
 	var spacer := Control.new()
 	spacer.custom_minimum_size.y = 4
 	report_container.add_child(spacer)
 
+func _get_goal_text(squad_name: String, squad_data: Dictionary) -> String:
+	var interference = SquadManager.interference
+	if randf() < interference * 0.4:
+		return "OBJECTIVE: [INTERFERENCE]"
+
+	var goal = squad_data.get("goal", SquadManager.Goal.ADVANCE)
+	var goal_name = SquadManager.GOAL_NAMES.get(goal, "Unknown")
+
+	var need_hint = ""
+	match goal:
+		SquadManager.Goal.POWER_TOWER:
+			var turns_left = 2 - squad_data.get("tower_fuel_turns", 0)
+			need_hint = " — requesting Fuel Cells (%d turn(s) to activate)" % turns_left
+		SquadManager.Goal.HOLD_TOWER:
+			need_hint = " — holding position, requesting Armaments"
+		SquadManager.Goal.ATTACK_PRIORITY:
+			var pt = GameManager.priority_target_name
+			need_hint = " — en route to eliminate %s" % pt if pt != "" else ""
+		SquadManager.Goal.EXTRACT:
+			need_hint = " — moving to extraction, requesting Fuel Cells"
+		SquadManager.Goal.FALLBACK:
+			need_hint = " — falling back, no fuel received in time"
+
+	return "OBJECTIVE: %s%s" % [goal_name, need_hint]
 
 func _card_style(squad_data: Dictionary) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

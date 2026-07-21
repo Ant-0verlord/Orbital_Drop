@@ -142,15 +142,17 @@ func _rebuild_transmissions() -> void:
 func _transmission_quality(squad: Dictionary) -> String:
 	var interference = SquadManager.interference
 
-	# Mission 1 (interference 0.0) — always normal
+	# Tower powered — check if this squad is within radius
+	if GameManager.tower_powered and GameManager.tower_sector != "":
+		var dist = EnemyManager._bfs_distance(squad.sector, GameManager.tower_sector)
+		if dist <= 3:  # within 3 hex radius of tower
+			interference = max(0.0, interference - 0.4)  # significant reduction
+
 	if interference <= 0.0:
 		return "normal"
-
-	# Lost squads always dead channel
 	if squad.status == SquadManager.Status.LOST:
 		return "dead"
 
-	# Roll against interference thresholds
 	var roll = randf()
 	if roll < interference * 0.15:
 		return "dead"

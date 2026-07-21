@@ -258,6 +258,8 @@ func advance_enemies(allocations: Dictionary) -> void:
 			emit_signal("reinforcement_landed", squad_name, target_sector, surprise)
 		GameManager.clear_pending_reinforcement()
 	
+	
+	
 	_rebuild_hex_control(squad_sectors)
 	emit_signal("enemies_updated")
 
@@ -449,6 +451,9 @@ func _bfs_distance_to_nearest(from: String, targets: Array) -> int:
 			min_dist = d
 	return min_dist
 
+# In EnemyManager.gd
+func get_distance_between(from: String, to: String) -> int:
+	return _bfs_distance(from, to)
 
 func _bfs_distance(start: String, end_sector: String) -> int:
 	if start == end_sector:
@@ -505,3 +510,9 @@ func is_priority_target_alive() -> bool:
 		if unit.get("is_priority", false):
 			return true
 	return false
+
+func is_any_enemy_alive() -> bool:
+	return enemy_units.size() > 0
+
+func get_total_enemy_count() -> int:
+	return enemy_units.size()

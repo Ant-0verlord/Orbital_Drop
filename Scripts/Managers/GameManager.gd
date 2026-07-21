@@ -29,6 +29,8 @@ var data_carrier_squad: String = ""
 var extraction_zone: String = ""
 var mission_type: String = "capture"  # "capture", "eliminate", "hold_tower", "extract"
 
+signal tower_activated
+
 const REINFORCEMENT_NAMES: Array = [
 	"Squad Taev",
 	"Squad Miren",
@@ -617,6 +619,7 @@ var missions: Array = [
 			{ "name": "Squad Davan", "sector": "Kappa-5C", "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
 		],
 		"enemies": [
+			{ "sector": "Beta-5C"    },  # Commander Vreth
 			{ "sector": "Upsilon-1C" },
 			{ "sector": "Phi-1C"     },
 			{ "sector": "Chi-1C"     },
@@ -624,8 +627,7 @@ var missions: Array = [
 			{ "sector": "Iota-3C"    },
 			{ "sector": "Kappa-3C"   },
 			{ "sector": "Lambda-3C"  },
-			{ "sector": "Beta-5C", "is_priority": true },  # Commander Vreth starts at centre
-			{ "sector": "Gamma-5C"   },
+			{ "sector": "Gamma-5C", "is_priority": true    },
 			{ "sector": "Delta-5C"   },
 			{ "sector": "Alpha-5C"   },
 			{ "sector": "Omega-5C"   },
@@ -731,6 +733,11 @@ func start_current_mission() -> void:
 	reinforcement_pool += data.get("reinforcement_pool", 0)
 	supply_spent = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	pending_reinforcement = {}
+	tower_powered = false
+	tower_sector = data.get("radio_tower_sector", "")
+	priority_target_alive = data.get("has_priority_target", false)
+	priority_target_name = data.get("priority_target_name", "")
+	mission_type = data.get("mission_type", "capture")
 	tower_powered = false
 	tower_sector = data.get("radio_tower_sector", "")
 	priority_target_alive = data.get("has_priority_target", false)
@@ -869,5 +876,39 @@ func calculate_score(held_hexes: int, turns_taken: int, win_hexes: int) -> Dicti
 		"supply_bonus": supply_bonus,
 	}
 
+func calculate_extraction_bonus() -> Dictionary:
+	var ez = extraction_zone
+	var extracted_count = 0
+	var data_extracted = false
+
+	for squad_name in SquadManager.squads:
+		var squad = SquadManager.squads[squad_name]
+		if squad.status == SquadManager.Status.LOST:
+			continue
+		if squad.sector == ez:
+			extracted_count += 1
+			if squad.get("has_data", false):
+				data_extracted = true
+
+	var bonus = extracted_count * 80
+	if data_extracted:
+		bonus += 200  # major bonus for getting the data out
+
+	return {
+		"extracted_count": extracted_count,
+		"data_extracted":  data_extracted,
+		"bonus":           bonus,
+	}
+
 func has_armed_bombardment() -> bool:
 	return not pending_bombardment.is_empty() and pending_bombardment.get("placed", false)
+
+
+func progress_tower_power(squad_name: String) -> void:
+	# Called when a squad spends a fuel turn at the tower
+	# Tracked per-squad in SquadManager, resolution happens in SquadManager
+	pass  # intentionally thin — actual tracking is in squad.tower_fuel_turns
+
+func activate_tower() -> void:
+	tower_powered = true
+	emit_signal("tower_activated")

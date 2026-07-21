@@ -81,6 +81,15 @@ func end_turn() -> void:
 	# Enemies advance
 	EnemyManager.advance_enemies(pending_allocations)
 
+	# Mid-turn win check for eliminate-type missions
+	var mission_type = GameManager.mission_type
+	if mission_type == "eliminate" and not EnemyManager.is_any_enemy_alive():
+		_end_mission(true, "")
+		return
+	if mission_type == "eliminate_priority" and not GameManager.priority_target_alive:
+		_end_mission(true, "")
+		return
+
 	# Resolve any armed orbital strike
 	var bombardment_report = _process_bombardment()
 	if not bombardment_report.is_empty():
@@ -149,6 +158,24 @@ func _check_reinforcement_warning(after_turn: int) -> void:
 
 
 func _check_win_condition() -> void:
+	var mission_type = GameManager.mission_type
+
+	match mission_type:
+		"capture":
+			_check_capture_win()
+		"eliminate":
+			_check_eliminate_win()
+		"hold_tower":
+			_check_hold_tower_win()
+		"eliminate_priority":
+			_check_eliminate_priority_win()
+		"extract":
+			_check_extract_win()
+		_:
+			_check_capture_win()  # fallback
+
+
+func _check_capture_win() -> void:
 	var held = EnemyManager.get_held_count()
 	var won  = held >= win_condition_hexes
 	if won:
@@ -156,6 +183,72 @@ func _check_win_condition() -> void:
 	else:
 		_end_mission(false,
 			"Insufficient territory held. Required %d sectors, held %d." % [win_condition_hexes, held])
+
+
+func _check_eliminate_win() -> void:
+	var enemies_remain = EnemyManager.is_any_enemy_alive()
+	if not enemies_remain:
+		_end_mission(true, "")
+	else:
+		var count = EnemyManager.get_total_enemy_count()
+		_end_mission(false,
+			"Enemy forces not fully eliminated. %d units remain in the field." % count)
+
+
+func _check_hold_tower_win() -> void:
+	var tower = GameManager.tower_sector
+	if tower == "":
+		_end_mission(false, "Comms tower location unknown — mission failed.")
+		return
+
+	var tower_powered = GameManager.tower_powered
+	var squad_holds_tower = false
+	for squad in SquadManager.get_squads_for_ui():
+		if squad.sector == tower and squad.status != SquadManager.Status.LOST:
+			squad_holds_tower = true
+			break
+
+	if tower_powered and squad_holds_tower:
+		_end_mission(true, "")
+	elif not tower_powered:
+		_end_mission(false,
+			"Comms tower was never activated. Fuel Cells required to power it.")
+	else:
+		_end_mission(false,
+			"Comms tower lost — enemy forces recaptured the position.")
+
+
+func _check_eliminate_priority_win() -> void:
+	if not GameManager.priority_target_alive:
+		_end_mission(true, "")
+	else:
+		_end_mission(false,
+			"Priority target '%s' was not eliminated. Mission failed." % GameManager.priority_target_name)
+
+
+func _check_extract_win() -> void:
+	# Count squads at extraction zone
+	var ez = GameManager.extraction_zone
+	var extracted = 0
+	var data_extracted = false
+
+	for squad in SquadManager.get_squads_for_ui():
+		if squad.status == SquadManager.Status.LOST:
+			continue
+		if squad.sector == ez:
+			extracted += 1
+			if squad.get("has_data", false):
+				data_extracted = true
+
+	if extracted == 0:
+		_end_mission(false, "No squads reached the extraction zone in time.")
+		return
+
+	if not data_extracted:
+		# Still wins but with a note — data squad didn't make it
+		_end_mission(true, "")  # won but score will reflect missing data
+	else:
+		_end_mission(true, "")
 
 
 func _end_mission(won: bool, reason: String) -> void:
@@ -171,7 +264,18 @@ func _end_mission(won: bool, reason: String) -> void:
 		else:
 			squads_alive += 1
 
+	var extraction_bonus = 0
+	var extracted_count = 0
+	var data_extracted = false
+	if GameManager.mission_type == "extract":
+		var eb = GameManager.calculate_extraction_bonus()
+		extraction_bonus = eb.bonus
+		extracted_count  = eb.extracted_count
+		data_extracted   = eb.data_extracted
+
 	var score = GameManager.calculate_score(held, current_turn, win_condition_hexes)
+	var final_score = score.total + extraction_bonus
+	
 
 	var report = {
 		"won":            won,
@@ -188,6 +292,9 @@ func _end_mission(won: bool, reason: String) -> void:
 		"supply_bonus":   score.supply_bonus,
 		"supply_pool":    GameManager.get_supply_pool().duplicate(),
 		"reinforcements": GameManager.get_reinforcement_pool(),
+		"extraction_bonus":  extraction_bonus,
+		"extracted_count":   extracted_count,
+		"data_extracted":    data_extracted,
 	}
 
 	GameManager.campaign_record.append({
