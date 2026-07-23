@@ -199,14 +199,11 @@ func advance_enemies(allocations: Dictionary) -> void:
 		if not enemy_units.has(unit):
 			continue
 
-		var best       = unit.sector
 		var use_priority_scoring = unit.get("is_priority", false)
+		var ai_mode = GameManager.enemy_ai_mode
 
-		var best_score = (
-			_priority_movement_score(unit.sector, squad_sectors, unit.id)
-			if use_priority_scoring
-			else _movement_score(unit.sector, squad_sectors, unit.id)
-		)
+		var best = unit.sector
+		var best_score = _get_movement_score(unit.sector, squad_sectors, unit.id, use_priority_scoring, ai_mode)
 
 		var candidates = adjacency.get(unit.sector, []).duplicate()
 		candidates.shuffle()
@@ -218,11 +215,7 @@ func advance_enemies(allocations: Dictionary) -> void:
 				var control = hex_control.get(n, "enemy")
 				if control == "held" or control == "contested" or n in squad_sectors:
 					continue
-			var score = (
-				_priority_movement_score(n, squad_sectors, unit.id)
-				if use_priority_scoring
-				else _movement_score(n, squad_sectors, unit.id)
-			)
+			var score = _get_movement_score(n, squad_sectors, unit.id, use_priority_scoring, ai_mode)
 			if score > best_score:
 				best_score = score
 				best = n
@@ -264,6 +257,7 @@ func advance_enemies(allocations: Dictionary) -> void:
 	emit_signal("enemies_updated")
 
 
+
 # -------------------------------------------------------
 # Movement scoring
 # -------------------------------------------------------
@@ -293,6 +287,20 @@ func _movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
 	score += adj_squad_tiles * 10
 
 	return score
+
+func _get_movement_score(sector: String, squad_sectors: Array, unit_id: int, is_priority: bool, ai_mode: String) -> int:
+	if is_priority:
+		return _priority_movement_score(sector, squad_sectors, unit_id)
+	match ai_mode:
+		"aggressive":
+			return _movement_score(sector, squad_sectors, unit_id)
+		"wave":
+			return _wave_movement_score(sector, squad_sectors, unit_id)
+		"defensive":
+			return _defensive_movement_score(sector, squad_sectors, unit_id)
+		"rush_extraction":
+			return _rush_extraction_score(sector, squad_sectors, unit_id)
+	return _movement_score(sector, squad_sectors, unit_id)
 
 func _priority_movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
 	var score = 0
@@ -516,3 +524,97 @@ func is_any_enemy_alive() -> bool:
 
 func get_total_enemy_count() -> int:
 	return enemy_units.size()
+
+func _defensive_movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
+	var score = 0
+
+	# Strongly prefer staying near tower or priority target home
+	var anchor = GameManager.tower_sector
+	if anchor == "" and GameManager.priority_target_home != "":
+		anchor = priority_target_home
+	if anchor != "":
+		var dist_from_anchor = _bfs_distance(sector, anchor)
+		score -= dist_from_anchor * 25
+
+	# Prefer enemy-controlled tiles
+	var control = hex_control.get(sector, "enemy")
+	if control == "enemy":
+		score += 15
+	elif control == "held":
+		score -= 30
+	elif control == "contested":
+		score += 5
+
+	# Avoid crowding
+	var nearby_enemies = 0
+	for n in adjacency.get(sector, []):
+		for unit in enemy_units:
+			if unit.id != unit_id and unit.sector == n:
+				nearby_enemies += 1
+	score -= nearby_enemies * 10
+
+	# Keep some distance from squads — don't rush in
+	var dist_to_squad = _bfs_distance_to_nearest(sector, squad_sectors)
+	score += min(dist_to_squad, 3) * 5
+
+	return score
+
+
+func _wave_movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
+	var score = 0
+
+	# Aggressively chase squads — even more than default
+	var dist = _bfs_distance_to_nearest(sector, squad_sectors)
+	score += (10 - min(dist, 10)) * 30
+
+	# Strong preference for held tiles — push into player territory
+	var control = hex_control.get(sector, "enemy")
+	if control == "held":
+		score += 40
+	elif control == "contested":
+		score += 25
+
+	# Actively group up — waves feel like a mass push
+	var nearby_enemies = 0
+	for n in adjacency.get(sector, []):
+		for unit in enemy_units:
+			if unit.id != unit_id and unit.sector == n:
+				nearby_enemies += 1
+	score += nearby_enemies * 5  # positive — waves cluster together
+
+	# Bonus for being adjacent to squads
+	for n in adjacency.get(sector, []):
+		if n in squad_sectors:
+			score += 20
+
+	return score
+
+
+func _rush_extraction_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
+	var score = 0
+
+	# Primary goal: get to extraction zone
+	var ez = GameManager.extraction_zone
+	if ez != "":
+		var dist_to_ez = _bfs_distance(sector, ez)
+		score += (15 - min(dist_to_ez, 15)) * 25
+
+	# Secondary: target data carrier squad specifically
+	var data_carrier = GameManager.data_carrier_squad
+	if data_carrier != "":
+		for squad in SquadManager.get_squads_for_ui():
+			if squad.name == data_carrier and squad.status != SquadManager.Status.LOST:
+				var dist_to_carrier = _bfs_distance(sector, squad.sector)
+				score += (10 - min(dist_to_carrier, 10)) * 15
+				break
+
+	# Still chase any squad, just less than extraction focus
+	var dist_to_squad = _bfs_distance_to_nearest(sector, squad_sectors)
+	score += (10 - min(dist_to_squad, 10)) * 8
+
+	# Prefer held tiles — disrupt the player
+	var control = hex_control.get(sector, "enemy")
+	if control == "held":
+		score += 20
+
+	return score

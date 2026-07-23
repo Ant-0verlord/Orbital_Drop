@@ -28,6 +28,7 @@ var priority_target_name: String = ""
 var data_carrier_squad: String = ""
 var extraction_zone: String = ""
 var mission_type: String = "capture"  # "capture", "eliminate", "hold_tower", "extract"
+var enemy_ai_mode: String = "aggressive"
 
 signal tower_activated
 
@@ -505,6 +506,7 @@ var missions: Array = [
 	{
 		# Mission 1
 		"mission_type":         "capture",
+		"enemy_ai_mode": "aggressive",
 		"has_priority_target":  false,
 		"priority_target_name": "",
 		"radio_tower_sector":   "",
@@ -533,6 +535,7 @@ var missions: Array = [
 	{
 		# Mission 2
 		"mission_type":         "eliminate",
+		"enemy_ai_mode": "aggressive",
 		"has_priority_target":  false,
 		"priority_target_name": "",
 		"radio_tower_sector":   "",
@@ -564,11 +567,12 @@ var missions: Array = [
 	{
 	# Mission 3
 	"mission_type":         "hold_tower",
+	"enemy_ai_mode": "wave",
 	"has_priority_target":  false,
 	"priority_target_name": "",
 	"radio_tower_sector":   "Sigma-1B",  # pick a central ring sector — adjust after testing
 	"title":        "Mission 3 — The Iron Salient",
-	"turns":        5,
+	"turns":        10,
 	"win_hexes":    22,
 	"interference": 0.5,
 	"objective":    "Hold 22 sectors against a reinforced enemy push.",
@@ -578,7 +582,7 @@ var missions: Array = [
 	"sectors":    M3_SECTORS,
 	"adjacency":  M3_ADJACENCY,
 	"axial":      M3_AXIAL,
-	"reinforcement_schedule": { 3: 1, 4: 2 },
+	"reinforcement_schedule": { 2: 2, 3: 2, 4: 3 },
 	"squads": [
 		{ "name": "Squad Varro", "sector": "Psi-1B",  "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
 		{ "name": "Squad Kael",  "sector": "Omega-1B","status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
@@ -597,6 +601,7 @@ var missions: Array = [
 		{
 		# Mission 4
 		"mission_type":         "eliminate_priority",
+		"enemy_ai_mode": "defensive",
 		"has_priority_target":  true,
 		"priority_target_name": "Commander Vreth",
 		"radio_tower_sector":   "Beta-5C",   # central cave sector — adjust after testing
@@ -641,6 +646,7 @@ var missions: Array = [
 	{
 		# Mission 5
 		"mission_type":         "extract",
+		"enemy_ai_mode": "rush_extraction",
 		"has_priority_target":  false,
 		"priority_target_name": "",
 		"radio_tower_sector":   "Zeta-3D",   # adjust after testing
@@ -730,6 +736,7 @@ func start_current_mission() -> void:
 	for s in base_pool:
 		supply_pool[s] = supply_pool.get(s, 0) + base_pool[s]
 
+	enemy_ai_mode = data.get("enemy_ai_mode", "aggressive")
 	reinforcement_pool += data.get("reinforcement_pool", 0)
 	supply_spent = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	pending_reinforcement = {}
@@ -747,6 +754,7 @@ func debug_jump_to_mission(index: int) -> void:
 	if index < 0 or index >= missions.size():
 		return
 
+	enemy_ai_mode = "aggressive"
 	current_mission = index
 	supply_pool   = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	supply_spent  = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }

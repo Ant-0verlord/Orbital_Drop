@@ -71,6 +71,9 @@ func _rebuild_reports() -> void:
 	if reinforcement_warning_turn > SquadManager.current_turn:
 		_add_reinforcements_warning_card(reinforcement_warning_count, reinforcement_warning_turn)
 
+	if GameManager.mission_type == "extract" and SquadManager.current_turn == 0:
+		_add_extraction_zone_card()
+
 	# Critical squads always break through — priority distress first
 	var reports: Dictionary = (
 		SquadManager.get_briefings()
@@ -374,6 +377,37 @@ func _add_bombardment_report_card(report: Dictionary) -> void:
 		ff_lbl.add_theme_font_size_override("font_size", 12)
 		ff_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 		vbox.add_child(ff_lbl)
+
+	report_container.add_child(card)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 4
+	report_container.add_child(spacer)
+
+func _add_extraction_zone_card() -> void:
+	var ez = GameManager.extraction_zone
+	if ez == "":
+		return
+
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _alert_style(Color(0.15, 0.12, 0.02), Color(0.95, 0.8, 0.1, 0.95)))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "▲ EXTRACTION ZONE CONFIRMED"
+	header.add_theme_font_size_override("font_size", 13)
+	header.add_theme_color_override("font_color", Color(0.95, 0.85, 0.2))
+	vbox.add_child(header)
+
+	var body := Label.new()
+	body.text = "Shuttle inbound to %s. All surviving squads must reach this sector by end of final turn. Enemy forces are converging on the zone — protect the data carrier at all costs." % ez
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD
+	body.add_theme_font_size_override("font_size", 12)
+	body.add_theme_color_override("font_color", Color(0.9, 0.85, 0.6))
+	vbox.add_child(body)
 
 	report_container.add_child(card)
 	var spacer := Control.new()
