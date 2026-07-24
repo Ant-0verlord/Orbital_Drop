@@ -5,19 +5,19 @@
 [ext_resource type="Script" uid="uid://lvgv4kp058x1" path="res://Scripts/Popups/VoxCasterPopup.gd" id="3_ch73s"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_dl7dm"]
-size = Vector3(2.0198936, 3.5313492, 5.866997)
+size = Vector3(1.4224539, 1.3144779, 2.9299383)
 
 [node name="Node3D" type="Node3D" unique_id=807166821]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1878356071]
-transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
+transform = Transform3D(-1.0200136, 0, 8.917242e-08, 0, 1.0200136, 0, -8.917242e-08, 0, -1.0200136, 0, 0, 0)
 mesh = ExtResource("1_7sr1o")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=1742761432]
 script = ExtResource("2_3hiqr")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=704792522]
-transform = Transform3D(1.0000004, 0, 0, 0, 1.0000004, 0, 0, 0, 1.0000004, -0.00501261, 0.74038506, -1.2023513)
+transform = Transform3D(1.0000004, 0, 0, 0, 1.0000004, 0, 0, 0, 1.0000004, 0.29370737, 0.38490438, -0.029503215)
 shape = SubResource("BoxShape3D_dl7dm")
 
 [node name="VoxCasterPopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=826539505]

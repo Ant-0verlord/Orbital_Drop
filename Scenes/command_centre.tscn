@@ -156,7 +156,7 @@ transform = Transform3D(-3.743831e-08, 0, -0.8564885, 0, 0.8564886, 0, 0.8564886
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.018492222, 0.68744946, 0)
 
 [node name="Vox-Caster Array" parent="." unique_id=807166821 instance=ExtResource("4_23xtj")]
-transform = Transform3D(-4.3711385e-08, 0, -0.99999994, 0, 1, 0, 0.99999994, 0, -4.3711385e-08, -0.03024447, 0.030961523, -3.4955354)
+transform = Transform3D(-4.3711385e-08, 0, -0.99999994, 0, 1, 0, 0.99999994, 0, -4.3711385e-08, -0.03024447, 0.22347404, -3.310323)
 
 [node name="Command Throne" parent="." unique_id=112694284 instance=ExtResource("5_5ts7m")]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -6.9602146, 0.8073853, -0.0857836)
