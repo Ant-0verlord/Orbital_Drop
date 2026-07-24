@@ -6,6 +6,18 @@
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_gntrk"]
 
+[sub_resource type="BoxMesh" id="BoxMesh_kyqiw"]
+size = Vector3(0.012622833, 0.013137817, 0.089263916)
+
+[sub_resource type="BoxMesh" id="BoxMesh_gntrk"]
+size = Vector3(0.012622833, 0.013137817, 0.089263916)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rpqav"]
+size = Vector3(0.08242798, 0.07110596, 0.089263916)
+
+[sub_resource type="BoxMesh" id="BoxMesh_g4v7s"]
+size = Vector3(1.5944824, 0.052001953, 0.05328369)
+
 [node name="Node3D" type="Node3D" unique_id=542213915]
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1020700930 groups=["player"]]
@@ -21,6 +33,24 @@ mesh = SubResource("CapsuleMesh_gntrk")
 
 [node name="Camera3D" type="Camera3D" parent="CharacterBody3D/Head" unique_id=1089722571]
 transform = Transform3D(1.3322768, 0, 0, 0, 1.3020766, 0, 0, 0, 1.3934069, 0, 0.6283808, -0.38560703)
+
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="CharacterBody3D/Head/Camera3D" unique_id=1138284396]
+transform = Transform3D(0.9971533, -0.006045626, 0.07516012, 0.025145473, 0.96638167, -0.2558774, -0.07108644, 0.25703853, 0.9637835, 0.47911638, -0.07759398, -1.3580511)
+mesh = SubResource("BoxMesh_kyqiw")
+
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="CharacterBody3D/Head/Camera3D/MeshInstance3D4" unique_id=784962080]
+transform = Transform3D(0.9971538, -0.0060455985, 0.075160146, 0.025145486, 0.9663825, -0.25587738, -0.07108647, 0.25703835, 0.9637835, -0.055420637, 0.010487318, -0.014739037)
+mesh = SubResource("BoxMesh_gntrk")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="CharacterBody3D/Head/Camera3D" unique_id=895305128]
+transform = Transform3D(-0.9047092, 0.4260299, -9.582274e-08, 0.419347, 0.89051867, 0.17641939, 0.075159885, 0.15960811, -0.9843153, 0.44497114, -0.09561288, -1.3219445)
+mesh = SubResource("BoxMesh_rpqav")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="CharacterBody3D/Head/Camera3D" unique_id=1716428675]
+transform = Transform3D(-4.371139e-08, 0, 1, 0.17641932, 0.9843151, 7.711538e-09, -0.9843151, 0.17641932, -4.3025782e-08, 0.4513567, -0.2369284, -0.5281277)
+mesh = SubResource("BoxMesh_g4v7s")
+skeleton = NodePath("../../..")
 
 [node name="RayCast3D" type="RayCast3D" parent="CharacterBody3D/Head/Camera3D" unique_id=928293612]
 target_position = Vector3(0, 0, -2.5)
