@@ -8,6 +8,8 @@ extends Control
 var current_action_mode: String = ""  # "", "reinforcement", or "bombardment"
 var player: Node = null
 var zone_states: Dictionary = {}
+var _help_attention: bool = false
+var _attention_pulse: float = 0.0
 
 const COLOR_HELD:      Color = Color(0.1,  0.8,  0.3,  0.85)
 const COLOR_CONTESTED: Color = Color(0.9,  0.7,  0.1,  0.85)
@@ -20,6 +22,7 @@ const COLOR_NEUTRAL:   Color = Color(0.12, 0.18, 0.25, 0.7)
 @onready var hex_canvas: Control        = $PanelContainer/VBoxContainer/HexCanvas
 @onready var sector_list: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/SectorList
 @onready var close_btn: Button          = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
+@onready var help_btn: Button           =$PanelContainer/VBoxContainer/ButtonRow/HelpBtn
 
 # Placement mode UI — add these nodes to the scene
 # under VBoxContainer, above ButtonRow
@@ -27,6 +30,7 @@ const COLOR_NEUTRAL:   Color = Color(0.12, 0.18, 0.25, 0.7)
 @onready var placement_label: Label           = $PanelContainer/VBoxContainer/PlacementBanner/PlacementLabel
 @onready var placement_confirm_btn: Button    = $PanelContainer/VBoxContainer/PlacementBanner/HBoxContainer/PlacementConfirmBtn
 @onready var placement_cancel_btn: Button     = $PanelContainer/VBoxContainer/PlacementBanner/HBoxContainer/PlacementCancelBtn
+@onready var tutorial_overlay: Control = $TutorialOverlay
 
 
 func _ready() -> void:
@@ -38,6 +42,8 @@ func _ready() -> void:
 	hex_canvas.hex_clicked.connect(_on_hex_clicked)
 	placement_confirm_btn.pressed.connect(_on_placement_confirmed)
 	placement_cancel_btn.pressed.connect(_on_placement_cancelled)
+
+	help_btn.pressed.connect(_on_help_pressed)
 
 	placement_banner.visible = false
 
@@ -138,6 +144,12 @@ func _check_placement_mode() -> void:
 		current_action_mode = ""
 		_exit_placement_mode()
 
+func _process(delta: float) -> void:
+	if not _help_attention or help_btn == null:
+		return
+	_attention_pulse += delta * 3.0
+	var t = (sin(_attention_pulse) + 1.0) * 0.5
+	help_btn.modulate = Color(1.0, lerp(0.6, 1.0, t), lerp(0.0, 0.3, t), 1.0)
 
 func _enter_placement_mode(squad_name: String) -> void:
 	hex_canvas.enter_placement_mode()
@@ -172,6 +184,49 @@ func _on_hex_clicked(sector: String) -> void:
 		placement_label.text = "DROP ZONE: %s%s  |  Confirm or pick another hex" % [sector, hot_drop_text]
 	placement_confirm_btn.disabled = false
 
+func set_help_attention(on: bool) -> void:
+	_help_attention = on
+	_attention_pulse = 0.0
+	if not on and help_btn != null:
+		help_btn.modulate = Color.WHITE
+
+func _on_help_pressed() -> void:
+	set_help_attention(false)
+	GameManager.mark_attention_seen("holomap_placement_%d" % SquadManager.current_turn)
+	GameManager.mark_attention_seen("holomap_priority_eliminated")
+	var steps: Array[TutorialStep] = [
+		_step(
+			"THE MAP — Shows every sector and who controls it. Green = your squads holding it. Red = enemy controlled. Dark blue/grey = neutral (unclaimed). Squad names and enemy ✕ markers show current positions.",
+			^"HexCanvas"
+		),
+		_step(
+			"PANNING — Middle-click and drag to move around larger maps. On Mission 3 and beyond the map will not fit on screen without scrolling.",
+			^"HexCanvas"
+		),
+		_step(
+			"SPECIAL MARKERS — ⚡ Comms Tower (power it with Fuel Cells). ✦ Priority Target (eliminate in M4 to secure data). ▲ Extraction Zone (all squads must reach this in M5).",
+			^"HexCanvas"
+		),
+		_step(
+			"SECTOR LIST — Every sector listed here with its current state and which squad occupies it. Scroll down to see the full list on larger maps.",
+			^"SectorList"
+		),
+	]
+
+	# Placement mode hint — only show if something is armed
+	if not GameManager.get_pending_reinforcement().is_empty() or not GameManager.get_pending_bombardment().is_empty():
+		steps.append(_step(
+			"PLACEMENT MODE — A reinforcement drop or orbital strike is armed. Click a hex on the map to select your target, then confirm. The map will highlight valid positions.",
+			^"PlacementBanner"
+		))
+
+	tutorial_overlay.start(steps, self)
+
+func _step(text: String, path: NodePath) -> TutorialStep:
+	var s := TutorialStep.new()
+	s.text = text
+	s.target_path = path
+	return s
 
 func _on_placement_confirmed() -> void:
 	var sector = hex_canvas.placed_sector

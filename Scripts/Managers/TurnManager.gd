@@ -20,6 +20,9 @@ var pending_allocations: Dictionary = {}
 var mission_over: bool = false
 var reinforcement_schedule: Dictionary = {}
 
+func _ready() -> void:
+	EnemyManager.priority_target_eliminated.connect(SquadManager._on_priority_target_eliminated)
+
 
 func start_mission(mission_data: Dictionary) -> void:
 	current_turn = 0

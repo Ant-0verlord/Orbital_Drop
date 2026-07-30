@@ -108,6 +108,14 @@ func add_squad(squad_name: String, sector: String, surprise: bool) -> void:
 	}
 	GameManager.register_reinforcement_name(squad_name)
 
+func _on_priority_target_eliminated(squad_name: String, sector: String) -> void:
+	if squad_name == "":
+		return  # orbital strike kill — data destroyed, no carrier
+	if squads.has(squad_name):
+		squads[squad_name]["has_data"] = true
+		print("DATA SECURED: %s acquired the objective data at %s" % [squad_name, sector])
+
+
 
 func get_squads_for_ui() -> Array:
 	var result: Array = []

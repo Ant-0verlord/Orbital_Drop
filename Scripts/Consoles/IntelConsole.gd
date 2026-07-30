@@ -9,8 +9,7 @@ extends StaticBody3D
 #     StaticBody3D        (this script)
 #       CollisionShape3D
 #       IntelConsolePopup (Control node, IntelConsolePopup.gd attached)
-# =============================================================
-
+# =============================================================	
 @onready var popup: Control = $IntelConsolePopup
 var player: Node = null
 

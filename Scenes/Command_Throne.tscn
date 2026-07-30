@@ -3,6 +3,7 @@
 [ext_resource type="ArrayMesh" uid="uid://dn541il6ad3tr" path="res://Models/Command Throne 2.0.obj" id="1_id48o"]
 [ext_resource type="Script" uid="uid://caj7dobn8fawx" path="res://Scripts/Consoles/CommandThrone.gd" id="2_id48o"]
 [ext_resource type="Script" uid="uid://fkuvbocfiykr" path="res://Scripts/Popups/CommandThronePopup.gd" id="3_602gn"]
+[ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_602gn"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_oohax"]
 size = Vector3(20.830643, 4.480967, 23.661272)
@@ -125,6 +126,10 @@ text = "ENGAGE TURN SEAL"
 layout_mode = 2
 text = "Close  [Esc]"
 
+[node name="HelpBtn" type="Button" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=1451015832]
+layout_mode = 2
+text = "Help"
+
 [node name="ReportPanel" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=1722529338]
 visible = false
 layout_mode = 1
@@ -206,3 +211,6 @@ text = "Close"
 [node name="NextMissionBtn" type="Button" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=2051750176]
 visible = false
 layout_mode = 2
+
+[node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=45888852 instance=ExtResource("4_602gn")]
+layout_mode = 1

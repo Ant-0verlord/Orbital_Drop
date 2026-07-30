@@ -28,6 +28,8 @@ var player: Node = null
 
 # Add this button to ReportVBox in the scene, below ReportClose
 @onready var next_mission_btn: Button     = $ReportPanel/ReportVBox/NextMissionBtn
+@onready var help_btn: Button = $PanelContainer/VBoxContainer/ButtonRow/HelpBtn
+@onready var tutorial_overlay: Control = $TutorialOverlay  # add TutorialOverlay.tscn as a child
 
 
 func _ready() -> void:
@@ -36,15 +38,42 @@ func _ready() -> void:
 	TurnManager.allocations_locked.connect(_on_allocations_locked)
 	TurnManager.mission_complete.connect(_on_mission_complete)
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
+	GameManager.tower_activated.connect(_on_tower_activated)
+	EnemyManager.priority_target_eliminated.connect(_on_priority_eliminated)
 
 	end_turn_btn.pressed.connect(_on_end_turn_pressed)
 	close_btn.pressed.connect(_on_close_pressed)
 	report_close.pressed.connect(_on_close_pressed)
 	next_mission_btn.pressed.connect(_on_next_mission_pressed)
+	help_btn.pressed.connect(_on_help_pressed) 
 
 	report_panel.visible = false
 	next_mission_btn.visible = false
 
+
+func _on_tower_activated() -> void:
+	if not GameManager.has_seen_attention("throne_tower_activated"):
+		set_help_attention(true)
+
+func _on_priority_eliminated(_squad: String, _sector: String) -> void:
+	if not GameManager.has_seen_attention("throne_priority_eliminated"):
+		set_help_attention(true)
+
+var _help_attention: bool = false
+var _attention_pulse: float = 0.0
+
+func _process(delta: float) -> void:
+	if not _help_attention or help_btn == null:
+		return
+	_attention_pulse += delta * 3.0
+	var t = (sin(_attention_pulse) + 1.0) * 0.5
+	help_btn.modulate = Color(1.0, lerp(0.6, 1.0, t), lerp(0.0, 0.3, t), 1.0)
+
+func set_help_attention(on: bool) -> void:
+	_help_attention = on
+	_attention_pulse = 0.0
+	if not on and help_btn != null:
+		help_btn.modulate = Color.WHITE
 
 func _on_turn_started(_t: int) -> void:
 	if visible: refresh()
@@ -340,6 +369,35 @@ func _on_end_turn_pressed() -> void:
 	TurnManager.end_turn()
 	_on_close_pressed()
 
+func _on_help_pressed() -> void:
+	set_help_attention(false)
+	GameManager.mark_attention_seen("throne_tower_activated")
+	GameManager.mark_attention_seen("throne_priority_eliminated")
+	var steps: Array[TutorialStep] = [
+		_step(
+			"CURRENT OBJECTIVE — Shows what you need to achieve to win this mission and your current progress toward it. Changes as mission events unfold.",
+			^"PanelContainer/VBoxContainer/ObjectiveLabel"
+		),
+		_step(
+			"SQUAD STATUS — A quick overview of all squads, their status, and their current position. Active is healthy. Wounded means taking casualties. Critical means one more hit and they are lost.",
+			^"PanelContainer/VBoxContainer/SquadSummary"
+		),
+		_step(
+			"LAST TURN DEBRIEF — A summary of what happened last turn across all squads. Read this alongside the Intel Desk for the full picture.",
+			^"PanelContainer/VBoxContainer/DebriefLabel"
+		),
+		_step(
+			"ENGAGE TURN SEAL — Ends the current turn and resolves all squad actions. You must lock allocations at the Logistics Terminal first. Once sealed you cannot undo it.",
+			^"PanelContainer/VBoxContainer/TurnSealBtn"
+		),
+	]
+	tutorial_overlay.start(steps, self)
+
+func _step(text: String, path: NodePath) -> TutorialStep:
+	var s := TutorialStep.new()
+	s.text = text
+	s.target_path = path
+	return s	
 
 func _on_close_pressed() -> void:
 	visible = false

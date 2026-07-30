@@ -14,10 +14,15 @@ var reinforcement_warning_turn: int  = -1
 var reinforcement_warning_count: int = 0
 var landed_sectors: Array            = []
 var landed_turn: int                 = -1
-	
+var data_destroyed_sector: String = ""
+var data_destroyed_turn: int = -1
+
+@onready var help_btn: Button = $PanelContainer/VBoxContainer/ButtonRow/HelpBtn
 @onready var turn_label: Label              = $PanelContainer/VBoxContainer/TurnLabel
 @onready var report_container: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/ReportContainer
 @onready var close_btn: Button              = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
+@onready var tutorial_overlay: Control = $TutorialOverlay
+
 
 
 func _ready() -> void:
@@ -27,8 +32,28 @@ func _ready() -> void:
 	TurnManager.enemy_reinforcements_landed.connect(_on_reinforcements_landed)
 	EnemyManager.reinforcement_landed.connect(_on_player_reinforcement_landed)
 	TurnManager.orbital_strike_resolved.connect(_on_orbital_strike_resolved)
+	EnemyManager.data_destroyed_by_strike.connect(_on_data_destroyed)
 	close_btn.pressed.connect(_on_close_pressed)
+	help_btn.pressed.connect(_on_help_pressed)
 
+var _help_attention: bool = false
+var _attention_pulse: float = 0.0
+
+
+
+
+func _process(delta: float) -> void:
+	if not _help_attention or help_btn == null:
+		return
+	_attention_pulse += delta * 3.0
+	var t = (sin(_attention_pulse) + 1.0) * 0.5
+	help_btn.modulate = Color(1.0, lerp(0.6, 1.0, t), lerp(0.0, 0.3, t), 1.0)
+
+func set_help_attention(on: bool) -> void:
+	_help_attention = on
+	_attention_pulse = 0.0
+	if not on and help_btn != null:
+		help_btn.modulate = Color.WHITE	
 
 func _on_turn_started(_turn: int) -> void:
 	if visible:
@@ -74,6 +99,9 @@ func _rebuild_reports() -> void:
 	if GameManager.mission_type == "extract" and SquadManager.current_turn == 0:
 		_add_extraction_zone_card()
 
+	if data_destroyed_sector != "" and data_destroyed_turn == SquadManager.current_turn:
+		_add_data_destroyed_card(data_destroyed_sector)
+
 	# Critical squads always break through — priority distress first
 	var reports: Dictionary = (
 		SquadManager.get_briefings()
@@ -91,21 +119,56 @@ func _rebuild_reports() -> void:
 		var squad_data = SquadManager.squads.get(squad_name, {})
 		_add_report_card(squad_name, reports[squad_name], squad_data)
 
+func _on_help_pressed() -> void:
+	set_help_attention(false)
+	GameManager.mark_attention_seen("intel_reinf_warning_%d" % reinforcement_warning_turn)
+	GameManager.mark_attention_seen("intel_reinf_landed_%d" % landed_turn)
+	GameManager.mark_attention_seen("intel_strike_%d" % SquadManager.current_turn)
+	GameManager.mark_attention_seen("intel_data_destroyed")
+	GameManager.mark_attention_seen("intel_player_reinf_%s" % player_reinforcement_info.get("squad_name", ""))
 
-func _on_player_reinforcement_landed(squad_name: String, sector: String, surprise: bool) -> void:
-	player_reinforcement_info = {
-		"squad_name": squad_name,
-		"sector":     sector,
-		"surprise":   surprise,
-		"turn":       SquadManager.current_turn,
-	}
-	if visible:
-		refresh()
+	var steps: Array[TutorialStep] = [
+		_step(
+			"INTEL REPORTS — Each card shows what a squad did last turn, their current status, and their next objective. Read these every turn to understand what your squads are doing and what they need.",
+			^"PanelContainer/VBoxContainer/ScrollContainer/ReportContainer"
+		),
+		_step(
+			"ALERT CARDS — Amber cards warn of incoming enemy reinforcements. Red cards report critical events: enemy landings, orbital strike results, data secured or destroyed. Check these first each turn.",
+			^"PanelContainer/VBoxContainer/ScrollContainer/ReportContainer"
+		),
+		_step(
+			"SQUAD OBJECTIVES — Under each report you will see the squad's current goal and what supply they are requesting next turn. Use this to plan your Logistics allocations.",
+			^"PanelContainer/VBoxContainer/ScrollContainer/ReportContainer"
+		),
+	]
+	tutorial_overlay.start(steps, self)
+
+
+
+func _step(text: String, path: NodePath) -> TutorialStep:
+	var s := TutorialStep.new()
+	s.text = text
+	s.target_path = path
+	return s
 
 func _on_orbital_strike_resolved(report: Dictionary) -> void:
 	bombardment_report = report
-	if visible:
-		refresh()
+	if not GameManager.has_seen_attention("intel_strike_%d" % SquadManager.current_turn):
+		set_help_attention(true)
+	if visible: refresh()
+
+func _on_data_destroyed(sector: String) -> void:
+	data_destroyed_sector = sector
+	data_destroyed_turn   = SquadManager.current_turn
+	if not GameManager.has_seen_attention("intel_data_destroyed"):
+		set_help_attention(true)
+	if visible: refresh()
+
+func _on_player_reinforcement_landed(squad_name: String, sector: String, surprise: bool) -> void:
+	player_reinforcement_info = { "squad_name": squad_name, "sector": sector, "surprise": surprise, "turn": SquadManager.current_turn }
+	if not GameManager.has_seen_attention("intel_player_reinf_%s" % squad_name):
+		set_help_attention(true)
+	if visible: refresh()
 
 func _add_report_card(squad_name: String, report_text: String, squad_data: Dictionary) -> void:
 	var card := PanelContainer.new()
@@ -225,17 +288,18 @@ func _status_color(status: int) -> Color:
 	return Color.WHITE
 
 func _on_reinforcements_incoming(turn: int, count: int) -> void:
-	print("INTEL: incoming warning received — turn %d, count %d" % [turn, count])
 	reinforcement_warning_turn  = turn
 	reinforcement_warning_count = count
-	if visible:
-		refresh()
+	if not GameManager.has_seen_attention("intel_reinf_warning_%d" % turn):
+		set_help_attention(true)
+	if visible: refresh()
 
 func _on_reinforcements_landed(sectors: Array) -> void:
 	landed_sectors = sectors
 	landed_turn    = SquadManager.current_turn
-	if visible:
-		refresh()
+	if not GameManager.has_seen_attention("intel_reinf_landed_%d" % SquadManager.current_turn):
+		set_help_attention(true)
+	if visible: refresh()
 
 func _add_reinforcements_warning_card(count: int, turn: int) -> void:
 	var card := PanelContainer.new()
@@ -407,6 +471,33 @@ func _add_extraction_zone_card() -> void:
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD
 	body.add_theme_font_size_override("font_size", 12)
 	body.add_theme_color_override("font_color", Color(0.9, 0.85, 0.6))
+	vbox.add_child(body)
+
+	report_container.add_child(card)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 4
+	report_container.add_child(spacer)
+
+func _add_data_destroyed_card(sector: String) -> void:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _alert_style(Color(0.2, 0.05, 0.05), Color(1.0, 0.2, 0.2, 0.95)))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "⚠ CRITICAL — PRIORITY TARGET DATA DESTROYED"
+	header.add_theme_font_size_override("font_size", 13)
+	header.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	vbox.add_child(header)
+
+	var body := Label.new()
+	body.text = "Orbital strike at %s eliminated %s but destroyed the objective data in the blast. Extraction will proceed but mission outcome is degraded — the campaign objective is compromised." % [sector, GameManager.priority_target_name]
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD
+	body.add_theme_font_size_override("font_size", 12)
+	body.add_theme_color_override("font_color", Color(0.95, 0.6, 0.6))
 	vbox.add_child(body)
 
 	report_container.add_child(card)

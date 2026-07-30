@@ -45,6 +45,8 @@ const DELAYED_BURST = [
 @onready var turn_label: Label                     = $PanelContainer/VBoxContainer/TurnLabel
 @onready var transmission_container: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/TransmissionContainer
 @onready var close_btn: Button                     = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
+@onready var tutorial_overlay: Control = $TutorialOverlay
+@onready var help_btn: Button = $PanelContainer/VBoxContainer/ButtonRow/HelpBtn
 
 
 func _ready() -> void:
@@ -52,9 +54,13 @@ func _ready() -> void:
 	TurnManager.turn_started.connect(_on_turn_started)
 	TurnManager.mission_complete.connect(_on_mission_complete)
 	close_btn.pressed.connect(_on_close_pressed)
+	help_btn.pressed.connect(_on_help_pressed)
 
 
 func _on_turn_started(_turn: int) -> void:
+	cached_turn = -1
+	if not GameManager.has_seen_attention("vox_turn_%d" % _turn):
+		set_help_attention(true)
 	if visible: refresh()
 
 func _on_turn_resolved() -> void:
@@ -133,6 +139,50 @@ func _rebuild_transmissions() -> void:
 		if squad.status != SquadManager.Status.CRITICAL:
 			_add_transmission(squad)
 
+var _help_attention: bool = false
+var _attention_pulse: float = 0.0
+
+func _process(delta: float) -> void:
+	if not _help_attention or help_btn == null:
+		return
+	_attention_pulse += delta * 3.0
+	var t = (sin(_attention_pulse) + 1.0) * 0.5
+	help_btn.modulate = Color(1.0, lerp(0.6, 1.0, t), lerp(0.0, 0.3, t), 1.0)
+
+func set_help_attention(on: bool) -> void:
+	_help_attention = on
+	_attention_pulse = 0.0
+	if not on and help_btn != null:
+		help_btn.modulate = Color.WHITE
+
+func _on_help_pressed() -> void:
+	set_help_attention(false)
+	GameManager.mark_attention_seen("vox_turn_%d" % SquadManager.current_turn)
+	var steps: Array[TutorialStep] = [
+		_step(
+			"TRANSMISSIONS — Live feed from all squads. Each card shows their callsign, location, and what supplies they are requesting. The text may be garbled depending on signal quality.",
+			^"PanelContainer/VBoxContainer/ScrollContainer/TransmissionContainer"
+		),
+		_step(
+			"SIGNAL QUALITY — CLEAR means full reliable intel. DEGRADED means some corruption. POOR means heavy interference — some words may be wrong. CRITICAL means you can barely hear them at all.",
+			^"PanelContainer/VBoxContainer/TurnLabel"
+		),
+		_step(
+			"INTERFERENCE — Higher missions have worse signal corruption. One transmission may always be false on Mission 3+. Powering the comms tower on M3/M4 reduces interference for nearby squads.",
+			^"PanelContainer/VBoxContainer/ScrollContainer/TransmissionContainer"
+		),
+		_step(
+			"SQUAD OBJECTIVES — Under each transmission you can see what the squad is trying to do next turn. Cross-check this with the Intel Desk reports for the clearest picture.",
+			^"PanelContainer/VBoxContainer/ScrollContainer/TransmissionContainer"
+		),
+	]
+	tutorial_overlay.start(steps, self)
+
+func _step(text: String, path: NodePath) -> TutorialStep:
+	var s := TutorialStep.new()
+	s.text = text
+	s.target_path = path
+	return s
 
 # -------------------------------------------------------
 # Determines transmission quality for this squad this turn

@@ -16,6 +16,11 @@ func _ready() -> void:
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	TurnManager.turn_started.connect(_on_turn_started)
 	EnemyManager.enemies_updated.connect(_on_enemies_updated)
+	EnemyManager.priority_target_eliminated.connect(_on_priority_eliminated)
+
+func _on_priority_eliminated(_squad: String, _sector: String) -> void:
+	if not GameManager.has_seen_attention("holomap_priority_eliminated"):
+		popup.set_help_attention(true)
 
 func _build_axial_map() -> Dictionary:
 	var data = GameManager.get_current_mission_data()
@@ -42,8 +47,12 @@ func close_popup() -> void:
 	popup.visible = false
 
 
+
 func _on_turn_resolved() -> void:
 	_build_zone_states()
+	var has_pending = not GameManager.get_pending_reinforcement().is_empty() or not GameManager.get_pending_bombardment().is_empty()
+	if has_pending and not GameManager.has_seen_attention("holomap_placement_%d" % SquadManager.current_turn):
+		popup.set_help_attention(true)
 	if popup.visible:
 		popup.refresh(zone_states)
 

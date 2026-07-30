@@ -11,6 +11,9 @@ const SUPPLY_COST: int = 2
 var allocations: Dictionary = {}
 var squad_rows: Array = []
 var pending_reinforcement_name: String = ""
+var _help_attention: bool = false
+var _attention_pulse: float = 0.0
+
 
 @onready var turn_label: Label              = $PanelContainer/VBoxContainer/TurnLabel
 @onready var held_label: Label              = $PanelContainer/VBoxContainer/HeldLabel
@@ -61,14 +64,58 @@ func _ready() -> void:
 	_refresh_bombardment_panel()
 	help_btn.pressed.connect(_on_help_pressed)
 
+func _process(delta: float) -> void:
+	if not _help_attention or help_btn == null:
+		return
+	_attention_pulse += delta * 3.0
+	var t = (sin(_attention_pulse) + 1.0) * 0.5
+	help_btn.modulate = Color(1.0, lerp(0.6, 1.0, t), lerp(0.0, 0.3, t), 1.0)
+
+func set_help_attention(on: bool) -> void:
+	_help_attention = on
+	_attention_pulse = 0.0
+	if not on and help_btn != null:
+		help_btn.modulate = Color.WHITE
 
 func _on_help_pressed() -> void:
+	set_help_attention(false)
+	GameManager.mark_attention_seen("logistics_turn")
+	GameManager.mark_attention_seen("logistics_reinforcement")
+	GameManager.mark_attention_seen("logistics_bombardment")
 	var steps: Array[TutorialStep] = [
-		_step("This is your supply pool — shared across all squads this turn.", ^"PanelContainer/VBoxContainer/PoolLabel"),
-		_step("Check each squad's checkboxes to allocate Armaments, Medi-Packs, or Fuel Cells.", ^"PanelContainer/VBoxContainer/ScrollContainer/SquadContainer"),
-		_step("Once you're happy with allocations, lock them in here before ending the turn.", ^"PanelContainer/VBoxContainer/ButtonRow/LockBtn"),
+		_step(
+			"SUPPLY POOL — This shows your total resources for this turn, shared across all squads. Once spent they are gone until next turn.",
+			^"PanelContainer/VBoxContainer/PoolLabel"
+		),
+		_step(
+			"BUDGET TRACKER — Shows what you have allocated this turn vs what remains. Turn red when you overspend a supply type.",
+			^"PanelContainer/VBoxContainer/BudgetLabel"
+		),
+		_step(
+			"SQUAD ROWS — Each squad can receive up to 2 supply types per turn. Armaments guarantee a kill (25% casualty risk). Medi-Packs heal one level. Fuel Cells extend movement and power the tower. Unused supplies are banked for later.",
+			^"PanelContainer/VBoxContainer/ScrollContainer/SquadContainer"
+		),
+		_step(
+			"LOCK ALLOCATIONS — Once you are happy with your supply choices, lock them here. You cannot end the turn at the Command Throne until allocations are locked.",
+			^"PanelContainer/VBoxContainer/ButtonRow/LockBtn"
+		),
 	]
-	tutorial_overlay.start(steps, self)	
+
+	# M2+ — reinforcement panel
+	if GameManager.current_mission >= 1 and GameManager.get_reinforcement_pool() > 0 or not GameManager.get_pending_reinforcement().is_empty():
+		steps.append(_step(
+			"REINFORCEMENT DROP — Call in a replacement squad via drop-pod. Select a squad name, call the drop, then visit the Holo-Map to choose where they land. You have a limited number per mission.",
+			^"PanelContainer/VBoxContainer/ReinforcementPanel"
+		))
+
+	# M3+ — bombardment panel
+	if GameManager.current_mission >= 2 and (GameManager.get_orbital_strikes_pool() > 0 or not GameManager.get_pending_bombardment().is_empty()):
+		steps.append(_step(
+			"ORBITAL STRIKE — Arm a strike here, then target a hex on the Holo-Map. Destroys all enemies in the target hex and its 6 neighbours. WARNING: kills friendly squads in the blast zone, and striking the priority target destroys the data.",
+			^"PanelContainer/VBoxContainer/BombardmentPanel"
+		))
+
+	tutorial_overlay.start(steps, self)
 
 func _step(text: String, path: NodePath) -> TutorialStep:
 	var s := TutorialStep.new()
@@ -78,7 +125,10 @@ func _step(text: String, path: NodePath) -> TutorialStep:
 
 func _on_turn_started(_turn: int) -> void:
 	_reset_allocations()
+	if not GameManager.has_seen_attention("logistics_turn"):
+		set_help_attention(true)
 	if visible: refresh()
+
 
 func _on_turn_resolved() -> void:
 	if visible: refresh()
@@ -427,6 +477,9 @@ func _refresh_reinforcement_panel() -> void:
 		reinforcement_pool_label.text = "Reinforcement Drops Available: %d" % pool
 		reinforcement_pool_label.add_theme_color_override("font_color",
 			Color(0.4, 0.9, 0.4) if pool > 0 else Color(0.5, 0.5, 0.5))
+	
+	if pool > 0 and not GameManager.has_seen_attention("logistics_reinforcement"):
+		set_help_attention(true)
 
 	if reinforcement_name_btn:
 		reinforcement_name_btn.clear()
@@ -470,6 +523,9 @@ func _refresh_bombardment_panel() -> void:
 		bombardment_pool_label.text = "Orbital Strikes Available: %d" % pool
 		bombardment_pool_label.add_theme_color_override("font_color",
 			Color(0.4, 0.9, 0.4) if pool > 0 else Color(0.5, 0.5, 0.5))
+
+	if pool > 0 and not GameManager.has_seen_attention("logistics_bombardment"):
+		set_help_attention(true)
 
 	if arm_bombardment_btn:
 		arm_bombardment_btn.disabled = pool <= 0 or has_pending or reinforcement_active or TurnManager.mission_over

@@ -6,6 +6,7 @@ extends Node
 signal enemies_updated
 signal reinforcement_landed(squad_name: String, sector: String, surprise: bool)
 signal priority_target_eliminated(squad_name: String, sector: String)
+signal data_destroyed_by_strike(sector: String)
 
 var hex_control: Dictionary = {}
 var enemy_units: Array = []
@@ -486,15 +487,29 @@ func resolve_bombardment(center: String) -> Dictionary:
 		affected.append(n)
 
 	var killed = 0
+	var priority_killed = false
 	for sector in affected:
 		var enemies_here = _get_enemies_at(sector)
 		killed += enemies_here.size()
 		for unit in enemies_here.duplicate():
+			if unit.get("is_priority", false):
+				priority_killed = true
 			enemy_units.erase(unit)
 		hex_control[sector] = "neutral"
 
+	if priority_killed:
+		GameManager.priority_target_alive = false
+		# Deliberately no data_carrier_squad set — orbital strike destroys the data
+		GameManager.data_destroyed = true
+		emit_signal("priority_target_eliminated", "", center)
+		emit_signal("data_destroyed_by_strike", center)
+
 	emit_signal("enemies_updated")
-	return { "affected": affected, "enemies_killed": killed }
+	return {
+		"affected":        affected,
+		"enemies_killed":  killed,
+		"priority_killed": priority_killed,
+	}
 
 func _build_adjacency(mission_adjacency: Dictionary) -> void:
 	adjacency.clear()

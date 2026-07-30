@@ -4,6 +4,7 @@ extends StaticBody3D
 # Attach to: StaticBody3D inside Vox-Caster_Array.tscn
 # =============================================================
 
+
 @onready var popup: Control = $VoxCasterPopup
 var player: Node = null
 

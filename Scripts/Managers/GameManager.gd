@@ -30,6 +30,10 @@ var extraction_zone: String = ""
 var mission_type: String = "capture"  # "capture", "eliminate", "hold_tower", "extract"
 var enemy_ai_mode: String = "aggressive"
 
+var data_destroyed: bool = false
+var seen_attention_events: Dictionary = {}
+
+
 signal tower_activated
 
 const REINFORCEMENT_NAMES: Array = [
@@ -179,68 +183,171 @@ const M2_AXIAL = [
 # 20 sectors, branching fork
 # =============================================================
 const M3_SECTORS = [
-	"Psi-1B", "Omega-1B", "Alpha-1B", "Beta-1B", "Gamma-1B", "Delta-1B", "Epsilon-1B",
-	"Zeta-1B", "Eta-1B", "Theta-1B", "Iota-1B", "Kappa-1B", "Lambda-1B", "Mu-1B",
-	"Nu-1B", "Xi-1B", "Omicron-1B", "Pi-1B", "Rho-1B", "Sigma-1B", "Tau-1B",
-	"Upsilon-1B", "Phi-1B", "Chi-1B", "Psi-3B", "Omega-3B", "Alpha-3B", "Beta-3B",
-	"Gamma-3B", "Delta-3B", "Epsilon-3B", "Zeta-3B", "Eta-3B", "Theta-3B", "Iota-3B",
-	"Kappa-3B", "Lambda-3B", "Mu-3B", "Nu-3B", "Xi-3B", "Omicron-3B",
+	"Psi-1B", "Omega-1B", "Alpha-1B", "Beta-1B", "Gamma-1B",
+	"Delta-1B", "Epsilon-1B", "Zeta-1B", "Eta-1B", "Theta-1B",
+	"Iota-1B", "Kappa-1B", "Lambda-1B", "Mu-1B", "Nu-1B",
+	"Xi-1B", "Omicron-1B", "Pi-1B", "Rho-1B", "Sigma-1B",
+	"Tau-1B", "Upsilon-1B", "Phi-1B", "Chi-1B", "Psi-3B",
+	"Omega-3B", "Alpha-3B", "Beta-3B", "Gamma-3B", "Delta-3B",
+	"Epsilon-3B", "Zeta-3B", "Eta-3B", "Theta-3B", "Iota-3B",
+	"Kappa-3B", "Lambda-3B", "Mu-3B", "Nu-3B", "Xi-3B",
+	"Omicron-3B", "Pi-3B", "Rho-3B", "Sigma-3B", "Tau-3B",
+	"Upsilon-3B", "Phi-3B", "Chi-3B", "Psi-5B", "Omega-5B",
+	"Alpha-5B", "Beta-5B", "Gamma-5B", "Delta-5B", "Epsilon-5B",
+	"Zeta-5B", "Eta-5B", "Theta-5B", "Iota-5B", "Kappa-5B",
+	"Lambda-5B", "Mu-5B", "Nu-5B", "Xi-5B", "Omicron-5B",
+	"Pi-5B", "Rho-5B", "Sigma-5B", "Tau-5B", "Upsilon-5B",
+	"Phi-5B", "Chi-5B", "Psi-7B", "Omega-7B", "Alpha-7B",
+	"Beta-7B", "Gamma-7B", "Delta-7B", "Epsilon-7B", "Zeta-7B",
+	"Eta-7B", "Theta-7B", "Iota-7B", "Kappa-7B", "Lambda-7B",
+	"Mu-7B", "Nu-7B", "Xi-7B", "Omicron-7B", "Pi-7B",
+	"Rho-7B", "Sigma-7B", "Tau-7B", "Upsilon-7B", "Phi-7B",
+	"Chi-7B", "Psi-9B", "Omega-9B", "Alpha-9B", "Beta-9B",
+	"Gamma-9B", "Delta-9B", "Epsilon-9B", "Zeta-9B", "Eta-9B",
+	"Theta-9B", "Iota-9B", "Kappa-9B", "Lambda-9B", "Mu-9B",
+	"Nu-9B", "Xi-9B", "Omicron-9B",
 ]
 
 const M3_ADJACENCY = {
-	0:  [1, 2, 10, 11, 14],
-	1:  [0, 11, 12],
-	2:  [0, 4, 14, 16],
-	3:  [15, 17],
-	4:  [2, 5, 16, 18, 20],
-	5:  [4, 7, 20, 22],
-	6:  [9, 21, 23],
-	7:  [5, 8, 22, 24, 25],
-	8:  [7, 9, 25, 26],
-	9:  [6, 8, 23, 26, 27],
-	10: [0, 11, 14, 28],
-	11: [0, 1, 10, 12, 28, 29],
-	12: [1, 11, 13, 29, 30],
-	13: [12, 15, 30, 31, 32],
-	14: [0, 2, 10, 16],
-	15: [3, 13, 17, 32, 33],
-	16: [2, 4, 14, 18],
-	17: [3, 15, 19, 33],
-	18: [4, 16, 20, 34],
-	19: [17, 21],
-	20: [4, 5, 18, 22, 34, 35],
-	21: [6, 19, 23],
-	22: [5, 7, 20, 24, 35, 36],
-	23: [6, 9, 21, 27],
-	24: [7, 22, 25, 36, 37, 38],
-	25: [7, 8, 24, 26, 38, 39],
-	26: [8, 9, 25, 27, 39, 40],
-	27: [9, 23, 26, 40],
-	28: [10, 11, 29],
-	29: [11, 12, 28, 30],
-	30: [12, 13, 29, 31],
-	31: [13, 30, 32],
-	32: [13, 15, 31, 33],
-	33: [15, 17, 32],
-	34: [18, 20, 35],
-	35: [20, 22, 34, 36],
-	36: [22, 24, 35, 37],
-	37: [24, 36, 38],
-	38: [24, 25, 37, 39],
-	39: [25, 26, 38, 40],
-	40: [26, 27, 39],
+	0:   [1, 2, 3],
+	1:   [0, 3, 4],
+	2:   [0, 3, 7],
+	3:   [0, 1, 2, 4, 8],
+	4:   [1, 3, 8, 9],
+	5:   [6, 10],
+	6:   [5, 7, 10, 11],
+	7:   [2, 6, 11, 12],
+	8:   [3, 4, 9, 13, 14],
+	9:   [4, 8, 14, 15],
+	10:  [5, 6, 11, 21, 22],
+	11:  [6, 7, 10, 12, 22, 23],
+	12:  [7, 11, 13, 23, 24],
+	13:  [8, 12, 14, 24, 25],
+	14:  [8, 9, 13, 15, 25, 26],
+	15:  [9, 14, 16, 26, 27],
+	16:  [15, 17, 27, 28],
+	17:  [16, 28],
+	18:  [19, 29, 30],
+	19:  [18, 20, 30, 31],
+	20:  [19, 31, 32],
+	21:  [10, 22, 33],
+	22:  [10, 11, 21, 23, 33, 34],
+	23:  [11, 12, 22, 24, 34, 35],
+	24:  [12, 13, 23, 25, 35],
+	25:  [13, 14, 24, 26],
+	26:  [14, 15, 25, 27],
+	27:  [15, 16, 26, 28, 36],
+	28:  [16, 17, 27, 36, 37],
+	29:  [18, 30, 38, 39],
+	30:  [18, 19, 29, 31, 39, 40],
+	31:  [19, 20, 30, 32, 40, 41],
+	32:  [20, 31, 41, 42],
+	33:  [21, 22, 34, 44, 45],
+	34:  [22, 23, 33, 35, 45, 46],
+	35:  [23, 24, 34, 46, 47],
+	36:  [27, 28, 37, 49, 50],
+	37:  [28, 36, 38, 50, 51],
+	38:  [29, 37, 39, 51, 52],
+	39:  [29, 30, 38, 40, 52, 53],
+	40:  [30, 31, 39, 41, 53, 54],
+	41:  [31, 32, 40, 42, 54, 55],
+	42:  [32, 41, 55],
+	43:  [44, 56],
+	44:  [33, 43, 45, 56, 57],
+	45:  [33, 34, 44, 46, 57, 58],
+	46:  [34, 35, 45, 47, 58, 59],
+	47:  [35, 46, 48, 59, 60],
+	48:  [47, 60],
+	49:  [36, 50, 61, 62],
+	50:  [36, 37, 49, 51, 62, 63],
+	51:  [37, 38, 50, 52, 63, 64],
+	52:  [38, 39, 51, 53, 64, 65],
+	53:  [39, 40, 52, 54, 65, 66],
+	54:  [40, 41, 53, 55, 66, 67],
+	55:  [41, 42, 54, 67, 68],
+	56:  [43, 44, 57, 69],
+	57:  [44, 45, 56, 58, 69, 70],
+	58:  [45, 46, 57, 59, 70, 71],
+	59:  [46, 47, 58, 60, 71, 72],
+	60:  [47, 48, 59, 72, 73],
+	61:  [49, 62, 74, 75],
+	62:  [49, 50, 61, 63, 75, 76],
+	63:  [50, 51, 62, 64, 76, 77],
+	64:  [51, 52, 63, 65, 77, 78],
+	65:  [52, 53, 64, 66, 78],
+	66:  [53, 54, 65, 67, 79],
+	67:  [54, 55, 66, 68, 79, 80],
+	68:  [55, 67, 80, 81],
+	69:  [56, 57, 70],
+	70:  [57, 58, 69, 71],
+	71:  [58, 59, 70, 72, 82],
+	72:  [59, 60, 71, 73, 82, 83],
+	73:  [60, 72, 74, 83],
+	74:  [61, 73, 75, 84],
+	75:  [61, 62, 74, 76, 84, 85],
+	76:  [62, 63, 75, 77, 85, 86],
+	77:  [63, 64, 76, 78, 86, 87],
+	78:  [64, 65, 77, 87],
+	79:  [66, 67, 80, 88],
+	80:  [67, 68, 79, 81, 88],
+	81:  [68, 80],
+	82:  [71, 72, 83],
+	83:  [72, 73, 82],
+	84:  [74, 75, 85, 89],
+	85:  [75, 76, 84, 86, 89, 90],
+	86:  [76, 77, 85, 87, 90, 91],
+	87:  [77, 78, 86, 91, 92],
+	88:  [79, 80, 94, 95],
+	89:  [84, 85, 90],
+	90:  [85, 86, 89, 91],
+	91:  [86, 87, 90, 92, 98],
+	92:  [87, 91, 93, 98, 99],
+	93:  [92, 94, 99, 100],
+	94:  [88, 93, 95, 100, 101],
+	95:  [88, 94, 96, 101, 102],
+	96:  [95, 102, 103],
+	97:  [104, 105],
+	98:  [91, 92, 99, 106],
+	99:  [92, 93, 98, 100, 106, 107],
+	100: [93, 94, 99, 101, 107, 108],
+	101: [94, 95, 100, 102, 108, 109],
+	102: [95, 96, 101, 103, 109, 110],
+	103: [96, 102, 104, 110, 111],
+	104: [97, 103, 105, 111, 112],
+	105: [97, 104, 112],
+	106: [98, 99, 107],
+	107: [99, 100, 106, 108],
+	108: [100, 101, 107, 109],
+	109: [101, 102, 108, 110],
+	110: [102, 103, 109, 111],
+	111: [103, 104, 110, 112],
+	112: [104, 105, 111],
 }
 
 const M3_AXIAL = [
-	Vector2(-2,  0), Vector2(-2,  1), Vector2(-1, -1), Vector2(-1,  2), Vector2( 0, -2),
-	Vector2( 1, -2), Vector2( 1,  1), Vector2( 2, -2), Vector2( 2, -1), Vector2( 2,  0),
-	Vector2(-3,  0), Vector2(-3,  1), Vector2(-3,  2), Vector2(-3,  3), Vector2(-2, -1),
-	Vector2(-2,  3), Vector2(-1, -2), Vector2(-1,  3), Vector2( 0, -3), Vector2( 0,  3),
-	Vector2( 1, -3), Vector2( 1,  2), Vector2( 2, -3), Vector2( 2,  1), Vector2( 3, -3),
-	Vector2( 3, -2), Vector2( 3, -1), Vector2( 3,  0), Vector2(-4,  1), Vector2(-4,  2),
-	Vector2(-4,  3), Vector2(-4,  4), Vector2(-3,  4), Vector2(-2,  4), Vector2( 1, -4),
-	Vector2( 2, -4), Vector2( 3, -4), Vector2( 4, -4), Vector2( 4, -3), Vector2( 4, -2),
-	Vector2( 4, -1),
+	Vector2(-1,-7), Vector2( 0,-7), Vector2(-2,-6), Vector2(-1,-6), Vector2( 0,-6),
+	Vector2(-5,-5), Vector2(-4,-5), Vector2(-3,-5), Vector2(-1,-5), Vector2( 0,-5),
+	Vector2(-5,-4), Vector2(-4,-4), Vector2(-3,-4), Vector2(-2,-4), Vector2(-1,-4),
+	Vector2( 0,-4), Vector2( 1,-4), Vector2( 2,-4), Vector2( 4,-4), Vector2( 5,-4),
+	Vector2( 6,-4), Vector2(-6,-3), Vector2(-5,-3), Vector2(-4,-3), Vector2(-3,-3),
+	Vector2(-2,-3), Vector2(-1,-3), Vector2( 0,-3), Vector2( 1,-3), Vector2( 3,-3),
+	Vector2( 4,-3), Vector2( 5,-3), Vector2( 6,-3), Vector2(-6,-2), Vector2(-5,-2),
+	Vector2(-4,-2), Vector2( 0,-2), Vector2( 1,-2), Vector2( 2,-2), Vector2( 3,-2),
+	Vector2( 4,-2), Vector2( 5,-2), Vector2( 6,-2), Vector2(-8,-1), Vector2(-7,-1),
+	Vector2(-6,-1), Vector2(-5,-1), Vector2(-4,-1), Vector2(-3,-1), Vector2(-1,-1),
+	Vector2( 0,-1), Vector2( 1,-1), Vector2( 2,-1), Vector2( 3,-1), Vector2( 4,-1),
+	Vector2( 5,-1), Vector2(-8, 0), Vector2(-7, 0), Vector2(-6, 0), Vector2(-5, 0),
+	Vector2(-4, 0), Vector2(-2, 0), Vector2(-1, 0), Vector2( 0, 0), Vector2( 1, 0),
+	Vector2( 2, 0), Vector2( 3, 0), Vector2( 4, 0), Vector2( 5, 0), Vector2(-8, 1),
+	Vector2(-7, 1), Vector2(-6, 1), Vector2(-5, 1), Vector2(-4, 1), Vector2(-3, 1),
+	Vector2(-2, 1), Vector2(-1, 1), Vector2( 0, 1), Vector2( 1, 1), Vector2( 3, 1),
+	Vector2( 4, 1), Vector2( 5, 1), Vector2(-6, 2), Vector2(-5, 2), Vector2(-3, 2),
+	Vector2(-2, 2), Vector2(-1, 2), Vector2( 0, 2), Vector2( 3, 2), Vector2(-3, 3),
+	Vector2(-2, 3), Vector2(-1, 3), Vector2( 0, 3), Vector2( 1, 3), Vector2( 2, 3),
+	Vector2( 3, 3), Vector2( 4, 3), Vector2( 6, 3), Vector2(-1, 4), Vector2( 0, 4),
+	Vector2( 1, 4), Vector2( 2, 4), Vector2( 3, 4), Vector2( 4, 4), Vector2( 5, 4),
+	Vector2( 6, 4), Vector2(-1, 5), Vector2( 0, 5), Vector2( 1, 5), Vector2( 2, 5),
+	Vector2( 3, 5), Vector2( 4, 5), Vector2( 5, 5),
 ]
 
 # =============================================================
@@ -421,84 +528,169 @@ const M4_AXIAL = [
 # 24 sectors, irregular sprawl
 # =============================================================
 const M5_SECTORS = [
-	"Rho-6C",    # 0
-	"Sigma-2C",  # 1
-	"Tau-8C",    # 2
-	"Upsilon-4C",# 3
-	"Phi-7C",    # 4
-	"Chi-1C",    # 5
-	"Psi-9C",    # 6
-	"Omega-3C",  # 7
-	"Alpha-5D",  # 8
-	"Beta-2D",   # 9
-	"Gamma-8D",  # 10
-	"Delta-4D",  # 11
-	"Epsilon-7D",# 12
-	"Zeta-3D",   # 13
-	"Eta-9D",    # 14
-	"Theta-1D",  # 15
-	"Iota-6D",   # 16
-	"Kappa-2D",  # 17
-	"Lambda-8D", # 18
-	"Mu-5D",     # 19
-	"Nu-3D",     # 20
-	"Xi-9D",     # 21
-	"Omicron-4D",# 22
-	"Pi-7D",     # 23
+	"Psi-1D", "Omega-1D", "Alpha-1D", "Beta-1D", "Gamma-1D",
+	"Delta-1D", "Epsilon-1D", "Zeta-1D", "Eta-1D", "Theta-1D",
+	"Iota-1D", "Kappa-1D", "Lambda-1D", "Mu-1D", "Nu-1D",
+	"Xi-1D", "Omicron-1D", "Pi-1D", "Rho-1D", "Sigma-1D",
+	"Tau-1D", "Upsilon-1D", "Phi-1D", "Chi-1D", "Psi-3D",
+	"Omega-3D", "Alpha-3D", "Beta-3D", "Gamma-3D", "Delta-3D",
+	"Epsilon-3D", "Zeta-3D", "Eta-3D", "Theta-3D", "Iota-3D",
+	"Kappa-3D", "Lambda-3D", "Mu-3D", "Nu-3D", "Xi-3D",
+	"Omicron-3D", "Pi-3D", "Rho-3D", "Sigma-3D", "Tau-3D",
+	"Upsilon-3D", "Phi-3D", "Chi-3D", "Psi-5D", "Omega-5D",
+	"Alpha-5D", "Beta-5D", "Gamma-5D", "Delta-5D", "Epsilon-5D",
+	"Zeta-5D", "Eta-5D", "Theta-5D", "Iota-5D", "Kappa-5D",
+	"Lambda-5D", "Mu-5D", "Nu-5D", "Xi-5D", "Omicron-5D",
+	"Pi-5D", "Rho-5D", "Sigma-5D", "Tau-5D", "Upsilon-5D",
+	"Phi-5D", "Chi-5D", "Psi-7D", "Omega-7D", "Alpha-7D",
+	"Beta-7D", "Gamma-7D", "Delta-7D", "Epsilon-7D", "Zeta-7D",
+	"Eta-7D", "Theta-7D", "Iota-7D", "Kappa-7D", "Lambda-7D",
+	"Mu-7D", "Nu-7D", "Xi-7D", "Omicron-7D", "Pi-7D",
+	"Rho-7D", "Sigma-7D", "Tau-7D", "Upsilon-7D", "Phi-7D",
+	"Chi-7D", "Psi-9D", "Omega-9D", "Alpha-9D", "Beta-9D",
+	"Gamma-9D", "Delta-9D", "Epsilon-9D", "Zeta-9D", "Eta-9D",
+	"Theta-9D", "Iota-9D", "Kappa-9D",
 ]
 
 const M5_ADJACENCY = {
-	0:  [1, 2, 8],
-	1:  [0, 3, 9],
-	2:  [0, 3, 4, 10],
-	3:  [1, 2, 5, 11],
-	4:  [2, 5, 6, 12],
-	5:  [3, 4, 7, 13],
-	6:  [4, 7, 14],
-	7:  [5, 6, 15],
-	8:  [0, 9, 16],
-	9:  [1, 8, 10, 17],
-	10: [2, 9, 11, 18],
-	11: [3, 10, 12, 19],
-	12: [4, 11, 13, 20],
-	13: [5, 12, 14, 21],
-	14: [6, 13, 15, 22],
-	15: [7, 14, 23],
-	16: [8, 17],
-	17: [9, 16, 18],
-	18: [10, 17, 19],
-	19: [11, 18, 20],
-	20: [12, 19, 21],
-	21: [13, 20, 22],
-	22: [14, 21, 23],
-	23: [15, 22],
+	0:   [1, 2],
+	1:   [0, 2, 3],
+	2:   [0, 1, 3, 7, 8],
+	3:   [1, 2, 8],
+	4:   [5, 10, 11],
+	5:   [4, 6, 11, 12],
+	6:   [5, 7, 12],
+	7:   [2, 6, 8],
+	8:   [2, 3, 7],
+	9:   [10, 16, 17],
+	10:  [4, 9, 11, 17],
+	11:  [4, 5, 10, 12],
+	12:  [5, 6, 11],
+	13:  [14, 21],
+	14:  [13, 15, 22],
+	15:  [14, 22, 23],
+	16:  [9, 17, 26, 27],
+	17:  [9, 10, 16, 27],
+	18:  [19, 30, 31],
+	19:  [18, 20, 31, 32],
+	20:  [19, 32],
+	21:  [13],
+	22:  [14, 15, 23, 33, 34],
+	23:  [15, 22, 24, 34, 35],
+	24:  [23, 35, 36],
+	25:  [26, 39, 40],
+	26:  [16, 25, 27, 40, 41],
+	27:  [16, 17, 26, 41, 42],
+	28:  [29, 43, 44],
+	29:  [28, 44, 45],
+	30:  [18, 31, 46],
+	31:  [18, 19, 30, 32],
+	32:  [19, 20, 31],
+	33:  [22, 34, 47, 48],
+	34:  [22, 23, 33, 35, 48, 49],
+	35:  [23, 24, 34, 36, 49, 50],
+	36:  [24, 35, 37, 50, 51],
+	37:  [36, 38, 51, 52],
+	38:  [37, 39, 52, 53],
+	39:  [25, 38, 40, 53, 54],
+	40:  [25, 26, 39, 41, 54, 55],
+	41:  [26, 27, 40, 42, 55, 56],
+	42:  [27, 41, 43, 56, 57],
+	43:  [28, 42, 44, 57],
+	44:  [28, 29, 43, 45, 58],
+	45:  [29, 44, 46, 58, 59],
+	46:  [30, 45, 59, 60],
+	47:  [33, 48, 64, 65],
+	48:  [33, 34, 47, 49, 65, 66],
+	49:  [34, 35, 48, 50, 66, 67],
+	50:  [35, 36, 49, 51, 67, 68],
+	51:  [36, 37, 50, 52, 68, 69],
+	52:  [37, 38, 51, 53, 69, 70],
+	53:  [38, 39, 52, 54, 70, 71],
+	54:  [39, 40, 53, 55, 71, 72],
+	55:  [40, 41, 54, 56, 72, 73],
+	56:  [41, 42, 55, 57, 73, 74],
+	57:  [42, 43, 56, 74],
+	58:  [44, 45, 59],
+	59:  [45, 46, 58, 60],
+	60:  [46, 59],
+	61:  [62, 75, 76],
+	62:  [61, 63, 76, 77],
+	63:  [62, 77],
+	64:  [47, 65, 78],
+	65:  [47, 48, 64, 66, 78, 79],
+	66:  [48, 49, 65, 67, 79, 80],
+	67:  [49, 50, 66, 68, 80, 81],
+	68:  [50, 51, 67, 69, 81, 82],
+	69:  [51, 52, 68, 70, 82, 83],
+	70:  [52, 53, 69, 71, 83],
+	71:  [53, 54, 70, 72, 84],
+	72:  [54, 55, 71, 73, 84, 85],
+	73:  [55, 56, 72, 74, 85, 86],
+	74:  [56, 57, 73, 86],
+	75:  [61, 76, 91, 92],
+	76:  [61, 62, 75, 77, 92, 93],
+	77:  [62, 63, 76, 93],
+	78:  [64, 65, 79],
+	79:  [65, 66, 78, 80, 94],
+	80:  [66, 67, 79, 81, 94, 95],
+	81:  [67, 68, 80, 82, 95],
+	82:  [68, 69, 81, 83],
+	83:  [69, 70, 82],
+	84:  [71, 72, 85],
+	85:  [72, 73, 84, 86],
+	86:  [73, 74, 85, 96],
+	87:  [88, 97],
+	88:  [87, 89],
+	89:  [88, 90, 98],
+	90:  [89, 91, 98, 99],
+	91:  [75, 90, 92, 99, 100],
+	92:  [75, 76, 91, 93, 100, 101],
+	93:  [76, 77, 92, 101, 102],
+	94:  [79, 80, 95],
+	95:  [80, 81, 94],
+	96:  [86, 97, 103, 104],
+	97:  [87, 96, 104, 105],
+	98:  [89, 90, 99],
+	99:  [90, 91, 98, 100],
+	100: [91, 92, 99, 101],
+	101: [92, 93, 100, 102],
+	102: [93, 101],
+	103: [96, 104, 106],
+	104: [96, 97, 103, 105, 106, 107],
+	105: [97, 104, 107],
+	106: [103, 104, 107],
+	107: [104, 105, 106],
 }
 
 const M5_AXIAL = [
-	Vector2(-3, -1),  # Rho-6C
-	Vector2(-3,  1),  # Sigma-2C
-	Vector2(-2, -2),  # Tau-8C
-	Vector2(-2,  0),  # Upsilon-4C
-	Vector2(-1, -3),  # Phi-7C
-	Vector2(-1,  1),  # Chi-1C
-	Vector2( 0, -3),  # Psi-9C
-	Vector2( 0,  1),  # Omega-3C
-	Vector2(-2, -1),  # Alpha-5D
-	Vector2(-2,  0),  # Beta-2D
-	Vector2(-1, -1),  # Gamma-8D
-	Vector2(-1,  0),  # Delta-4D
-	Vector2( 0, -2),  # Epsilon-7D
-	Vector2( 0,  0),  # Zeta-3D    — centre
-	Vector2( 1, -2),  # Eta-9D
-	Vector2( 1,  0),  # Theta-1D
-	Vector2(-1, -2),  # Iota-6D
-	Vector2( 0, -1),  # Kappa-2D
-	Vector2( 1, -1),  # Lambda-8D
-	Vector2( 1,  1),  # Mu-5D
-	Vector2( 2, -1),  # Nu-3D
-	Vector2( 2,  0),  # Xi-9D
-	Vector2( 3, -1),  # Omicron-4D
-	Vector2( 3,  0),  # Pi-7D
+	Vector2( 9,-7), Vector2(10,-7), Vector2( 9,-6), Vector2(10,-6),
+	Vector2( 5,-5), Vector2( 6,-5), Vector2( 7,-5), Vector2( 8,-5),
+	Vector2( 9,-5), Vector2( 3,-4), Vector2( 4,-4), Vector2( 5,-4),
+	Vector2( 6,-4), Vector2(-7,-3), Vector2(-6,-3), Vector2(-5,-3),
+	Vector2( 2,-3), Vector2( 3,-3), Vector2( 8,-3), Vector2( 9,-3),
+	Vector2(10,-3), Vector2(-8,-2), Vector2(-6,-2), Vector2(-5,-2),
+	Vector2(-4,-2), Vector2( 0,-2), Vector2( 1,-2), Vector2( 2,-2),
+	Vector2( 4,-2), Vector2( 5,-2), Vector2( 7,-2), Vector2( 8,-2),
+	Vector2( 9,-2), Vector2(-7,-1), Vector2(-6,-1), Vector2(-5,-1),
+	Vector2(-4,-1), Vector2(-3,-1), Vector2(-2,-1), Vector2(-1,-1),
+	Vector2( 0,-1), Vector2( 1,-1), Vector2( 2,-1), Vector2( 3,-1),
+	Vector2( 4,-1), Vector2( 5,-1), Vector2( 6,-1), Vector2(-8, 0),
+	Vector2(-7, 0), Vector2(-6, 0), Vector2(-5, 0), Vector2(-4, 0),
+	Vector2(-3, 0), Vector2(-2, 0), Vector2(-1, 0), Vector2( 0, 0),
+	Vector2( 1, 0), Vector2( 2, 0), Vector2( 4, 0), Vector2( 5, 0),
+	Vector2( 6, 0), Vector2( 8, 0), Vector2( 9, 0), Vector2(10, 0),
+	Vector2(-9, 1), Vector2(-8, 1), Vector2(-7, 1), Vector2(-6, 1),
+	Vector2(-5, 1), Vector2(-4, 1), Vector2(-3, 1), Vector2(-2, 1),
+	Vector2(-1, 1), Vector2( 0, 1), Vector2( 1, 1), Vector2( 7, 1),
+	Vector2( 8, 1), Vector2( 9, 1), Vector2(-9, 2), Vector2(-8, 2),
+	Vector2(-7, 2), Vector2(-6, 2), Vector2(-5, 2), Vector2(-4, 2),
+	Vector2(-2, 2), Vector2(-1, 2), Vector2( 0, 2), Vector2( 2, 2),
+	Vector2( 3, 2), Vector2( 4, 2), Vector2( 5, 2), Vector2( 6, 2),
+	Vector2( 7, 2), Vector2( 8, 2), Vector2(-8, 3), Vector2(-7, 3),
+	Vector2( 0, 3), Vector2( 1, 3), Vector2( 4, 3), Vector2( 5, 3),
+	Vector2( 6, 3), Vector2( 7, 3), Vector2( 8, 3), Vector2(-1, 4),
+	Vector2( 0, 4), Vector2( 1, 4), Vector2(-1, 5), Vector2( 0, 5),
 ]
 
 
@@ -566,36 +758,39 @@ var missions: Array = [
 	},
 	{
 	# Mission 3
-	"mission_type":         "hold_tower",
-	"enemy_ai_mode": "wave",
-	"has_priority_target":  false,
+	"title":             "Mission 3 — The Iron Salient",
+	"turns":             6,
+	"win_hexes":         0,
+	"interference":      0.5,
+	"mission_type":      "hold_tower",
+	"enemy_ai_mode":     "wave",
+	"has_priority_target": false,
 	"priority_target_name": "",
-	"radio_tower_sector":   "Sigma-1B",  # pick a central ring sector — adjust after testing
-	"title":        "Mission 3 — The Iron Salient",
-	"turns":        10,
-	"win_hexes":    22,
-	"interference": 0.5,
-	"objective":    "Hold 22 sectors against a reinforced enemy push.",
-	"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
+	"radio_tower_sector": "Gamma-5B",
+	"objective":         "Power the comms tower and hold it against enemy waves.",
+	"supply_pool":       { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
 	"reinforcement_pool": 1,
-	"orbital_strikes":    1,
+	"orbital_strikes":   0,
 	"sectors":    M3_SECTORS,
 	"adjacency":  M3_ADJACENCY,
 	"axial":      M3_AXIAL,
 	"reinforcement_schedule": { 2: 2, 3: 2, 4: 3 },
 	"squads": [
-		{ "name": "Squad Varro", "sector": "Psi-1B",  "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-		{ "name": "Squad Kael",  "sector": "Omega-1B","status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
-		{ "name": "Squad Orin",  "sector": "Nu-1B",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-		{ "name": "Squad Davan", "sector": "Iota-1B", "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
+		{ "name": "Squad Varro", "sector": "Psi-5B",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+		{ "name": "Squad Kael",  "sector": "Omega-5B",  "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
+		{ "name": "Squad Orin",  "sector": "Iota-5B",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+		{ "name": "Squad Davan", "sector": "Kappa-5B",  "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
 	],
 	"enemies": [
-		{ "sector": "Theta-1B"   },
-		{ "sector": "Sigma-1B"   },
-		{ "sector": "Beta-3B"    },
-		{ "sector": "Theta-3B"   },
-		{ "sector": "Mu-3B"      },
-		{ "sector": "Omicron-3B" },
+		{ "sector": "Psi-1B"    },
+		{ "sector": "Omega-1B"  },
+		{ "sector": "Sigma-1B"  },
+		{ "sector": "Gamma-3B"  },
+		{ "sector": "Chi-3B"    },
+		{ "sector": "Eta-5B"    },
+		{ "sector": "Pi-5B"     },
+		{ "sector": "Eta-7B"    },
+		{ "sector": "Lambda-7B" },
 	],
 	},
 		{
@@ -645,39 +840,41 @@ var missions: Array = [
 	},	
 	{
 		# Mission 5
-		"mission_type":         "extract",
-		"enemy_ai_mode": "rush_extraction",
-		"has_priority_target":  false,
-		"priority_target_name": "",
-		"radio_tower_sector":   "Zeta-3D",   # adjust after testing
-		"title":        "Mission 5 — Final Assault",
-		"turns":        5,
-		"win_hexes":    15,
-		"interference": 1.0,
-		"objective":    "Hold 15 sectors. All channels compromised. The final push begins.",
-		"supply_pool":        { "Armaments": 12, "Medi-Packs": 10, "Fuel Cells": 12 },
-		"reinforcement_pool": 2,
-		"orbital_strikes": 0,
-		"sectors":    M5_SECTORS,
-		"adjacency":  M5_ADJACENCY,
-		"axial":      M5_AXIAL,
-		"reinforcement_schedule": { 3: 1, 4: 2 },
-		"squads": [
-			{ "name": "Squad Varro", "sector": "Rho-6C",    "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-			{ "name": "Squad Kael",  "sector": "Sigma-2C",  "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
-			{ "name": "Squad Orin",  "sector": "Tau-8C",    "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-			{ "name": "Squad Davan", "sector": "Upsilon-4C","status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
-			{ "name": "Squad Rhael", "sector": "Phi-7C",    "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.ARMAMENTS  },
-		],
-		"enemies": [
-			{ "sector": "Pi-7D"      },
-			{ "sector": "Omicron-4D" },
-			{ "sector": "Xi-9D"      },
-			{ "sector": "Nu-3D"      },
-			{ "sector": "Mu-5D"      },
-			{ "sector": "Lambda-8D"  },
-			{ "sector": "Eta-9D"     },
-			{ "sector": "Theta-1D"   },
+		"title":              "Mission 5 — Final Assault",
+	"turns":              7,
+	"win_hexes":          0,
+	"interference":       0.9,
+	"mission_type":       "extract",
+	"enemy_ai_mode":      "rush_extraction",
+	"has_priority_target": false,
+	"priority_target_name": "",
+	"radio_tower_sector": "",
+	"objective":          "Reach the extraction zone. Data carrier must extract.",
+	"supply_pool":        { "Armaments": 14, "Medi-Packs": 12, "Fuel Cells": 14 },
+	"reinforcement_pool": 0,
+	"orbital_strikes":    2,
+	"sectors":    M5_SECTORS,
+	"adjacency":  M5_ADJACENCY,
+	"axial":      M5_AXIAL,
+	"reinforcement_schedule": { 3: 2, 5: 3 },
+	"squads": [
+		{ "name": "Squad Varro", "sector": "Omicron-5D", "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+		{ "name": "Squad Kael",  "sector": "Pi-5D",      "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
+		{ "name": "Squad Orin",  "sector": "Epsilon-7D", "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+		{ "name": "Squad Davan", "sector": "Zeta-7D",    "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
+	],
+	"enemies": [
+		{ "sector": "Omega-3D"   },
+		{ "sector": "Alpha-3D"   },
+		{ "sector": "Beta-3D"    },
+		{ "sector": "Sigma-3D"   },
+		{ "sector": "Tau-3D"     },
+		{ "sector": "Upsilon-3D" },
+		{ "sector": "Phi-3D"     },
+		{ "sector": "Omega-1D"   },
+		{ "sector": "Beta-1D"    },
+		{ "sector": "Tau-1D"     },
+		{ "sector": "Xi-5D"      },
 		],
 	},
 ]
@@ -726,6 +923,7 @@ func has_pending_bombardment() -> bool:
 
 
 func start_current_mission() -> void:
+	data_destroyed = false
 	var data = get_current_mission_data()
 	orbital_strikes_pool = data.get("orbital_strikes", 0)
 	if data.is_empty():
@@ -735,6 +933,10 @@ func start_current_mission() -> void:
 	var base_pool = data.get("supply_pool", { "Armaments": 8, "Medi-Packs": 6, "Fuel Cells": 8 })
 	for s in base_pool:
 		supply_pool[s] = supply_pool.get(s, 0) + base_pool[s]
+
+	for key in seen_attention_events.keys():
+		if key.begins_with("mission_"):
+			seen_attention_events.erase(key)
 
 	enemy_ai_mode = data.get("enemy_ai_mode", "aggressive")
 	reinforcement_pool += data.get("reinforcement_pool", 0)
@@ -751,6 +953,7 @@ func start_current_mission() -> void:
 	TurnManager.start_mission(data)
 
 func debug_jump_to_mission(index: int) -> void:
+	data_destroyed = false
 	if index < 0 or index >= missions.size():
 		return
 
@@ -884,6 +1087,19 @@ func calculate_extraction_bonus() -> Dictionary:
 	var extracted_count = 0
 	var data_extracted = false
 
+	if data_destroyed:
+		# Data was destroyed by orbital strike — can't be extracted
+		for squad_name in SquadManager.squads:
+			var squad = SquadManager.squads[squad_name]
+			if squad.status != SquadManager.Status.LOST and squad.sector == ez:
+				extracted_count += 1
+		return {
+			"extracted_count": extracted_count,
+			"data_extracted":  false,
+			"data_destroyed":  true,
+			"bonus":           extracted_count * 80,
+		}
+
 	for squad_name in SquadManager.squads:
 		var squad = SquadManager.squads[squad_name]
 		if squad.status == SquadManager.Status.LOST:
@@ -895,17 +1111,23 @@ func calculate_extraction_bonus() -> Dictionary:
 
 	var bonus = extracted_count * 80
 	if data_extracted:
-		bonus += 200  # major bonus for getting the data out
+		bonus += 200
 
 	return {
 		"extracted_count": extracted_count,
 		"data_extracted":  data_extracted,
+		"data_destroyed":  false,
 		"bonus":           bonus,
 	}
 
 func has_armed_bombardment() -> bool:
 	return not pending_bombardment.is_empty() and pending_bombardment.get("placed", false)
 
+func has_seen_attention(event_key: String) -> bool:
+	return seen_attention_events.get(event_key, false)
+
+func mark_attention_seen(event_key: String) -> void:
+	seen_attention_events[event_key] = true
 
 func progress_tower_power(squad_name: String) -> void:
 	# Called when a squad spends a fuel turn at the tower

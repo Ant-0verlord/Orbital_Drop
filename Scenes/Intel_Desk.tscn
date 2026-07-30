@@ -3,6 +3,7 @@
 [ext_resource type="ArrayMesh" uid="uid://cpi4ecavsejjf" path="res://Models/Intel Desk.obj" id="1_1kgtn"]
 [ext_resource type="Script" uid="uid://bd5yqf4ku64t4" path="res://Scripts/Consoles/IntelConsole.gd" id="2_1kgtn"]
 [ext_resource type="Script" uid="uid://c5ousiyt0lvs" path="res://Scripts/Popups/IntelConsolePopup.gd" id="3_l8jtb"]
+[ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_l8jtb"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_oohax"]
 size = Vector3(5.431281, 4.480967, 9.567525)
@@ -83,3 +84,10 @@ alignment = 2
 [node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=821681410]
 layout_mode = 2
 text = "Close  [Esc]"
+
+[node name="HelpBtn" type="Button" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=1840799294]
+layout_mode = 2
+text = "Help"
+
+[node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup" unique_id=45888852 instance=ExtResource("4_l8jtb")]
+layout_mode = 1
