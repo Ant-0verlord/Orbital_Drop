@@ -61,28 +61,32 @@ func start_mission(mission_data: Dictionary) -> void:
 	emit_signal("turn_started", current_turn)
 
 func _assign_extraction_zone() -> void:
+	var mission_data = GameManager.get_current_mission_data()
+	var fixed = mission_data.get("extraction_sector", "")
+	if fixed != "":
+		GameManager.extraction_zone = fixed
+		print("Extraction zone fixed: %s" % fixed)
+		return
+
+	# Fallback dynamic assignment for future missions
 	var squad_sectors = []
 	for squad in SquadManager.get_squads_for_ui():
 		squad_sectors.append(squad.sector)
-
 	var enemy_sectors = []
 	for sector in EnemyManager.get_hex_control():
 		if EnemyManager.get_hex_control()[sector] == "enemy":
 			enemy_sectors.append(sector)
-
-	# Find sector furthest from enemy concentration
 	var best_sector = ""
 	var best_score = -1
 	for sector in EnemyManager.get_all_sectors():
 		if sector in squad_sectors:
 			continue
-		var dist_from_enemies = EnemyManager._bfs_distance_to_nearest(sector, enemy_sectors)
-		if dist_from_enemies > best_score:
-			best_score = dist_from_enemies
+		var dist = EnemyManager._bfs_distance_to_nearest(sector, enemy_sectors)
+		if dist > best_score:
+			best_score = dist
 			best_sector = sector
-
 	GameManager.extraction_zone = best_sector
-	print("Extraction zone assigned: %s" % best_sector)
+	print("Extraction zone dynamic: %s" % best_sector)
 
 func lock_allocations(allocations: Dictionary) -> void:
 	if mission_over:

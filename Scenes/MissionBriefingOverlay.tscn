@@ -1,0 +1,63 @@
+[gd_scene format=3 uid="uid://1qfkfl330bb6"]
+
+[ext_resource type="Script" uid="uid://cjjvuo72tuls0" path="res://Scripts/Guide/Mission_Briefing_Overlay.gd" id="1_j8jmk"]
+[ext_resource type="Script" uid="uid://jbhrl18mtmtu" path="res://Scripts/Guide/Objective_Text.gd" id="2_02glx"]
+[ext_resource type="Script" uid="uid://3nfhr6d6q3g2" path="res://Scripts/Guide/BriefingHexPreview.gd" id="3_02glx"]
+
+[node name="MissionBriefingOverlay" type="CanvasLayer" unique_id=1970799262]
+layer = 20
+script = ExtResource("1_j8jmk")
+
+[node name="BG" type="ColorRect" parent="." unique_id=189795826]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.003921569, 0.003921569, 0.003921569, 0.92941177)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BG" unique_id=1095316541]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 179.0
+alignment = 1
+
+[node name="MissionLabel" type="Label" parent="BG/VBoxContainer" unique_id=1633792368]
+layout_mode = 2
+text = "MISSION 1 — PLANETARY INSERTION"
+
+[node name="ClassLabel" type="Label" parent="BG/VBoxContainer" unique_id=1761114025]
+layout_mode = 2
+text = "PRIORITY: CLASSIFIED"
+
+[node name="HSeparator" type="HSeparator" parent="BG/VBoxContainer" unique_id=161571054]
+layout_mode = 2
+
+[node name="BriefingText" type="Label" parent="BG/VBoxContainer" unique_id=1742742766]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="BG/VBoxContainer" unique_id=1178248602]
+layout_mode = 2
+
+[node name="ObjectiveLabel" type="Label" parent="BG/VBoxContainer" unique_id=465984477]
+layout_mode = 2
+text = "PRIMARY OBJECTIVE:"
+
+[node name="ObjectiveText" type="Label" parent="BG/VBoxContainer" unique_id=544807201]
+layout_mode = 2
+script = ExtResource("2_02glx")
+
+[node name="HSeparator3" type="HSeparator" parent="BG/VBoxContainer" unique_id=1060238414]
+layout_mode = 2
+
+[node name="MapPreview" type="Control" parent="BG/VBoxContainer" unique_id=506907015]
+layout_mode = 2
+script = ExtResource("3_02glx")
+
+[node name="HSeparator4" type="HSeparator" parent="BG/VBoxContainer" unique_id=2090184274]
+layout_mode = 2
+
+[node name="BeginBtn" type="Button" parent="BG/VBoxContainer" unique_id=2004334881]
+layout_mode = 2
+text = "ENGAGE — BEGIN MISSION"

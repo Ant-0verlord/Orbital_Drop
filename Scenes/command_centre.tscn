@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://dksywdr8xyjsf" path="res://Scenes/Command_Throne.tscn" id="5_5ts7m"]
 [ext_resource type="PackedScene" uid="uid://ecaj1srmx3pq" path="res://Scenes/Logistics_Terminal.tscn" id="6_23xtj"]
 [ext_resource type="PackedScene" uid="uid://caglsrgxql7v5" path="res://Scenes/Intel_Desk.tscn" id="7_5ts7m"]
+[ext_resource type="PackedScene" uid="uid://1qfkfl330bb6" path="res://Scenes/MissionBriefingOverlay.tscn" id="9_uagpp"]
 
 [sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_ludm1"]
 
@@ -178,3 +179,5 @@ transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -6.7
 light_energy = 16.0
 spot_range = 9.237521
 spot_angle = 66.01568
+
+[node name="MissionBriefingOverlay" parent="." unique_id=1970799262 instance=ExtResource("9_uagpp")]

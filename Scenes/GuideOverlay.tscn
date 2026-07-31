@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://dbhi1rx25cidk"]
+
+[ext_resource type="Script" uid="uid://4u8bmkied6qp" path="res://Scripts/Guide/Guide_Overlay.gd" id="1_je48y"]
+[ext_resource type="Script" uid="uid://mh24db6xndbi" path="res://Scripts/Guide/Arrow_Canvas.gd" id="2_2uard"]
+
+[node name="GuideOverlay" type="CanvasLayer" unique_id=1628897131]
+layer = 10
+script = ExtResource("1_je48y")
+
+[node name="PromptBar" type="PanelContainer" parent="." unique_id=406689043]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -0.5
+offset_top = -23.0
+offset_right = 0.5
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PromptBar" unique_id=1967574977]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PromptBar/HBoxContainer" unique_id=2096823956]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="PromptBar/HBoxContainer" unique_id=855543545]
+layout_mode = 2
+text = "Skip Guide"
+
+[node name="ArrowCanvas" type="Control" parent="." unique_id=1058510310]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_2uard")

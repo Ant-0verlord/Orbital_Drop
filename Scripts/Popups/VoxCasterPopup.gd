@@ -16,7 +16,7 @@ var cached_need_text: Dictionary = {}    # squad_name -> garbled need string
 var cached_status_text: Dictionary = {}  # squad_name -> garbled status string
 var cached_flavour: Dictionary = {}      # squad_name -> chosen flavour line (dead/ghost/delayed labels)
 
-const STATIC_CHARS = ["—", "█", "░", "▒", "?", "#", "~", "×"]
+const STATIC_CHARS = ["-", "=", "?", "#", "~", "x", "/", "\\"]
 
 # Dead channel flavour lines
 const DEAD_CHANNEL = [

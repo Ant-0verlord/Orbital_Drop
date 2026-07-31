@@ -17,6 +17,7 @@ func _ready() -> void:
 func open_popup() -> void:
 	popup.visible = true
 	popup.refresh()
+	GuideManager.on_console_opened("logistics")
 
 
 func close_popup() -> void:

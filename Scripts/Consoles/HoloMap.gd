@@ -41,6 +41,7 @@ func open_popup() -> void:
 	_build_zone_states()
 	popup.visible = true
 	popup.refresh(zone_states, _build_axial_map())
+	GuideManager.on_console_opened("holomap")
 
 
 func close_popup() -> void:
@@ -61,6 +62,7 @@ func _on_enemies_updated() -> void:
 	_build_zone_states()
 	if popup.visible:
 		popup.refresh(zone_states)
+
 
 
 func _build_zone_states() -> void:

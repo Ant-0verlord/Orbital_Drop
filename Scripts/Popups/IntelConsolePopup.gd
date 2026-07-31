@@ -33,14 +33,23 @@ func _ready() -> void:
 	EnemyManager.reinforcement_landed.connect(_on_player_reinforcement_landed)
 	TurnManager.orbital_strike_resolved.connect(_on_orbital_strike_resolved)
 	EnemyManager.data_destroyed_by_strike.connect(_on_data_destroyed)
+	SquadManager.data_passed.connect(_on_data_passed)
+	SquadManager.data_destroyed_by_enemy.connect(_on_data_destroyed_by_enemy)
 	close_btn.pressed.connect(_on_close_pressed)
 	help_btn.pressed.connect(_on_help_pressed)
 
 var _help_attention: bool = false
 var _attention_pulse: float = 0.0
+var data_passed_info: Dictionary = {}	
 
-
-
+func _on_data_passed(from_squad: String, to_squad: String) -> void:
+	data_passed_info = {
+		"from": from_squad,
+		"to":   to_squad,
+		"turn": SquadManager.current_turn,
+	}
+	set_help_attention(true)
+	if visible: refresh()
 
 func _process(delta: float) -> void:
 	if not _help_attention or help_btn == null:
@@ -102,6 +111,9 @@ func _rebuild_reports() -> void:
 	if data_destroyed_sector != "" and data_destroyed_turn == SquadManager.current_turn:
 		_add_data_destroyed_card(data_destroyed_sector)
 
+	if not data_passed_info.is_empty() and data_passed_info.get("turn") == SquadManager.current_turn:
+		_add_data_passed_card(data_passed_info)
+
 	# Critical squads always break through — priority distress first
 	var reports: Dictionary = (
 		SquadManager.get_briefings()
@@ -118,6 +130,33 @@ func _rebuild_reports() -> void:
 	for squad_name in reports:
 		var squad_data = SquadManager.squads.get(squad_name, {})
 		_add_report_card(squad_name, reports[squad_name], squad_data)
+
+func _add_data_passed_card(info: Dictionary) -> void:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _alert_style(Color(0.05, 0.15, 0.22), Color(0.3, 0.7, 1.0, 0.95)))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "⟳ DATA PACKAGE TRANSFERRED"
+	header.add_theme_font_size_override("font_size", 13)
+	header.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+	vbox.add_child(header)
+
+	var body := Label.new()
+	body.text = "%s took casualties and passed the data package to %s. New carrier is now the extraction priority." % [info.get("from", ""), info.get("to", "")]
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD
+	body.add_theme_font_size_override("font_size", 12)
+	body.add_theme_color_override("font_color", Color(0.7, 0.85, 0.95))
+	vbox.add_child(body)
+
+	report_container.add_child(card)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 4
+	report_container.add_child(spacer)
 
 func _on_help_pressed() -> void:
 	set_help_attention(false)

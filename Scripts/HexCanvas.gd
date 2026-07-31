@@ -312,16 +312,16 @@ func _draw() -> void:
 			var sym_color = Color.WHITE
 			match special_type:
 				"priority":
-					symbol = "✦"
+					symbol = "[!]"
 					sym_color = Color(0.9, 0.6, 1.0, 0.95)
 				"tower":
-					symbol = "⚡"
+					symbol = "[T]"
 					sym_color = Color(0.5, 0.95, 1.0, 0.9)
 				"tower_powered":
-					symbol = "⚡"
+					symbol = "[T]"
 					sym_color = Color(0.0, 1.0, 0.8, 1.0)
 				"extraction":
-					symbol = "▲"
+					symbol = "[EXT]"
 					sym_color = Color(1.0, 0.9, 0.3, 1.0)
 			if symbol != "":
 				draw_string(ThemeDB.fallback_font,

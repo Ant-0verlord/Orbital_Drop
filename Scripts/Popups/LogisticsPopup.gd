@@ -213,6 +213,11 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 	info_lbl.add_theme_color_override("font_color", _status_color(squad.status))
 	row.add_child(info_lbl)
 
+		# Force M1 T1 allocations
+	var is_forced_turn = (GameManager.current_mission == 0 and SquadManager.current_turn == 0 and not GuideManager.turn_1_done)
+	if is_forced_turn:
+		_apply_forced_allocation(squad, checkboxes)
+
 	var checkboxes: Dictionary = {}
 	for supply in ["Armaments", "Medi-Packs", "Fuel Cells"]:
 		var col := VBoxContainer.new()
@@ -263,6 +268,29 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 
 	return { "squad": squad.name, "checkboxes": checkboxes }
 
+func _apply_forced_allocation(squad: Dictionary, checkboxes: Dictionary) -> void:
+	# Force the squad's stated need supply — and Armaments if Active
+	var forced: Array[String] = []
+	match squad.need:
+		SquadManager.Need.MEDI_PACKS:  forced.append("Medi-Packs")
+		SquadManager.Need.FUEL_CELLS:  forced.append("Fuel Cells")
+		SquadManager.Need.ARMAMENTS:   forced.append("Armaments")
+
+	# Active squads also get Armaments as second supply if not already
+	if squad.status == SquadManager.Status.ACTIVE and not forced.has("Armaments"):
+		forced.append("Armaments")
+
+	for supply in checkboxes:
+		var cb = checkboxes[supply]
+		if forced.has(supply):
+			cb.button_pressed = true
+			cb.disabled = true
+			if not allocations.has(squad.name):
+				allocations[squad.name] = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
+			allocations[squad.name][supply] = SUPPLY_COST
+		else:
+			cb.button_pressed = false
+			cb.disabled = true  # lock out everything not forced
 
 func _sync_allocations() -> void:
 	for squad in SquadManager.get_squads_for_ui():

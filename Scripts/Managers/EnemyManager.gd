@@ -608,28 +608,34 @@ func _wave_movement_score(sector: String, squad_sectors: Array, unit_id: int) ->
 func _rush_extraction_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
 	var score = 0
 
-	# Primary goal: get to extraction zone
-	var ez = GameManager.extraction_zone
-	if ez != "":
-		var dist_to_ez = _bfs_distance(sector, ez)
-		score += (15 - min(dist_to_ez, 15)) * 25
-
-	# Secondary: target data carrier squad specifically
+	# Primary: hunt the data carrier specifically — highest priority
 	var data_carrier = GameManager.data_carrier_squad
-	if data_carrier != "":
+	if data_carrier != "" and not GameManager.data_destroyed:
 		for squad in SquadManager.get_squads_for_ui():
 			if squad.name == data_carrier and squad.status != SquadManager.Status.LOST:
 				var dist_to_carrier = _bfs_distance(sector, squad.sector)
-				score += (10 - min(dist_to_carrier, 10)) * 15
+				score += (15 - min(dist_to_carrier, 15)) * 40  # heavily weighted
 				break
 
-	# Still chase any squad, just less than extraction focus
+	# Secondary: deny extraction zone
+	var ez = GameManager.extraction_zone
+	if ez != "":
+		var dist_to_ez = _bfs_distance(sector, ez)
+		score += (15 - min(dist_to_ez, 15)) * 20
+
+	# Tertiary: general squad pressure
 	var dist_to_squad = _bfs_distance_to_nearest(sector, squad_sectors)
 	score += (10 - min(dist_to_squad, 10)) * 8
 
-	# Prefer held tiles — disrupt the player
+	# Prefer held tiles
 	var control = hex_control.get(sector, "enemy")
 	if control == "held":
-		score += 20
+		score += 15
+
+	# If data is already destroyed — shift fully to denying extraction
+	if GameManager.data_destroyed:
+		if ez != "":
+			var dist_to_ez2 = _bfs_distance(sector, ez)
+			score += (15 - min(dist_to_ez2, 15)) * 35
 
 	return score

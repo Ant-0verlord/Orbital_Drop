@@ -19,10 +19,10 @@ func _ready() -> void:
 	player = get_tree().get_first_node_in_group("player")
 	popup.player = player
 
-
 func open_popup() -> void:
 	popup.visible = true
 	popup.refresh()
+	GuideManager.on_console_opened("intel")s
 
 
 func close_popup() -> void:

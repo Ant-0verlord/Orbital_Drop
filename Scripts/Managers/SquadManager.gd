@@ -5,6 +5,8 @@ extends Node
 
 signal turn_resolved
 signal squad_lost(squad_name: String)
+signal data_passed(from_squad: String, to_squad: String)
+signal data_destroyed_by_enemy(squad_name: String)
 
 enum Status { ACTIVE, WOUNDED, CRITICAL, LOST }
 enum Need   { ARMAMENTS, MEDI_PACKS, FUEL_CELLS }
@@ -14,6 +16,7 @@ enum Goal {
 	POWER_TOWER,      # stationary at tower, needs Fuel Cells
 	HOLD_TOWER,       # tower powered, holding position
 	EXTRACT,          # moving toward extraction zone
+	DEFEND_CARRIER,
 	FALLBACK,         # abandoned tower goal, reverting to advance
 }
 
@@ -23,6 +26,7 @@ const GOAL_NAMES: Dictionary = {
 	Goal.POWER_TOWER:      "Powering comms tower",
 	Goal.HOLD_TOWER:       "Holding comms tower",
 	Goal.EXTRACT:          "Moving to extract",
+	Goal.DEFEND_CARRIER:   "Defending data carrier",
 	Goal.FALLBACK:         "Falling back",
 }
 
@@ -72,6 +76,41 @@ func init_squads(squad_list: Array, mission_interference: float) -> void:
 
 	_generate_briefings()
 
+func _try_pass_data(carrier_name: String) -> void:
+	var carrier = squads.get(carrier_name, {})
+	if carrier.is_empty():
+		return
+	if not carrier.get("has_data", false):
+		return
+
+	# Only pass if carrier is wounded or critical
+	if carrier.status == Status.ACTIVE:
+		return
+
+	# Find healthiest adjacent squad
+	var carrier_sector = carrier.sector
+	var best_candidate = ""
+	var best_status = 99
+
+	for squad_name in squads:
+		if squad_name == carrier_name:
+			continue
+		var squad = squads[squad_name]
+		if squad.status == Status.LOST:
+			continue
+		# Check adjacency
+		if squad.sector in EnemyManager.adjacency.get(carrier_sector, []):
+			var status_val = squad.status  # ACTIVE=0, WOUNDED=1, CRITICAL=2
+			if int(status_val) < best_status:
+				best_status = int(status_val)
+				best_candidate = squad_name
+
+	if best_candidate != "":
+		carrier["has_data"] = false
+		squads[best_candidate]["has_data"] = true
+		GameManager.data_carrier_squad = best_candidate
+		print("DATA PASSED: %s → %s" % [carrier_name, best_candidate])
+		emit_signal("data_passed", carrier_name, best_candidate)
 
 func _make_squad(s: Dictionary) -> Dictionary:
 	return {
@@ -263,6 +302,27 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 						else:
 							step_target = _path_toward(current_sector, ez)
 
+				elif squad.goal == Goal.DEFEND_CARRIER:
+					var carrier_name = GameManager.data_carrier_squad
+					var carrier_sector = squads.get(carrier_name, {}).get("sector", "")
+					if carrier_sector != "":
+						# If enemy is adjacent to carrier — path to intercept
+						var enemies_near_carrier = false
+						for n in EnemyManager.adjacency.get(carrier_sector, []):
+							if EnemyManager.get_enemy_count_at(n) > 0:
+								enemies_near_carrier = true
+								if n in EnemyManager.adjacency.get(current_sector, []):
+									step_target = n
+									engaging_enemy = true
+									break
+
+				# Otherwise path toward carrier
+				if step_target == "" and carrier_sector != current_sector:
+					if carrier_sector in EnemyManager.adjacency.get(current_sector, []):
+						step_target = carrier_sector
+					else:
+						step_target = _path_toward(current_sector, carrier_sector)
+
 				squad.sector = step_target
 				moved_to = step_target
 				steps_taken += 1
@@ -415,7 +475,13 @@ func _worsen_status(squad: Dictionary) -> void:
 	match squad.status:
 		Status.ACTIVE:   squad.status = Status.WOUNDED
 		Status.WOUNDED:  squad.status = Status.CRITICAL
-		Status.CRITICAL: squad.status = Status.LOST
+		Status.CRITICAL:
+			squad.status = Status.LOST
+			if squad.get("has_data", false):
+				squad["has_data"] = false
+				GameManager.data_destroyed = true
+				GameManager.data_carrier_squad = ""
+				emit_signal("data_destroyed_by_enemy", squad.name)
 
 
 func _next_need(squad: Dictionary, last_action: String) -> int:
@@ -527,9 +593,100 @@ func _generate_report(squad: Dictionary, action: String, moved_to: String, used_
 			return prefix + "%s is at the tower in %s awaiting fuel supply. Will abandon in %d turn(s)." % [n, s, 2 - squad.tower_fuel_turns_waited]
 		"abandoned_tower":
 			return prefix + "%s has abandoned the comms tower at %s — no fuel received. Falling back." % [n, s]
+		"defend_carrier":
+			return prefix + "%s is moving to protect the data carrier." % n
 	return "%s — no report." % n
 
 func _assign_goals() -> void:
+	var tower_sector  = GameManager.tower_sector
+	var mission_type  = GameManager.mission_type
+	var tower_powered = GameManager.tower_powered
+	var has_tower     = tower_sector != ""
+
+	var squads_assigned_to_tower = 0
+	for squad_name in squads:
+		var squad = squads[squad_name]
+		if squad.goal == Goal.POWER_TOWER or squad.goal == Goal.HOLD_TOWER:
+			squads_assigned_to_tower += 1
+
+	# ---- M5 EXTRACTION LOGIC ----
+	if mission_type == "extract":
+		var carrier_name   = GameManager.data_carrier_squad
+		var carrier_sector = ""
+		if squads.has(carrier_name):
+			carrier_sector = squads[carrier_name].sector
+
+		# Try to pass data if carrier is hurt
+		if carrier_name != "":
+			_try_pass_data(carrier_name)
+			# Refresh after potential pass
+			carrier_name   = GameManager.data_carrier_squad
+			carrier_sector = squads.get(carrier_name, {}).get("sector", "")
+
+		# Check if carrier is under immediate threat
+		var carrier_under_threat = false
+		if carrier_sector != "":
+			carrier_under_threat = EnemyManager.get_enemy_count_at(carrier_sector) > 0
+
+		for squad_name in squads:
+			var squad = squads[squad_name]
+			if squad.status == Status.LOST:
+				continue
+
+			# Carrier always extracts
+			if squad_name == carrier_name:
+				squad.goal = Goal.EXTRACT
+				continue
+
+			# Check proximity to carrier
+			var dist_to_carrier = 999
+			if carrier_sector != "":
+				dist_to_carrier = EnemyManager._bfs_distance(squad.sector, carrier_sector)
+
+			# If carrier is threatened, nearest squad defends regardless of distance
+			if carrier_under_threat and dist_to_carrier <= 3:
+				squad.goal = Goal.DEFEND_CARRIER
+				continue
+
+			# Within 2 hexes of carrier — defend
+			if dist_to_carrier <= 2:
+				squad.goal = Goal.DEFEND_CARRIER
+				continue
+
+			# Everyone else heads to extraction
+			squad.goal = Goal.EXTRACT
+
+		return
+
+	# ---- ALL OTHER MISSIONS (existing logic unchanged) ----
+	for squad_name in squads:
+		var squad = squads[squad_name]
+		if squad.status == Status.LOST:
+			continue
+
+		if squad.get("has_data", false) and mission_type in ["eliminate_priority", "extract"]:
+			squad.goal = Goal.EXTRACT
+			continue
+
+		if has_tower and not tower_powered and mission_type in ["hold_tower", "eliminate_priority", "extract"]:
+			if squad.sector == tower_sector:
+				squad.goal = Goal.POWER_TOWER if not tower_powered else Goal.HOLD_TOWER
+				continue
+			if squads_assigned_to_tower < 2:
+				squad.goal = Goal.POWER_TOWER
+				squads_assigned_to_tower += 1
+				continue
+
+		if has_tower and tower_powered and squad.sector == tower_sector:
+			squad.goal = Goal.HOLD_TOWER
+			continue
+
+		if squad.goal not in [Goal.POWER_TOWER, Goal.HOLD_TOWER, Goal.EXTRACT]:
+			squad.goal = Goal.ADVANCE
+
+		if mission_type == "eliminate_priority" and GameManager.priority_target_alive:
+			if squad.goal == Goal.ADVANCE:
+				squad.goal = Goal.ATTACK_PRIORITY
 	var tower_sector = GameManager.tower_sector
 	var mission_type = GameManager.mission_type
 	var has_tower = tower_sector != ""

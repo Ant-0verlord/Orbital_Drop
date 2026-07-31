@@ -8,6 +8,7 @@ extends StaticBody3D
 var player: Node = null
 
 
+
 func _ready() -> void:
 	popup.visible = false
 	player = get_tree().get_first_node_in_group("player")
@@ -17,6 +18,7 @@ func _ready() -> void:
 func open_popup() -> void:
 	popup.visible = true
 	popup.refresh()
+	GuideManager.on_console_opened("throne")
 
 
 func close_popup() -> void:
