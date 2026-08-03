@@ -687,17 +687,8 @@ func _assign_goals() -> void:
 		if mission_type == "eliminate_priority" and GameManager.priority_target_alive:
 			if squad.goal == Goal.ADVANCE:
 				squad.goal = Goal.ATTACK_PRIORITY
-	var tower_sector = GameManager.tower_sector
-	var mission_type = GameManager.mission_type
-	var has_tower = tower_sector != ""
-	var tower_powered = GameManager.tower_powered
 
 	# Count how many squads are already heading to or at the tower
-	var squads_assigned_to_tower = 0
-	for squad_name in squads:
-		var squad = squads[squad_name]
-		if squad.goal == Goal.POWER_TOWER or squad.goal == Goal.HOLD_TOWER:
-			squads_assigned_to_tower += 1
 
 	for squad_name in squads:
 		var squad = squads[squad_name]
