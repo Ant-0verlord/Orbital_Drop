@@ -1,14 +1,15 @@
-[gd_scene format=3 uid="uid://bgn1a16rrkx12"]
+[gd_scene format=3 uid="uid://d3ixugoora46y"]
 
 [ext_resource type="Script" uid="uid://brmhi6pjtlhey" path="res://Scripts/CommandCentre.gd" id="1_r3tsr"]
 [ext_resource type="PackedScene" uid="uid://cwcetb2j4yciv" path="res://Scenes/Player.tscn" id="2_ludm1"]
-[ext_resource type="ArrayMesh" uid="uid://cd5yolfg7busp" path="res://Models/Backup room.obj" id="2_r3tsr"]
 [ext_resource type="PackedScene" uid="uid://poa3ylhykd1g" path="res://Scenes/Holomap.tscn" id="3_pelsp"]
 [ext_resource type="PackedScene" uid="uid://bj4d3r48vrf44" path="res://Scenes/Vox-Caster_Array.tscn" id="4_23xtj"]
 [ext_resource type="PackedScene" uid="uid://dksywdr8xyjsf" path="res://Scenes/Command_Throne.tscn" id="5_5ts7m"]
 [ext_resource type="PackedScene" uid="uid://ecaj1srmx3pq" path="res://Scenes/Logistics_Terminal.tscn" id="6_23xtj"]
 [ext_resource type="PackedScene" uid="uid://caglsrgxql7v5" path="res://Scenes/Intel_Desk.tscn" id="7_5ts7m"]
+[ext_resource type="PackedScene" uid="uid://ikcfagbyljtt" path="res://Models/Orbital_Drop_Room.blend" id="9_0dw1l"]
 [ext_resource type="PackedScene" uid="uid://1qfkfl330bb6" path="res://Scenes/MissionBriefingOverlay.tscn" id="9_uagpp"]
+[ext_resource type="PackedScene" uid="uid://dbhi1rx25cidk" path="res://Scenes/GuideOverlay.tscn" id="10_0dw1l"]
 
 [sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_ludm1"]
 
@@ -71,7 +72,6 @@ script = ExtResource("1_r3tsr")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1147768109]
 transform = Transform3D(0.6981386, 0, 0, 0, 0.628524, 0, 0, 0, 0.66599905, -0.005318165, -2.3841858e-07, -0.029469907)
-mesh = ExtResource("2_r3tsr")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=1421208256]
 
@@ -150,6 +150,9 @@ shape = SubResource("BoxShape3D_1e6n8")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.02165983, 0.99862486, 5.998108)
 shape = SubResource("BoxShape3D_tslkb")
 
+[node name="Orbital_Drop_Room" parent="MeshInstance3D" unique_id=547262151 instance=ExtResource("9_0dw1l")]
+transform = Transform3D(0.98979414, 0, 0, 0, 1.0994227, 0, 0, 0, 1.0375594, -0.13247909, 0.042581033, 0.03254445)
+
 [node name="Player" parent="." unique_id=542213915 instance=ExtResource("2_ludm1")]
 transform = Transform3D(-3.743831e-08, 0, -0.8564885, 0, 0.8564886, 0, 0.85648865, 0, -3.74383e-08, -2.2679906, 2.5670242, 0.21827985)
 
@@ -175,9 +178,11 @@ spot_range = 17.835012
 spot_angle = 39.765095
 
 [node name="SpotLight3D2" type="SpotLight3D" parent="." unique_id=1171789347]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -6.720251, 8.329589, 0)
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -6.720251, 11.495178, 0)
 light_energy = 16.0
-spot_range = 9.237521
-spot_angle = 66.01568
+spot_range = 34.70398
+spot_angle = 70.506996
 
 [node name="MissionBriefingOverlay" parent="." unique_id=1970799262 instance=ExtResource("9_uagpp")]
+
+[node name="GuideOverlay" parent="." unique_id=1628897131 instance=ExtResource("10_0dw1l")]

@@ -1,28 +1,57 @@
 extends CanvasLayer
-# =============================================================
-# MissionBriefingOverlay.gd
-# Full-screen mission briefing before each mission starts.
-# =============================================================
 
-@onready var mission_label:   Label   = $BG/VBoxContainer/MissionLabel
-@onready var class_label:     Label   = $BG/VBoxContainer/ClassLabel
-@onready var briefing_text:   Label   = $BG/VBoxContainer/BriefingText
-@onready var objective_text:  Label   = $BG/VBoxContainer/ObjectiveText
-@onready var map_preview:     Control = $BG/VBoxContainer/MapPreview
-@onready var begin_btn:       Button  = $BG/VBoxContainer/BeginBtn
+@onready var mission_label:  Label   = $BG/VBoxContainer/MissionLabel
+@onready var class_label:    Label   = $BG/VBoxContainer/ClassLabel
+@onready var briefing_text:  Label   = $BG/VBoxContainer/BriefingText
+@onready var objective_text: Label   = $BG/VBoxContainer/ObjectiveText
+@onready var map_preview:    Control = $BG/VBoxContainer/MapPreview
+@onready var begin_btn:      Button  = $BG/VBoxContainer/BeginBtn
 
 signal briefing_dismissed
+
+const BRIEFINGS = [
+	{
+		"title":     "MISSION 01 — LANDFALL",
+		"class":     "PRIORITY: ALPHA — COMMAND EYES ONLY",
+		"narrative": "Insertion successful. Drop-pods have made contact with the surface of Kerath-IV. Initial scans confirm enemy presence across the landing zone — resistance was anticipated. Your squads are on the ground and awaiting orders from the Command Post.\n\nIntelligence suggests a high-value target is operating somewhere on this planet. Before we can locate them, we need to establish a foothold. Secure the surrounding sectors and eliminate any opposition that threatens the beachhead.\n\nFamiliarise yourself with Command Post systems. The Intel Desk, Vox-Caster, Logistics Terminal, Holo-Map and Command Throne are all online and at your disposal.",
+		"objective": "Secure the landing zone. Hold 4 sectors by end of Turn 5.",
+	},
+	{
+		"title":     "MISSION 02 — ADVANCE ON KERATH-IV",
+		"class":     "PRIORITY: ALPHA — RESTRICTED DISTRIBUTION",
+		"narrative": "The beachhead is established. We are pushing deeper into enemy-held territory along the Kerath-IV corridor. Ground teams have identified a viable advance route, but enemy forces are dug in and contesting every metre.\n\nEliminate all resistance in the operational theatre. We cannot afford to leave enemy units behind us as we push toward the interior — any stragglers will compromise the follow-on operation.\n\nReinforcement drop-pods have been authorised for this operation. If squads take heavy casualties, call in replacements through the Logistics Terminal. Be advised: enemy command has signalled for their own reinforcements. We have a window — use it.",
+		"objective": "Eliminate all enemy forces in the operational theatre.",
+	},
+	{
+		"title":     "MISSION 03 — THE IRON SALIENT",
+		"class":     "PRIORITY: ALPHA — COMMAND CLEARANCE REQUIRED",
+		"narrative": "Signals intelligence has identified a strategic communications tower at the centre of the Iron Salient — a ring of fortified positions deep in enemy-controlled terrain. This tower is the key.\n\nIf we can power the tower and hold it, we can triangulate the position of the enemy field commander directing resistance across the entire theatre. Command has designated this target VRETH. Without the tower active, Vreth's location remains unknown and the campaign stalls.\n\nEnemy forces know what we are attempting. Wave assaults are inbound through the passage corridors surrounding the position. Squads carrying Fuel Cells must reach the tower, power it over two consecutive turns, and hold it until the triangulation is complete. Do not let the tower fall.",
+		"objective": "Power and hold the comms tower at sector Gamma-5B. Tower requires Fuel Cells for two consecutive turns to activate.",
+	},
+	{
+		"title":     "MISSION 04 — CONTESTED HIVE SPIRE",
+		"class":     "PRIORITY: SOVEREIGN — COMMAND CLEARANCE REQUIRED",
+		"narrative": "Tower triangulation confirms it. Commander Vreth is operating from within the Hive Spire — a semi-subterranean network of cave passages and fortified chambers in the interior. Vreth is directing all enemy operations on Kerath-IV from this position.\n\nYour squads breach from two separate entry points on opposite flanks. Fight through to the centre and eliminate Vreth. The data package Vreth carries contains full enemy order-of-battle intelligence for the sector — it is the reason this entire campaign was authorised. It must be recovered intact.\n\nNote: the cave structure is partial, not sealed. Orbital assets remain effective throughout the network. However, do not deploy orbital strikes on Vreth's position directly. The data package will not survive the blast radius.",
+		"objective": "Locate and eliminate Commander Vreth. Recover the data package intact. Orbital strikes are effective but must not target Vreth directly.",
+	},
+	{
+		"title":     "MISSION 05 — EXTRACTION",
+		"class":     "PRIORITY: SOVEREIGN — EYES ONLY — DESTROY AFTER READING",
+		"narrative": "Vreth is down. The data package is secured. Mission command has authorised immediate extraction.\n\nA shuttle is inbound to a designated extraction zone on the surface. All surviving squads are to converge on this position immediately. Enemy forces are fully aware of what we are carrying and are converging on the extraction zone from multiple vectors — this is a fighting withdrawal, not a clean exit.\n\nThe squad carrying the data package is the priority. Get them to the extraction zone. Any other squads that make it out are a bonus — any squad not at the extraction zone when the shuttle lifts is left behind. There will be no second run.\n\nMove fast. Move together. Get off this planet.",
+		"objective": "Reach the extraction zone with surviving squads before the final turn. The data carrier must extract for full mission success.",
+	},
+]
 
 func _ready() -> void:
 	begin_btn.pressed.connect(_on_begin_pressed)
 	visible = false
 
 func show_briefing(mission_index: int, zone_states: Dictionary, axial_map: Dictionary) -> void:
-	if mission_index >= MissionBriefingOverlay.BRIEFINGS.size():
+	if mission_index >= BRIEFINGS.size():
 		emit_signal("briefing_dismissed")
 		return
 
-	var data = MissionBriefingOverlay.BRIEFINGS[mission_index]
+	var data = BRIEFINGS[mission_index]
 	mission_label.text  = data.title
 	class_label.text    = data.get("class", "")
 	briefing_text.text  = data.narrative

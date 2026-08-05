@@ -6,9 +6,9 @@ extends CanvasLayer
 # =============================================================
 
 @onready var prompt_bar:   PanelContainer = $PromptBar
-@onready var prompt_label: Label          = $PromptBar/HBoxContainer/PromptLabel
-@onready var dismiss_btn:  Button         = $PromptBar/HBoxContainer/DismissBtn
-@onready var arrow_canvas: Control        = $ArrowCanvas
+@onready var prompt_label: Label         = $PromptBar/HBoxContainer/PromptLabel
+@onready var dismiss_btn:  Button        = $PromptBar/HBoxContainer/DismissBtn
+@onready var arrow_canvas: Control       = $ArrowCanvas
 
 var camera: Camera3D = null
 var target_console: String = ""
@@ -48,6 +48,8 @@ func _on_guide_dismissed() -> void:
 func _draw_arrows() -> void:
 	# Called from ArrowCanvas._draw()
 	if camera == null or not GuideManager.guide_active:
+		return
+	if GuideManager.popup_open:
 		return
 	if target_console == "":
 		return

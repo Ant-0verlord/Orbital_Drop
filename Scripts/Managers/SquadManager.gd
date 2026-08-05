@@ -15,6 +15,8 @@ enum Goal {
 	ATTACK_PRIORITY,  # moving toward priority target
 	POWER_TOWER,      # stationary at tower, needs Fuel Cells
 	HOLD_TOWER,       # tower powered, holding position
+	DEFEND_TOWER,     # near the tower but not needed to power/hold it —
+					  # digs in and fights off attackers instead of advancing
 	EXTRACT,          # moving toward extraction zone
 	DEFEND_CARRIER,
 	FALLBACK,         # abandoned tower goal, reverting to advance
@@ -25,10 +27,15 @@ const GOAL_NAMES: Dictionary = {
 	Goal.ATTACK_PRIORITY:  "Targeting priority contact",
 	Goal.POWER_TOWER:      "Powering comms tower",
 	Goal.HOLD_TOWER:       "Holding comms tower",
+	Goal.DEFEND_TOWER:     "Defending tower perimeter",
 	Goal.EXTRACT:          "Moving to extract",
 	Goal.DEFEND_CARRIER:   "Defending data carrier",
 	Goal.FALLBACK:         "Falling back",
 }
+
+# How close (in hexes) a squad needs to be to the tower to be put on
+# perimeter-defence duty instead of wandering off to advance elsewhere.
+const DEFEND_TOWER_RADIUS: int = 2
 
 const STATUS_NAMES: Dictionary = {
 	Status.ACTIVE:   "Active",
@@ -147,6 +154,19 @@ func add_squad(squad_name: String, sector: String, surprise: bool) -> void:
 	}
 	GameManager.register_reinforcement_name(squad_name)
 
+# Called by GameManager when the enemy retakes the tower sector — clears
+# every squad's fuel-powering progress so it has to be earned again from
+# scratch, and drops anyone still holding onto HOLD_TOWER back to a
+# normal goal (the next _assign_goals() pass will reassign whoever is
+# closest to POWER_TOWER since tower_powered is now false).
+func reset_tower_progress() -> void:
+	for squad_name in squads:
+		var squad = squads[squad_name]
+		squad.tower_fuel_turns = 0
+		squad.tower_fuel_turns_waited = 0
+		if squad.goal == Goal.HOLD_TOWER:
+			squad.goal = Goal.ADVANCE
+
 func _on_priority_target_eliminated(squad_name: String, sector: String) -> void:
 	if squad_name == "":
 		return  # orbital strike kill — data destroyed, no carrier
@@ -219,8 +239,10 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 		# TOWER POWERING — squad at tower with fuel stays put
 		# -------------------------------------------------------
 		var at_tower = (GameManager.tower_sector != "" and squad.sector == GameManager.tower_sector)
+		var anchored_at_tower = false
 
 		if at_tower and not GameManager.tower_powered and squad.goal == Goal.POWER_TOWER:
+			anchored_at_tower = true
 			if effective_fuel:
 				squad.tower_fuel_turns += 1
 				squad.tower_fuel_turns_waited = 0
@@ -239,15 +261,16 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 					action = "abandoned_tower"
 				else:
 					action = "waiting_at_tower"
-			# Either way, skip the rest of the normal movement block
+			# Either way, this squad stays put — the movement block below
+			# is skipped entirely (anchored_at_tower gates it off).
 			# Jump straight to medi-pack and banking sections below
 
 		# -------------------------------------------------------
 		# Obstacle check — only risk this when relying on the
 		# baseline move (no fuel at all)
 		# -------------------------------------------------------
-		var can_attempt_move = true
-		if not effective_fuel and randf() < NO_FUEL_OBSTACLE_CHANCE:
+		var can_attempt_move = not anchored_at_tower
+		if can_attempt_move and not effective_fuel and randf() < NO_FUEL_OBSTACLE_CHANCE:
 			can_attempt_move = false
 			obstacle = true
 
@@ -265,13 +288,13 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 					if step_target != "":
 						engaging_enemy = true
 					else:
-						step_target = EnemyManager.get_best_move_target(current_sector)
+						step_target = _default_advance_target(squad, current_sector)
 				else:
 					step_target = EnemyManager.get_best_move_into_enemy(current_sector)
 					if step_target != "":
 						engaging_enemy = true
 					else:
-						step_target = EnemyManager.get_best_move_target(current_sector)
+						step_target = _default_advance_target(squad, current_sector)
 
 				if step_target == "":
 					break  # nowhere left to go
@@ -294,6 +317,23 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 						else:
 							step_target = _path_toward(current_sector, tower)
 
+				elif squad.goal == Goal.DEFEND_TOWER:
+					# Anchored near the tower. If we've already found a fight
+					# this step (engaging_enemy true from the default
+					# targeting above), let it stand — that's exactly the
+					# "fight enemies that come to attack it" behaviour.
+					# Otherwise, only redirect back if we've drifted outside
+					# the defence radius; inside it, default targeting is
+					# free to mop up/capture nearby tiles.
+					var tower_d = GameManager.tower_sector
+					if tower_d != "" and not engaging_enemy:
+						var dist_to_tower = EnemyManager.get_distance_between(current_sector, tower_d)
+						if dist_to_tower > DEFEND_TOWER_RADIUS:
+							if tower_d in EnemyManager.adjacency.get(current_sector, []):
+								step_target = tower_d
+							else:
+								step_target = _path_toward(current_sector, tower_d)
+
 				elif squad.goal == Goal.EXTRACT:
 					var ez = GameManager.extraction_zone
 					if ez != "" and ez != current_sector:
@@ -305,23 +345,31 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 				elif squad.goal == Goal.DEFEND_CARRIER:
 					var carrier_name = GameManager.data_carrier_squad
 					var carrier_sector = squads.get(carrier_name, {}).get("sector", "")
-					if carrier_sector != "":
-						# If enemy is adjacent to carrier — path to intercept
-						var enemies_near_carrier = false
-						for n in EnemyManager.adjacency.get(carrier_sector, []):
-							if EnemyManager.get_enemy_count_at(n) > 0:
-								enemies_near_carrier = true
-								if n in EnemyManager.adjacency.get(current_sector, []):
-									step_target = n
-									engaging_enemy = true
-									break
+					if carrier_sector == "":
+						break
+					# If enemy is adjacent to carrier — path to intercept
+					var enemies_near_carrier = false
+					for n in EnemyManager.adjacency.get(carrier_sector, []):
+						if EnemyManager.get_enemy_count_at(n) > 0:
+							enemies_near_carrier = true
+							if n in EnemyManager.adjacency.get(current_sector, []):
+								step_target = n
+								engaging_enemy = true
+							break
+						# Otherwise path toward carrier
+					if step_target == "" and carrier_sector != current_sector:
+						if carrier_sector in EnemyManager.adjacency.get(current_sector, []):
+							step_target = carrier_sector
+						else:
+							step_target = _path_toward(current_sector, carrier_sector)
 
-				# Otherwise path toward carrier
-				if step_target == "" and carrier_sector != current_sector:
-					if carrier_sector in EnemyManager.adjacency.get(current_sector, []):
-						step_target = carrier_sector
-					else:
-						step_target = _path_toward(current_sector, carrier_sector)
+				# A goal override above may have swapped step_target to a
+				# different tile than the one engaging_enemy was set for
+				# (e.g. POWER_TOWER redirecting away from a found fight to
+				# path toward the tower instead). Recompute against the
+				# tile we're actually about to occupy so combat below only
+				# triggers when there really is an enemy there.
+				engaging_enemy = EnemyManager.get_enemy_count_at(step_target) > 0
 
 				squad.sector = step_target
 				moved_to = step_target
@@ -603,12 +651,6 @@ func _assign_goals() -> void:
 	var tower_powered = GameManager.tower_powered
 	var has_tower     = tower_sector != ""
 
-	var squads_assigned_to_tower = 0
-	for squad_name in squads:
-		var squad = squads[squad_name]
-		if squad.goal == Goal.POWER_TOWER or squad.goal == Goal.HOLD_TOWER:
-			squads_assigned_to_tower += 1
-
 	# ---- M5 EXTRACTION LOGIC ----
 	if mission_type == "extract":
 		var carrier_name   = GameManager.data_carrier_squad
@@ -658,7 +700,16 @@ func _assign_goals() -> void:
 
 		return
 
-	# ---- ALL OTHER MISSIONS (existing logic unchanged) ----
+	# ---- ALL OTHER MISSIONS ----
+	# Squads still needing a tower-relevant goal are collected here first,
+	# then assigned in a second pass by DISTANCE TO THE TOWER — recomputed
+	# fresh every turn. This means a reinforcement that drops in closer
+	# than an already-assigned squad takes over tower duty from it (the
+	# old version just kept whichever squad claimed it first, forever,
+	# so close reinforcements would ignore the tower and wander off).
+	var tower_missions = ["hold_tower", "eliminate_priority", "extract"]
+	var tower_candidates: Array = []
+
 	for squad_name in squads:
 		var squad = squads[squad_name]
 		if squad.status == Status.LOST:
@@ -668,63 +719,60 @@ func _assign_goals() -> void:
 			squad.goal = Goal.EXTRACT
 			continue
 
-		if has_tower and not tower_powered and mission_type in ["hold_tower", "eliminate_priority", "extract"]:
+		if has_tower and mission_type in tower_missions:
+			tower_candidates.append({
+				"name": squad_name,
+				"dist": EnemyManager.get_distance_between(squad.sector, tower_sector),
+			})
+			continue
+
+		# No tower relevant to this mission — default advance / priority hunt
+		squad.goal = Goal.ATTACK_PRIORITY if (mission_type == "eliminate_priority" and GameManager.priority_target_alive) else Goal.ADVANCE
+
+	if tower_candidates.is_empty():
+		return
+
+	tower_candidates.sort_custom(func(a, b): return a.dist < b.dist)
+
+	var tower_slots = 2  # up to 2 squads actively push for / hold the tower
+	for i in range(tower_candidates.size()):
+		var entry = tower_candidates[i]
+		var squad = squads[entry.name]
+
+		if i < tower_slots:
 			if squad.sector == tower_sector:
-				squad.goal = Goal.POWER_TOWER if not tower_powered else Goal.HOLD_TOWER
-				continue
-			if squads_assigned_to_tower < 2:
+				squad.goal = Goal.HOLD_TOWER if tower_powered else Goal.POWER_TOWER
+			else:
 				squad.goal = Goal.POWER_TOWER
-				squads_assigned_to_tower += 1
-				continue
+		elif entry.dist <= DEFEND_TOWER_RADIUS:
+			# Close enough to the tower to matter, but not needed to
+			# power/hold it — dig in and fight off anything that
+			# comes for it instead of wandering off to advance.
+			squad.goal = Goal.DEFEND_TOWER
+		else:
+			squad.goal = Goal.ATTACK_PRIORITY if (mission_type == "eliminate_priority" and GameManager.priority_target_alive) else Goal.ADVANCE
 
-		if has_tower and tower_powered and squad.sector == tower_sector:
-			squad.goal = Goal.HOLD_TOWER
-			continue
-
-		if squad.goal not in [Goal.POWER_TOWER, Goal.HOLD_TOWER, Goal.EXTRACT]:
-			squad.goal = Goal.ADVANCE
-
-		if mission_type == "eliminate_priority" and GameManager.priority_target_alive:
-			if squad.goal == Goal.ADVANCE:
-				squad.goal = Goal.ATTACK_PRIORITY
-
-	# Count how many squads are already heading to or at the tower
-
-	for squad_name in squads:
-		var squad = squads[squad_name]
-		if squad.status == Status.LOST:
-			continue
-
-		# Data carrier in M4/M5 tries to extract
-		if squad.get("has_data", false) and mission_type in ["eliminate_priority", "extract"]:
-			squad.goal = Goal.EXTRACT
-			continue
-
-		# Tower missions — assign 1-2 squads to tower if not yet powered
-		if has_tower and not tower_powered and mission_type in ["hold_tower", "eliminate_priority", "extract"]:
-			if squad.sector == tower_sector:
-				# Already at tower — keep powering/holding
-				squad.goal = Goal.POWER_TOWER if not tower_powered else Goal.HOLD_TOWER
-				continue
-			if squads_assigned_to_tower < 2:
-				# Assign this squad to go for the tower
-				squad.goal = Goal.POWER_TOWER
-				squads_assigned_to_tower += 1
-				continue
-
-		# Tower is powered — one squad holds it
-		if has_tower and tower_powered and squad.sector == tower_sector:
-			squad.goal = Goal.HOLD_TOWER
-			continue
-
-		# Default — advance toward enemies
-		if squad.goal not in [Goal.POWER_TOWER, Goal.HOLD_TOWER, Goal.EXTRACT]:
-			squad.goal = Goal.ADVANCE
-
-		# Priority target missions — reassign non-tower squads to hunt the target
-		if mission_type == "eliminate_priority" and GameManager.priority_target_alive:
-			if squad.goal == Goal.ADVANCE:
-				squad.goal = Goal.ATTACK_PRIORITY
+# -------------------------------------------------------
+# Default movement target when a squad has no adjacent enemy to
+# fight/chase. Plain ADVANCE used to just grab whatever neighbour
+# get_best_move_target() found first (fixed adjacency-list order,
+# unrelated to the objective) — on tower missions this made squads
+# wander far off course instead of converging on the fight. Now,
+# on tower missions, an ADVANCE squad with nothing to fight heads
+# generally toward the tower instead, while still stopping to fight
+# anything it runs into on the way (that check happens before this
+# is ever called). Squads already on tower duty (POWER_TOWER /
+# HOLD_TOWER / DEFEND_TOWER) don't use this — their own goal-directed
+# targeting further down takes over.
+# -------------------------------------------------------
+func _default_advance_target(squad: Dictionary, current_sector: String) -> String:
+	var tower = GameManager.tower_sector
+	if squad.goal == Goal.ADVANCE and tower != "" and tower != current_sector \
+			and GameManager.mission_type in ["hold_tower", "eliminate_priority", "extract"]:
+		var toward_tower = tower if tower in EnemyManager.adjacency.get(current_sector, []) else _path_toward(current_sector, tower)
+		if toward_tower != "":
+			return toward_tower
+	return EnemyManager.get_best_move_target(current_sector)
 
 func _path_toward(from_sector: String, to_sector: String) -> String:
 	if from_sector == to_sector:

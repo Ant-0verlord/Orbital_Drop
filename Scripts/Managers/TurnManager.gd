@@ -114,6 +114,11 @@ func end_turn() -> void:
 	# Enemies advance
 	EnemyManager.advance_enemies(pending_allocations)
 
+	# If the enemy has retaken the tower sector this turn, it loses power
+	# immediately — being powered was permanent before, with nothing
+	# checking who actually controls the tile afterward.
+	GameManager.check_tower_still_held()
+
 	# Mid-turn win check for eliminate-type missions
 	var mission_type = GameManager.mission_type
 	if mission_type == "eliminate" and not EnemyManager.is_any_enemy_alive():

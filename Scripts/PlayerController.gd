@@ -55,6 +55,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				popup_open = true
 				current_console = hit
 				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+				GuideManager.set_popup_open(true)
 
 	# Close popup with Esc
 	if event.is_action_pressed("ui_cancel") and popup_open:
@@ -107,3 +108,4 @@ func _close_popup() -> void:
 	popup_open = false
 	current_console = null
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	GuideManager.set_popup_open(false)

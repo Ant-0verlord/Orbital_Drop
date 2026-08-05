@@ -23,6 +23,13 @@ var current_step: Step = Step.NONE
 var guide_active: bool = false
 var turn_1_done:  bool = false
 var dismissed:    bool = false
+var popup_open:   bool = false
+
+func _ready() -> void:
+	TurnManager.turn_ended.connect(on_turn_ended)
+
+func set_popup_open(open: bool) -> void:
+	popup_open = open
 
 # Console world positions (Y offset added for arrow height)
 const CONSOLE_POSITIONS = {
@@ -78,9 +85,10 @@ func on_turn_ended() -> void:
 		return
 	if not turn_1_done:
 		turn_1_done = true
-		# After turn 1 — guide becomes lightweight (prompt bar only, no arrows)
+		# After turn 1 — guide fully retires: hide prompt bar and arrow
 		_set_step(Step.NONE)
 		guide_active = false
+		emit_signal("guide_dismissed")
 
 func get_target_console() -> String:
 	match current_step:

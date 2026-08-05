@@ -22,10 +22,10 @@ grow_vertical = 0
 [node name="HBoxContainer" type="HBoxContainer" parent="PromptBar" unique_id=1967574977]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="PromptBar/HBoxContainer" unique_id=2096823956]
+[node name="PromptLabel" type="Label" parent="PromptBar/HBoxContainer" unique_id=2096823956]
 layout_mode = 2
 
-[node name="Button" type="Button" parent="PromptBar/HBoxContainer" unique_id=855543545]
+[node name="DismissBtn" type="Button" parent="PromptBar/HBoxContainer" unique_id=855543545]
 layout_mode = 2
 text = "Skip Guide"
 

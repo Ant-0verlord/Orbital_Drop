@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://1qfkfl330bb6"]
 
 [ext_resource type="Script" uid="uid://cjjvuo72tuls0" path="res://Scripts/Guide/Mission_Briefing_Overlay.gd" id="1_j8jmk"]
-[ext_resource type="Script" uid="uid://jbhrl18mtmtu" path="res://Scripts/Guide/Objective_Text.gd" id="2_02glx"]
 [ext_resource type="Script" uid="uid://3nfhr6d6q3g2" path="res://Scripts/Guide/BriefingHexPreview.gd" id="3_02glx"]
 
 [node name="MissionBriefingOverlay" type="CanvasLayer" unique_id=1970799262]
@@ -46,7 +45,6 @@ text = "PRIMARY OBJECTIVE:"
 
 [node name="ObjectiveText" type="Label" parent="BG/VBoxContainer" unique_id=544807201]
 layout_mode = 2
-script = ExtResource("2_02glx")
 
 [node name="HSeparator3" type="HSeparator" parent="BG/VBoxContainer" unique_id=1060238414]
 layout_mode = 2

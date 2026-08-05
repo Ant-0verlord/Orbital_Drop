@@ -11,6 +11,7 @@ func _ready() -> void:
 	TurnManager.mission_complete.connect(_on_mission_complete)
 	TurnManager.mission_failed.connect(_on_mission_failed)
 	TurnManager.allocations_locked.connect(_on_allocations_locked)
+	GameManager.mission_advanced.connect(_show_briefing)
 
 	if result_overlay:
 		result_overlay.visible = false
@@ -27,6 +28,7 @@ func _show_briefing() -> void:
 	if briefing_overlay == null:
 		_start_mission()
 		return
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Build zone states for preview
 	GameManager.start_current_mission()  # init data but don't start turn yet
@@ -58,6 +60,7 @@ func _show_briefing() -> void:
 	briefing_overlay.show_briefing(GameManager.current_mission, zone_states, axial_map)
 
 func _on_briefing_dismissed() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	_start_mission()
 
 func _start_mission() -> void:

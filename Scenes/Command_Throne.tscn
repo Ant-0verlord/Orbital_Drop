@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_602gn"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_oohax"]
-size = Vector3(20.830643, 4.480967, 23.661272)
+size = Vector3(20.830643, 42.779057, 23.661272)
 
 [node name="Node3D" type="Node3D" unique_id=112694284]
 
@@ -19,7 +19,7 @@ transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.477, 0, 0, 0)
 script = ExtResource("2_id48o")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=935619825]
-transform = Transform3D(0.5, 0, -6.8034467e-13, 0, 0.45100012, 0, 0, 0, 0.47700024, -0.036579017, 1.6691686, -0.04202642)
+transform = Transform3D(0.5, 0, -8.4909857e-13, 0, 0.45100012, 0, 0, 0, 0.47700024, -0.03657903, 7.6552157, -0.042026415)
 shape = SubResource("BoxShape3D_oohax")
 
 [node name="CommandThronePopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=778375555]

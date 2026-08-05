@@ -198,10 +198,19 @@ func _on_orbital_strike_resolved(report: Dictionary) -> void:
 
 func _on_data_destroyed(sector: String) -> void:
 	data_destroyed_sector = sector
-	data_destroyed_turn   = SquadManager.current_turn
-	if not GameManager.has_seen_attention("intel_data_destroyed"):
-		set_help_attention(true)
-	if visible: refresh()
+	data_destroyed_turn = SquadManager.current_turn
+	GameManager.mark_attention_seen("intel_data_destroyed")
+	set_help_attention(true)
+	if visible:
+		refresh()
+
+func _on_data_destroyed_by_enemy(squad_name: String) -> void:
+	data_destroyed_sector = "carried by %s" % squad_name
+	data_destroyed_turn = SquadManager.current_turn
+	GameManager.mark_attention_seen("intel_data_destroyed")
+	set_help_attention(true)
+	if visible:
+		refresh()
 
 func _on_player_reinforcement_landed(squad_name: String, sector: String, surprise: bool) -> void:
 	player_reinforcement_info = { "squad_name": squad_name, "sector": sector, "surprise": surprise, "turn": SquadManager.current_turn }
@@ -316,7 +325,6 @@ func _card_style(squad_data: Dictionary) -> StyleBoxFlat:
 		style.bg_color     = Color(0.13, 0.13, 0.18)
 		style.border_color = Color(0.4, 0.4, 0.55)
 	return style
-
 
 func _status_color(status: int) -> Color:
 	match status:

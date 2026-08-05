@@ -22,7 +22,7 @@ func _ready() -> void:
 func open_popup() -> void:
 	popup.visible = true
 	popup.refresh()
-	GuideManager.on_console_opened("intel")s
+	GuideManager.on_console_opened("intel")
 
 
 func close_popup() -> void:

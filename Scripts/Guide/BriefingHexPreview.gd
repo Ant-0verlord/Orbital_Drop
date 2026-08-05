@@ -62,7 +62,9 @@ func _draw() -> void:
 
 		var pts = _hex_points(pixel, r - 1.5)
 		draw_colored_polygon(pts, fill)
-		draw_polyline(pts + [pts[0]], Color(0.15, 0.2, 0.3, 0.6), 1.0)
+		var outline = PackedVector2Array(pts)
+		outline.append(pts[0])
+		draw_polyline(outline, Color(0.15, 0.2, 0.3, 0.6), 1.0)
 
 		if squad != "":
 			draw_string(ThemeDB.fallback_font,

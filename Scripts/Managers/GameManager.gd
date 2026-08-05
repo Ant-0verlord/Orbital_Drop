@@ -35,6 +35,8 @@ var seen_attention_events: Dictionary = {}
 
 
 signal tower_activated
+signal tower_lost
+signal mission_advanced
 
 const REINFORCEMENT_NAMES: Array = [
 	"Squad Taev",
@@ -792,22 +794,40 @@ var missions: Array = [
 	"adjacency":  M3_ADJACENCY,
 	"axial":      M3_AXIAL,
 	"reinforcement_schedule": { 2: 2, 3: 2, 4: 3 },
+	# All squads drop on the far west edge, right around Eta-5B — the
+	# westmost enemy position on the map (x=-8, the map's actual edge).
+	# Eta-5B has exactly 4 neighbouring hexes, so each squad gets its own
+	# distinct tile in a ring around it, chained neighbour-to-neighbour
+	# (Sigma-3B–Tau-3B–Theta-5B–Upsilon-5B) rather than stacked together.
 	"squads": [
-		{ "name": "Squad Varro", "sector": "Psi-5B",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-		{ "name": "Squad Kael",  "sector": "Omega-5B",  "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
-		{ "name": "Squad Orin",  "sector": "Iota-5B",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-		{ "name": "Squad Davan", "sector": "Kappa-5B",  "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
+		{ "name": "Squad Varro", "sector": "Sigma-3B",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+		{ "name": "Squad Kael",  "sector": "Tau-3B",     "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
+		{ "name": "Squad Orin",  "sector": "Theta-5B",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+		{ "name": "Squad Davan", "sector": "Upsilon-5B", "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
 	],
+	# Original 9 enemies, minus Eta-5B (was boxed in and immediately
+	# surrounded by the squad landing ring, giving it nothing to do) —
+	# relocated to Alpha-7B instead, which sits directly on the shortest
+	# path from the landing zone to the tower (confirmed by tracing the
+	# actual BFS route squads path along), so it now intercepts squads
+	# on the way rather than sitting trapped at the drop zone.
+	# Also added Nu-3B/Delta-5B directly adjacent to the tower (Gamma-5B)
+	# for a stronger perimeter, and Eta-9B/Rho-3B out on the far
+	# southeast/east edges for extra map-wide spread.
 	"enemies": [
 		{ "sector": "Psi-1B"    },
 		{ "sector": "Omega-1B"  },
 		{ "sector": "Sigma-1B"  },
 		{ "sector": "Gamma-3B"  },
 		{ "sector": "Chi-3B"    },
-		{ "sector": "Eta-5B"    },
+		{ "sector": "Alpha-7B"  },
 		{ "sector": "Pi-5B"     },
 		{ "sector": "Eta-7B"    },
 		{ "sector": "Lambda-7B" },
+		{ "sector": "Nu-3B"     },
+		{ "sector": "Delta-5B"  },
+		{ "sector": "Eta-9B"    },
+		{ "sector": "Rho-3B"    },
 	],
 	},
 		{
@@ -874,11 +894,15 @@ var missions: Array = [
 	"adjacency":  M5_ADJACENCY,
 	"axial":      M5_AXIAL,
 	"reinforcement_schedule": { 3: 2, 5: 3 },
+	# All 4 squads now drop together in the far bottom-left corner of the
+	# map — Eta-7D sits at the centre of this cluster and is directly
+	# adjacent to the other three, so it's a tight, believable landing
+	# zone rather than a scattered one.
 	"squads": [
-		{ "name": "Squad Varro", "sector": "Omicron-5D", "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-		{ "name": "Squad Kael",  "sector": "Pi-5D",      "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
-		{ "name": "Squad Orin",  "sector": "Epsilon-7D", "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-		{ "name": "Squad Davan", "sector": "Zeta-7D",    "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
+		{ "name": "Squad Varro", "sector": "Eta-7D",     "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+		{ "name": "Squad Kael",  "sector": "Tau-5D",     "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
+		{ "name": "Squad Orin",  "sector": "Upsilon-5D", "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
+		{ "name": "Squad Davan", "sector": "Theta-7D",   "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
 	],
 	"enemies": [
 		{ "sector": "Omega-3D"   },
@@ -891,8 +915,19 @@ var missions: Array = [
 		{ "sector": "Omega-1D"   },
 		{ "sector": "Beta-1D"    },
 		{ "sector": "Tau-1D"     },
-		{ "sector": "Xi-5D"      },{ "sector": "Nu-9D"  },  # (5,-7) left tunnel entry
-{ "sector": "Xi-9D"  },  # (6,-7) left tunnel
+		{ "sector": "Xi-5D"      },
+		# The tunnel network (Nu-9D through Tau-9D) isn't reachable from
+		# the open map by normal pathing — enemies posted here don't sit
+		# on any squad's route, they only surface at their tunnel's exit
+		# hex once they move, so they read as an ambush instead of a
+		# roadblock.
+		{ "sector": "Nu-9D"      },  # tunnel entry -> exits near Mu-1D
+		{ "sector": "Xi-9D"      },  # tunnel -> exits near Mu-1D/Zeta-1D
+		{ "sector": "Omicron-9D" },  # tunnel -> exits near Zeta-1D/Sigma-9D
+		{ "sector": "Pi-9D"      },  # tunnel -> exits at Mu-1D
+		{ "sector": "Rho-9D"     },  # tunnel -> exits at Zeta-1D
+		{ "sector": "Sigma-9D"   },  # tunnel -> exits at Omicron-1D
+		{ "sector": "Tau-9D"     },  # tunnel -> exits at Iota-1D/Epsilon-1D
 		],
 	},
 ]
@@ -992,7 +1027,9 @@ func debug_jump_to_mission(index: int) -> void:
 	extraction_zone = ""
 	mission_type = "capture"
 
-	start_current_mission()
+	# Same as advance_to_next_mission() — let CommandCentre show the
+	# briefing/dossier rather than dropping straight into gameplay.
+	emit_signal("mission_advanced")
 	print("DEBUG: Jumped to mission %d — %s" % [index, missions[index].get("title", "")])
 
 func start_campaign() -> void:
@@ -1010,7 +1047,10 @@ func advance_to_next_mission() -> void:
 	if current_mission >= missions.size():
 		push_error("GameManager: No more missions.")
 		return
-	start_current_mission()
+	# Don't start the mission directly — let CommandCentre show the
+	# briefing/dossier first, same as it does for mission 1. It calls
+	# start_current_mission() itself once the player dismisses it.
+	emit_signal("mission_advanced")
 
 
 func consume_supplies(allocations: Dictionary) -> void:
@@ -1155,3 +1195,17 @@ func progress_tower_power(squad_name: String) -> void:
 func activate_tower() -> void:
 	tower_powered = true
 	emit_signal("tower_activated")
+
+# Called once per turn, after combat/movement resolves, to check whether
+# the enemy has actually taken the tower sector. Being powered used to be
+# permanent once activated — nothing ever re-checked who controls the
+# tile, so an enemy that fought its way onto it never actually cost you
+# anything. Losing the sector now costs the power immediately; squads
+# have to retake and re-power it from scratch.
+func check_tower_still_held() -> void:
+	if tower_sector == "" or not tower_powered:
+		return
+	if EnemyManager.get_hex_control().get(tower_sector, "") == "enemy":
+		tower_powered = false
+		SquadManager.reset_tower_progress()
+		emit_signal("tower_lost")

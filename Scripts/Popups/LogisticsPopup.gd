@@ -214,9 +214,6 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 	row.add_child(info_lbl)
 
 		# Force M1 T1 allocations
-	var is_forced_turn = (GameManager.current_mission == 0 and SquadManager.current_turn == 0 and not GuideManager.turn_1_done)
-	if is_forced_turn:
-		_apply_forced_allocation(squad, checkboxes)
 
 	var checkboxes: Dictionary = {}
 	for supply in ["Armaments", "Medi-Packs", "Fuel Cells"]:
@@ -225,11 +222,13 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 
 		var cb := CheckBox.new()
 		cb.text = supply
-		cb.add_theme_font_size_override("font_size", 12)
+		cb.add_theme_font_size_override("font_size", 13)
+		cb.add_theme_constant_override("icon_max_width", 26)
 		cb.disabled = TurnManager.mission_over
 
 		var saved = allocations.get(squad.name, {}).get(supply, 0)
 		cb.button_pressed = saved > 0
+		_style_checkbox(cb)
 
 		col.add_child(cb)
 
@@ -241,6 +240,10 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 
 		row.add_child(col)
 		checkboxes[supply] = cb
+
+	var is_forced_turn = (GameManager.current_mission == 0 and SquadManager.current_turn == 0 and not GuideManager.turn_1_done)
+	if is_forced_turn:
+		_apply_forced_allocation(squad, checkboxes)
 
 	# Wire up mutual exclusion AFTER all checkboxes exist
 	for supply in checkboxes:
@@ -291,6 +294,7 @@ func _apply_forced_allocation(squad: Dictionary, checkboxes: Dictionary) -> void
 		else:
 			cb.button_pressed = false
 			cb.disabled = true  # lock out everything not forced
+		_style_checkbox(cb)
 
 func _sync_allocations() -> void:
 	for squad in SquadManager.get_squads_for_ui():
@@ -329,7 +333,27 @@ func _on_supply_toggled(pressed: bool, squad_name: String, supply: String, check
 		lock_btn.text = "Lock Allocations"
 		lock_btn.disabled = false
 
+	for s in checkboxes:
+		_style_checkbox(checkboxes[s])
+
 	_refresh_budget()
+
+
+# -------------------------------------------------------
+# Makes ticked supply checkboxes obviously highlighted —
+# the default theme checkbox is too subtle for new testers.
+# -------------------------------------------------------
+func _style_checkbox(cb: CheckBox) -> void:
+	if cb.button_pressed:
+		cb.add_theme_color_override("font_color", Color(0.15, 0.9, 0.4))
+		cb.add_theme_color_override("font_color_hover", Color(0.15, 0.9, 0.4))
+		cb.add_theme_color_override("font_color_disabled", Color(0.15, 0.65, 0.35))
+		cb.modulate = Color(1.25, 1.25, 1.1)
+	else:
+		cb.remove_theme_color_override("font_color")
+		cb.remove_theme_color_override("font_color_hover")
+		cb.remove_theme_color_override("font_color_disabled")
+		cb.modulate = Color(1, 1, 1)
 
 
 # -------------------------------------------------------
