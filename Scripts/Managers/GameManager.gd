@@ -38,7 +38,13 @@ signal tower_activated
 signal tower_lost
 signal mission_advanced
 
+# Squads Orin and Davan used to be scripted into every mission's starting
+# roster — they're now reinforcement-only, so they're listed here instead
+# alongside the original placeholder names. They keep their established
+# identities, but only show up if actually called in.
 const REINFORCEMENT_NAMES: Array = [
+	"Squad Orin",
+	"Squad Davan",
 	"Squad Taev",
 	"Squad Miren",
 	"Squad Cros",
@@ -756,7 +762,7 @@ var missions: Array = [
 		"interference": 0.2,
 		"objective":    "Secure 8 sectors. Enemy reinforcements inbound.",
 		"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
-		"reinforcement_pool": 1,
+		"reinforcement_pool": 2,
 		"sectors":    M2_SECTORS,
 		"adjacency":  M2_ADJACENCY,
 		"axial":      M2_AXIAL,
@@ -765,7 +771,6 @@ var missions: Array = [
 		"squads": [
 			{ "name": "Squad Varro", "sector": "Omicron-3", "status": SquadManager.Status.ACTIVE,  "need": SquadManager.Need.FUEL_CELLS },
 			{ "name": "Squad Kael",  "sector": "Pi-7",      "status": SquadManager.Status.WOUNDED, "need": SquadManager.Need.MEDI_PACKS },
-			{ "name": "Squad Orin",  "sector": "Rho-2",     "status": SquadManager.Status.ACTIVE,  "need": SquadManager.Need.FUEL_CELLS },
 		],
 		"enemies": [
 			{ "sector": "Tau-5"     },
@@ -787,23 +792,28 @@ var missions: Array = [
 	"priority_target_name": "",
 	"radio_tower_sector": "Gamma-5B",
 	"objective":         "Power the comms tower and hold it against enemy waves.",
+	# Squads landing further north (Sigma-3B/Tau-3B) would otherwise take
+	# a completely different, longer route to the tower than the ones
+	# landing closer (Theta-5B/Upsilon-5B) — pure shortest-path BFS sends
+	# each squad wherever's fewest hexes for THEM specifically. Routing
+	# everyone through Alpha-7B first keeps the whole squad funnelling
+	# down the same corridor instead of scattering across the map.
+	"route_waypoint":    "Alpha-7B",
 	"supply_pool":       { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
-	"reinforcement_pool": 1,
-	"orbital_strikes":   0,
+	"reinforcement_pool": 2,
+	"orbital_strikes":   1,
 	"sectors":    M3_SECTORS,
 	"adjacency":  M3_ADJACENCY,
 	"axial":      M3_AXIAL,
 	"reinforcement_schedule": { 2: 2, 3: 2, 4: 3 },
-	# All squads drop on the far west edge, right around Eta-5B — the
-	# westmost enemy position on the map (x=-8, the map's actual edge).
-	# Eta-5B has exactly 4 neighbouring hexes, so each squad gets its own
-	# distinct tile in a ring around it, chained neighbour-to-neighbour
-	# (Sigma-3B–Tau-3B–Theta-5B–Upsilon-5B) rather than stacked together.
+	# Both base squads drop on the far west edge, on neighbouring hexes
+	# rather than stacked together. Squad count only grows from here if
+	# reinforcements are called in — Theta-5B/Upsilon-5B (previously
+	# Orin/Davan's scripted start) are no longer auto-occupied, so
+	# there's extra room right at the landing zone for whoever's called in.
 	"squads": [
 		{ "name": "Squad Varro", "sector": "Sigma-3B",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
 		{ "name": "Squad Kael",  "sector": "Tau-3B",     "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
-		{ "name": "Squad Orin",  "sector": "Theta-5B",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-		{ "name": "Squad Davan", "sector": "Upsilon-5B", "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
 	],
 	# Original 9 enemies, minus Eta-5B (was boxed in and immediately
 	# surrounded by the squad landing ring, giving it nothing to do) —
@@ -843,8 +853,8 @@ var missions: Array = [
 		"interference": 0.75,
 		"objective":    "Push through the cave network and hold 55 sectors. Comms are failing.",
 		"supply_pool":        { "Armaments": 12, "Medi-Packs": 10, "Fuel Cells": 12 },
-		"reinforcement_pool": 1,
-		"orbital_strikes":    1,
+		"reinforcement_pool": 2,
+		"orbital_strikes":    2,
 		"sectors":    M4_SECTORS,
 		"adjacency":  M4_ADJACENCY,
 		"axial":      M4_AXIAL,
@@ -852,8 +862,6 @@ var missions: Array = [
 		"squads": [
 			{ "name": "Squad Varro", "sector": "Rho-3C",   "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
 			{ "name": "Squad Kael",  "sector": "Mu-5C",    "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
-			{ "name": "Squad Orin",  "sector": "Omicron-3C","status": SquadManager.Status.ACTIVE,  "need": SquadManager.Need.FUEL_CELLS },
-			{ "name": "Squad Davan", "sector": "Kappa-5C", "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
 		],
 		"enemies": [
 			{ "sector": "Beta-5C"    },  # Commander Vreth
@@ -888,21 +896,19 @@ var missions: Array = [
 	"radio_tower_sector": "",
 	"objective":          "Reach the extraction zone. Data carrier must extract.",
 	"supply_pool":        { "Armaments": 14, "Medi-Packs": 12, "Fuel Cells": 14 },
-	"reinforcement_pool": 0,
-	"orbital_strikes":    2,
+	"reinforcement_pool": 1,
+	"orbital_strikes":    1,
 	"sectors":    M5_SECTORS,
 	"adjacency":  M5_ADJACENCY,
 	"axial":      M5_AXIAL,
 	"reinforcement_schedule": { 3: 2, 5: 3 },
-	# All 4 squads now drop together in the far bottom-left corner of the
-	# map — Eta-7D sits at the centre of this cluster and is directly
-	# adjacent to the other three, so it's a tight, believable landing
-	# zone rather than a scattered one.
+	# Both base squads drop together in the far bottom-left corner of the
+	# map, on neighbouring hexes rather than stacked. Upsilon-5D/Theta-7D
+	# (previously Orin/Davan's scripted start) are free for whoever's
+	# called in as a reinforcement to land near the rest of the group.
 	"squads": [
 		{ "name": "Squad Varro", "sector": "Eta-7D",     "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
 		{ "name": "Squad Kael",  "sector": "Tau-5D",     "status": SquadManager.Status.WOUNDED,  "need": SquadManager.Need.MEDI_PACKS },
-		{ "name": "Squad Orin",  "sector": "Upsilon-5D", "status": SquadManager.Status.ACTIVE,   "need": SquadManager.Need.FUEL_CELLS },
-		{ "name": "Squad Davan", "sector": "Theta-7D",   "status": SquadManager.Status.CRITICAL, "need": SquadManager.Need.MEDI_PACKS },
 	],
 	"enemies": [
 		{ "sector": "Omega-3D"   },

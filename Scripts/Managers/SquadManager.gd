@@ -59,8 +59,16 @@ var current_turn: int = 0
 var interference: float = 0.0
 
 
-func init_squads(squad_list: Array, mission_interference: float) -> void:
+func init_squads(squad_list: Array, mission_interference: float, rally_candidates: Array = []) -> void:
+	var mission_squad_names: Array = []
+	for s in squad_list:
+		mission_squad_names.append(s.name)
+
 	for key in squads:
+		# A squad lost in a previous mission stays lost — it doesn't get
+		# quietly revived just because a new mission started.
+		if squads[key].status == Status.LOST:
+			continue
 		squads[key].status = Status.ACTIVE
 		squads[key].turns_unsupplied = 0
 		squads[key].report = ""
@@ -68,6 +76,7 @@ func init_squads(squad_list: Array, mission_interference: float) -> void:
 		squads[key]["surprise_bonus"] = false
 		squads[key]["goal"] = Goal.ADVANCE
 		squads[key]["tower_fuel_turns"] = 0
+		squads[key]["tower_fuel_turns_waited"] = 0
 		# has_data intentionally NOT reset — carries over between missions
 
 	current_turn = 0
@@ -80,6 +89,28 @@ func init_squads(squad_list: Array, mission_interference: float) -> void:
 		else:
 			# Update sector to mission starting position
 			squads[s.name].sector = s.sector
+
+	# Squads called in as reinforcements during a previous mission aren't
+	# part of this mission's scripted roster, so they never get a sector
+	# on this mission's map — they'd be left standing on a sector name
+	# that doesn't exist here. Bring each one in already-there, on its
+	# own hex near the main force's landing point (TurnManager works out
+	# the candidate hexes ahead of time) rather than stacking every
+	# carried squad onto the same tile.
+	var fallback_sector = ""
+	if squad_list.size() > 0:
+		fallback_sector = squad_list[0].sector
+	var next_rally_idx = 0
+	for key in squads:
+		if key in mission_squad_names:
+			continue
+		if squads[key].status == Status.LOST:
+			continue
+		if next_rally_idx < rally_candidates.size():
+			squads[key].sector = rally_candidates[next_rally_idx]
+			next_rally_idx += 1
+		elif fallback_sector != "":
+			squads[key].sector = fallback_sector
 
 	_generate_briefings()
 
@@ -769,10 +800,39 @@ func _default_advance_target(squad: Dictionary, current_sector: String) -> Strin
 	var tower = GameManager.tower_sector
 	if squad.goal == Goal.ADVANCE and tower != "" and tower != current_sector \
 			and GameManager.mission_type in ["hold_tower", "eliminate_priority", "extract"]:
-		var toward_tower = tower if tower in EnemyManager.adjacency.get(current_sector, []) else _path_toward(current_sector, tower)
+		var toward_tower = _route_target_toward_tower(current_sector, tower)
 		if toward_tower != "":
 			return toward_tower
 	return EnemyManager.get_best_move_target(current_sector)
+
+# -------------------------------------------------------
+# Picks the next hex on the way to the tower. Raw shortest-path BFS
+# sends squads on whatever route is fewest hexes for THEIR starting
+# position, which can scatter them across totally different paths
+# depending on which side of the map they land on (seen on Mission 3 —
+# squads starting further north took a completely different route than
+# the ones starting near the tower). A mission can set "route_waypoint"
+# to a chokepoint sector; any squad still "behind" it gets routed
+# through that hex first, so everyone funnels through the same
+# corridor instead of free-roaming their own shortest path.
+# -------------------------------------------------------
+func _route_target_toward_tower(current_sector: String, tower: String) -> String:
+	var waypoint = GameManager.get_current_mission_data().get("route_waypoint", "")
+	if waypoint != "" and waypoint != current_sector and waypoint != tower:
+		var dist_direct   = EnemyManager.get_distance_between(current_sector, tower)
+		var dist_waypoint = EnemyManager.get_distance_between(waypoint, tower)
+		# Still further from the tower than the waypoint is — route
+		# through it first. Once a squad is at-or-inside that distance
+		# (i.e. it has effectively passed the waypoint), fall through
+		# to heading straight for the tower instead.
+		if dist_direct > dist_waypoint:
+			if waypoint in EnemyManager.adjacency.get(current_sector, []):
+				return waypoint
+			return _path_toward(current_sector, waypoint)
+
+	if tower in EnemyManager.adjacency.get(current_sector, []):
+		return tower
+	return _path_toward(current_sector, tower)
 
 func _path_toward(from_sector: String, to_sector: String) -> String:
 	if from_sector == to_sector:

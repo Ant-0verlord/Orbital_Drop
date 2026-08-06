@@ -100,16 +100,28 @@ func _exit_bombardment_mode() -> void:
 
 func _refresh_from_game_state() -> void:
 	var hex_control = EnemyManager.get_hex_control()
+	# sector -> Array of squad names — more than one squad can end up
+	# sharing a hex (e.g. a carried-over reinforcement squad landing
+	# alongside the main force), and all of them should show up rather
+	# than one silently overwriting another.
 	var squad_sectors: Dictionary = {}
 	for squad in SquadManager.get_squads_for_ui():
 		if squad.status != SquadManager.Status.LOST:
-			squad_sectors[squad.sector] = squad.name
+			if not squad_sectors.has(squad.sector):
+				squad_sectors[squad.sector] = []
+			squad_sectors[squad.sector].append(squad.name)
 
 	var states: Dictionary = {}
 	for sector in hex_control:
+		var names: Array = squad_sectors.get(sector, [])
+		var squad_text = ""
+		for i in range(names.size()):
+			if i > 0:
+				squad_text += ", "
+			squad_text += names[i]
 		states[sector] = {
 			"state":       hex_control[sector],
-			"squad":       squad_sectors.get(sector, ""),
+			"squad":       squad_text,
 			"enemy_count": EnemyManager.get_enemy_count_at(sector),
 		}
 

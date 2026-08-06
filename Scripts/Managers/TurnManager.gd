@@ -39,7 +39,8 @@ func start_mission(mission_data: Dictionary) -> void:
 	var sectors      = mission_data.get("sectors", [])
 	var adj          = mission_data.get("adjacency", {})
 
-	SquadManager.init_squads(squad_list, interference)
+	var rally_candidates = _find_rally_candidates(squad_list, enemy_list, sectors, adj)
+	SquadManager.init_squads(squad_list, interference, rally_candidates)
 
 	if not SquadManager.squad_lost.is_connected(_on_squad_lost):
 		SquadManager.squad_lost.connect(_on_squad_lost)
@@ -59,6 +60,54 @@ func start_mission(mission_data: Dictionary) -> void:
 	_check_reinforcement_warning(0)
 
 	emit_signal("turn_started", current_turn)
+
+
+# -------------------------------------------------------
+# Finds distinct hexes near the squad landing zone where carried-over
+# reinforcement squads (called in during a previous mission) can start
+# this mission — one hex each, rather than all stacking onto the main
+# force's tile. Works from the mission's raw index-based adjacency
+# since EnemyManager hasn't built its name-based copy yet at this point
+# in mission setup (init_enemies runs after this, once squad_sectors —
+# which depends on squad placement — is known).
+# -------------------------------------------------------
+func _find_rally_candidates(squad_list: Array, enemy_list: Array, sectors: Array, adj: Dictionary) -> Array:
+	if squad_list.is_empty() or sectors.is_empty():
+		return []
+
+	var name_to_idx: Dictionary = {}
+	for i in range(sectors.size()):
+		name_to_idx[sectors[i]] = i
+
+	var occupied: Dictionary = {}
+	for s in squad_list:
+		occupied[s.sector] = true
+	for e in enemy_list:
+		occupied[e.get("sector", "")] = true
+
+	var start_name = squad_list[0].sector
+	if not name_to_idx.has(start_name):
+		return []
+	var start_idx = name_to_idx[start_name]
+
+	var visited: Dictionary = { start_idx: true }
+	var to_visit: Array = [start_idx]
+	var candidates: Array = []
+	var max_needed = GameManager.REINFORCEMENT_NAMES.size()
+
+	while not to_visit.is_empty() and candidates.size() < max_needed:
+		var cur = to_visit.pop_front()
+		for n_idx in adj.get(cur, []):
+			if visited.has(n_idx):
+				continue
+			visited[n_idx] = true
+			to_visit.append(n_idx)
+			if n_idx < sectors.size():
+				var n_name = sectors[n_idx]
+				if not occupied.has(n_name):
+					candidates.append(n_name)
+
+	return candidates
 
 func _assign_extraction_zone() -> void:
 	var mission_data = GameManager.get_current_mission_data()
