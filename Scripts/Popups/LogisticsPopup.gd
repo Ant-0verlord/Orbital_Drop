@@ -201,7 +201,10 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 	row.add_theme_constant_override("separation", 12)
 
 	var name_lbl := Label.new()
-	name_lbl.text = squad.name
+	# Tag the data carrier here too — this row was previously identical
+	# whether or not a squad was holding the recovered data package, with
+	# no lasting way to tell who has it.
+	name_lbl.text = squad.name + (" 📦" if squad.get("has_data", false) else "")
 	name_lbl.custom_minimum_size.x = 120
 	name_lbl.add_theme_font_size_override("font_size", 13)
 	row.add_child(name_lbl)

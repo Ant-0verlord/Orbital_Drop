@@ -287,6 +287,10 @@ func _draw() -> void:
 		# shows every name instead of just squeezing them onto one line.
 		for i in range(squad_names.size()):
 			var short = String(squad_names[i]).replace("Squad ", "")
+			# Tag whichever squad is carrying the recovered data package —
+			# previously invisible on the map entirely.
+			if squad_names[i] == GameManager.data_carrier_squad:
+				short += " 📦"
 			draw_string(ThemeDB.fallback_font,
 				center + Vector2(-len(short) * 2.8, 4 + i * SQUAD_LINE_HEIGHT),
 				short, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 1, 1, 0.85))

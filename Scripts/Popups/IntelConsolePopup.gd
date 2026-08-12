@@ -236,6 +236,17 @@ func _add_report_card(squad_name: String, report_text: String, squad_data: Dicti
 	name_lbl.add_theme_font_size_override("font_size", 14)
 	header.add_child(name_lbl)
 
+	# Persistent marker for whichever squad is carrying the recovered data
+	# package — previously the only sign of this was a one-off "transferred"
+	# notification card when it changed hands, with no lasting way to tell
+	# who actually has it right now.
+	if squad_data.get("has_data", false):
+		var data_lbl := Label.new()
+		data_lbl.text = "📦 DATA"
+		data_lbl.add_theme_font_size_override("font_size", 12)
+		data_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+		header.add_child(data_lbl)
+
 	if squad_data.has("status"):
 		var status_lbl := Label.new()
 		status_lbl.text = "[%s]" % SquadManager.STATUS_NAMES[squad_data.status]
