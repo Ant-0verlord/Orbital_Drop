@@ -745,12 +745,22 @@ var missions: Array = [
 		"win_hexes":    4,
 		"interference": 0.0,
 		"objective":    "Capture and hold 4 sectors by the end of Turn 5.",
-		# Supply pools across all 5 missions cut ~40% from their original
-		# values (M1 was 8/6/8) -- squads' per-turn supply draw is forced,
-		# not optional, so the old pools comfortably covered a mission's
-		# full length. This makes running dry, and letting a squad go
-		# unsupplied for a turn, a real possibility.
-		"supply_pool":        { "Armaments": 5, "Medi-Packs": 4, "Fuel Cells": 5 },
+		# Supply pools across all 5 missions cut well below their
+		# original values (M1 was 8/6/8) -- squads' per-turn supply draw
+		# is forced, not optional, so the old pools comfortably covered
+		# a mission's full length. This makes running dry, and letting
+		# a squad go unsupplied for a turn, a real possibility.
+		#
+		# All values kept even: every allocation costs a flat 2 points
+		# (SUPPLY_COST in LogisticsPopup.gd), so an odd pool total
+		# always left 1 point that could never actually be spent.
+		#
+		# Armaments kept higher than the others here specifically --
+		# M1 has 3 enemies on the map plus a turn-4 reinforcement, and
+		# the pool needs enough headroom to actually fight through them
+		# (each armed engagement costs 2 points) rather than only
+		# covering a couple of turns.
+		"supply_pool":        { "Armaments": 8, "Medi-Packs": 4, "Fuel Cells": 4 },
 		"reinforcement_pool": 0,
 		"orbital_strikes": 0,
 		"sectors":    M1_SECTORS,
@@ -779,7 +789,12 @@ var missions: Array = [
 		"win_hexes":    8,
 		"interference": 0.2,
 		"objective":    "Secure 8 sectors. Enemy reinforcements inbound.",
-		"supply_pool":        { "Armaments": 6, "Medi-Packs": 5, "Fuel Cells": 6 },
+		# Same headroom issue as M1, and more pressing here — this is an
+		# "eliminate" mission, so ALL 5 starting enemies plus the 2 more
+		# from the turn 5/6 reinforcement wave (7 total) actually need to
+		# die to win, not just be pushed off sectors. Armaments bumped a
+		# few points so that's realistically affordable.
+		"supply_pool":        { "Armaments": 10, "Medi-Packs": 4, "Fuel Cells": 6 },
 		"reinforcement_pool": 1,
 		"sectors":    M2_SECTORS,
 		"adjacency":  M2_ADJACENCY,
@@ -817,7 +832,7 @@ var missions: Array = [
 	# everyone through Alpha-7B first keeps the whole squad funnelling
 	# down the same corridor instead of scattering across the map.
 	"route_waypoint":    "Alpha-7B",
-	"supply_pool":       { "Armaments": 6, "Medi-Packs": 5, "Fuel Cells": 6 },
+	"supply_pool":       { "Armaments": 6, "Medi-Packs": 4, "Fuel Cells": 6 },
 	"reinforcement_pool": 1,
 	"orbital_strikes":   1,
 	"sectors":    M3_SECTORS,
@@ -870,7 +885,7 @@ var missions: Array = [
 		"win_hexes":    55,
 		"interference": 0.75,
 		"objective":    "Push through the cave network and hold 55 sectors. Comms are failing.",
-		"supply_pool":        { "Armaments": 7, "Medi-Packs": 6, "Fuel Cells": 7 },
+		"supply_pool":        { "Armaments": 6, "Medi-Packs": 6, "Fuel Cells": 6 },
 		"reinforcement_pool": 1,
 		"orbital_strikes":    2,
 		"sectors":    M4_SECTORS,
@@ -913,7 +928,7 @@ var missions: Array = [
 	"priority_target_name": "",
 	"radio_tower_sector": "",
 	"objective":          "Reach the extraction zone. Data carrier must extract.",
-	"supply_pool":        { "Armaments": 8, "Medi-Packs": 7, "Fuel Cells": 8 },
+	"supply_pool":        { "Armaments": 8, "Medi-Packs": 6, "Fuel Cells": 8 },
 	"reinforcement_pool": 1,
 	"orbital_strikes":    1,
 	"sectors":    M5_SECTORS,
@@ -1031,7 +1046,7 @@ func start_current_mission() -> void:
 	if _mission_resources_granted_for != current_mission:
 		_mission_resources_granted_for = current_mission
 
-		var base_pool = data.get("supply_pool", { "Armaments": 5, "Medi-Packs": 4, "Fuel Cells": 5 })
+		var base_pool = data.get("supply_pool", { "Armaments": 8, "Medi-Packs": 4, "Fuel Cells": 4 })
 		for s in base_pool:
 			supply_pool[s] = supply_pool.get(s, 0) + base_pool[s]
 		mission_starting_supply = supply_pool.duplicate()
