@@ -45,7 +45,7 @@ func _show_briefing() -> void:
 
 	var zone_states: Dictionary = {}
 	for s in sectors:
-		zone_states[s] = { "state": "neutral", "squad": "", "enemy_count": 0 }
+		zone_states[s] = { "state": "neutral", "squad": [], "enemy_count": 0 }
 	for e in enemies:
 		var sec = e.get("sector", "")
 		if sec != "" and zone_states.has(sec):
@@ -54,7 +54,9 @@ func _show_briefing() -> void:
 		var sec = sq.get("sector", "")
 		if sec != "" and zone_states.has(sec):
 			zone_states[sec]["state"] = "held"
-			zone_states[sec]["squad"] = sq.get("name", "")
+			# Array, not a single overwrite — more than one squad can
+			# share a landing hex.
+			zone_states[sec]["squad"].append(sq.get("name", ""))
 
 	briefing_overlay.briefing_dismissed.connect(_on_briefing_dismissed, CONNECT_ONE_SHOT)
 	briefing_overlay.show_briefing(GameManager.current_mission, zone_states, axial_map)
