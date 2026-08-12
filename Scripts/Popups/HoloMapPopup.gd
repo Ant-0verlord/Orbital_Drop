@@ -113,15 +113,12 @@ func _refresh_from_game_state() -> void:
 
 	var states: Dictionary = {}
 	for sector in hex_control:
-		var names: Array = squad_sectors.get(sector, [])
-		var squad_text = ""
-		for i in range(names.size()):
-			if i > 0:
-				squad_text += ", "
-			squad_text += names[i]
+		# "squad" is the raw Array of names sharing this hex — HexCanvas
+		# draws each on its own line, and _rebuild_sector_list() below
+		# joins them for the single-line sector list row.
 		states[sector] = {
 			"state":       hex_control[sector],
-			"squad":       squad_text,
+			"squad":       squad_sectors.get(sector, []),
 			"enemy_count": EnemyManager.get_enemy_count_at(sector),
 		}
 
@@ -301,7 +298,7 @@ func _rebuild_sector_list() -> void:
 	for sector_name in zone_states:
 		var data        = zone_states[sector_name]
 		var state       = data.get("state", "enemy")
-		var squad       = data.get("squad", "")
+		var squad_names: Array = data.get("squad", [])
 		var enemy_count = data.get("enemy_count", 0)
 
 		var row := HBoxContainer.new()
@@ -330,8 +327,14 @@ func _rebuild_sector_list() -> void:
 		state_lbl.add_theme_font_size_override("font_size", 11)
 		row.add_child(state_lbl)
 
+		var squad_text = ""
+		for i in range(squad_names.size()):
+			if i > 0:
+				squad_text += ", "
+			squad_text += squad_names[i]
+
 		var squad_lbl := Label.new()
-		squad_lbl.text = squad if squad != "" else "—"
+		squad_lbl.text = squad_text if squad_text != "" else "—"
 		squad_lbl.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
 		squad_lbl.add_theme_font_size_override("font_size", 11)
 		row.add_child(squad_lbl)

@@ -7,23 +7,34 @@ extends Control
 var zone_states: Dictionary = {}
 var axial_map:   Dictionary = {}
 
-const HEX_R     = 18.0
+const HEX_R       = 18.0
 const GRID_CENTRE = Vector2(300, 100)
+const MIN_SIZE    = Vector2(300, 150)
+# Extra room around the hex bounds so the outermost hexes aren't
+# clipped right at the control's edge.
+const PADDING     = HEX_R * 2.0
+
+var _bounds_min: Vector2 = Vector2.ZERO
+var _bounds_max: Vector2 = Vector2.ZERO
 
 func setup(states: Dictionary, axial: Dictionary) -> void:
 	zone_states = states
 	axial_map   = axial
-	custom_minimum_size = Vector2(600, 200)
+	_compute_bounds()
+	# Missions vary hugely in map size (Mission 1's handful of sectors vs.
+	# Mission 3/4/5's 100+ sector maps) — a fixed box was fine for the
+	# small maps but too short for the big ones, so the hexes overflowed
+	# upward into the objective text above. Size the control to whatever
+	# this specific mission's map actually needs instead.
+	custom_minimum_size = Vector2(
+		max(_bounds_max.x - _bounds_min.x + PADDING * 2.0, MIN_SIZE.x),
+		max(_bounds_max.y - _bounds_min.y + PADDING * 2.0, MIN_SIZE.y)
+	)
 	queue_redraw()
 
-func _draw() -> void:
-	if zone_states.is_empty():
-		return
-
+func _compute_bounds() -> void:
 	var sq3 = sqrt(3.0)
 	var r   = HEX_R
-
-	# Auto-centre: find pixel bounds and recentre
 	var positions: Array[Vector2] = []
 	for sector in zone_states:
 		if axial_map.has(sector):
@@ -33,13 +44,22 @@ func _draw() -> void:
 				r * 1.5 * ax.y
 			))
 	if positions.is_empty():
+		_bounds_min = Vector2.ZERO
+		_bounds_max = Vector2.ZERO
+		return
+	_bounds_min = positions[0]
+	_bounds_max = positions[0]
+	for p in positions:
+		_bounds_min = Vector2(min(_bounds_min.x, p.x), min(_bounds_min.y, p.y))
+		_bounds_max = Vector2(max(_bounds_max.x, p.x), max(_bounds_max.y, p.y))
+
+func _draw() -> void:
+	if zone_states.is_empty():
 		return
 
-	var min_p = positions[0]; var max_p = positions[0]
-	for p in positions:
-		min_p = Vector2(min(min_p.x, p.x), min(min_p.y, p.y))
-		max_p = Vector2(max(max_p.x, p.x), max(max_p.y, p.y))
-	var offset = (size / 2.0) - ((min_p + max_p) / 2.0)
+	var sq3 = sqrt(3.0)
+	var r   = HEX_R
+	var offset = (size / 2.0) - ((_bounds_min + _bounds_max) / 2.0)
 
 	for sector in zone_states:
 		if not axial_map.has(sector):
@@ -51,7 +71,7 @@ func _draw() -> void:
 		) + offset
 
 		var state = zone_states[sector].get("state", "enemy")
-		var squad = zone_states[sector].get("squad", "")
+		var squad_names: Array = zone_states[sector].get("squad", [])
 
 		var fill: Color
 		match state:
@@ -66,10 +86,23 @@ func _draw() -> void:
 		outline.append(pts[0])
 		draw_polyline(outline, Color(0.15, 0.2, 0.3, 0.6), 1.0)
 
-		if squad != "":
+		if squad_names.size() > 0:
 			draw_string(ThemeDB.fallback_font,
 				pixel + Vector2(-4, 4),
 				"●", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
+
+			# Name(s) underneath the hex — comma-joined on one small line
+			# since this preview's hexes are too small for one line each,
+			# but every squad occupying the tile still shows, not just
+			# whichever happened to be listed last.
+			var label = ""
+			for i in range(squad_names.size()):
+				if i > 0:
+					label += ", "
+				label += String(squad_names[i]).replace("Squad ", "")
+			draw_string(ThemeDB.fallback_font,
+				pixel + Vector2(-label.length() * 2.2, r + 8),
+				label, HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(1, 1, 1, 0.9))
 
 func _hex_points(centre: Vector2, r: float) -> PackedVector2Array:
 	var pts = PackedVector2Array()

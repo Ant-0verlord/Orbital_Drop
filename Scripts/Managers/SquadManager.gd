@@ -90,6 +90,15 @@ func init_squads(squad_list: Array, mission_interference: float, rally_candidate
 			# Update sector to mission starting position
 			squads[s.name].sector = s.sector
 
+		# Normally the data carrier is set mid-Mission-4 when the priority
+		# target is eliminated, and the squad already has has_data=true by
+		# the time it carries into this mission. Debug-jumping straight
+		# here skips that entirely though, so GameManager may hand the
+		# carrier flag to a squad that doesn't have it yet — pick that up
+		# here rather than requiring Mission 4 to have actually been played.
+		if GameManager.data_carrier_squad == s.name and not squads[s.name].get("has_data", false):
+			squads[s.name]["has_data"] = true
+
 	# Squads called in as reinforcements during a previous mission aren't
 	# part of this mission's scripted roster, so they never get a sector
 	# on this mission's map — they'd be left standing on a sector name
@@ -222,6 +231,10 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 	current_turn += 1
 
 	GameManager.consume_supplies(allocations)
+
+	# Freeze what each hex's control state looked like before any squad
+	# moves this turn — see hex_control_turn_start in EnemyManager for why.
+	EnemyManager.snapshot_hex_control()
 
 	_assign_goals()
 

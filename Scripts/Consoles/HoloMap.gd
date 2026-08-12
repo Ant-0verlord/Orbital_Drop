@@ -71,13 +71,15 @@ func _build_zone_states() -> void:
 
 	for sector in EnemyManager.get_all_sectors():
 		var control = hex_control.get(sector, "enemy")
-		var squad_here = ""
+		# Array, not a single overwrite — more than one squad can share a
+		# hex, and every one of them needs to show up here, not just
+		# whichever was found first.
+		var squads_here: Array = []
 		for squad in SquadManager.get_squads_for_ui():
 			if squad.sector == sector and squad.status != SquadManager.Status.LOST:
-				squad_here = squad.name
-				break
+				squads_here.append(squad.name)
 		zone_states[sector] = {
 			"state":        control,
-			"squad":        squad_here,
+			"squad":        squads_here,
 			"enemy_count":  EnemyManager.get_enemy_count_at(sector),
 		}

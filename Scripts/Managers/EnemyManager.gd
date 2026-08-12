@@ -14,6 +14,19 @@ var all_sectors: Array = []
 var adjacency: Dictionary = {}
 var priority_target_home: String = ""
 
+# Snapshot of hex_control taken before a turn's squads start moving. Squads
+# resolve one at a time within the same turn, and each capture_tile() call
+# mutates the live hex_control immediately — without this snapshot, a squad
+# that moves later in the turn would see an ally's just-captured tile as
+# "already ours" and skip past it as a move target, even when it was the
+# obvious next step forward. Movement scoring reads from this frozen
+# snapshot instead, so every squad picks its target as if nobody else had
+# moved yet this turn.
+var hex_control_turn_start: Dictionary = {}
+
+func snapshot_hex_control() -> void:
+	hex_control_turn_start = hex_control.duplicate()
+
 # -------------------------------------------------------
 # Init — now receives sectors and adjacency from mission data
 # -------------------------------------------------------
@@ -144,13 +157,34 @@ func fight_at_unarmed(sector: String) -> Dictionary:
 
 func get_best_move_target(from_sector: String) -> String:
 	var neighbors = adjacency.get(from_sector, [])
+	if neighbors.is_empty():
+		return ""
+
+	# Prefer unclaimed enemy territory with no enemy unit actually
+	# camped on it — genuine forward progress. Checked against the
+	# turn-start snapshot (see hex_control_turn_start above), not the
+	# live map, so a squad that moves later in this same turn isn't
+	# steered away from a tile just because an ally captured it a
+	# moment ago in this same turn's resolution.
 	for n in neighbors:
-		if not _has_enemy_unit(n) and hex_control.get(n, "") == "enemy":
+		if not _has_enemy_unit(n) and hex_control_turn_start.get(n, "") == "enemy":
 			return n
+
+	# Any tile without an enemy unit standing on it — this deliberately
+	# includes a hex already held by one of OUR OWN other squads.
+	# Squads are allowed to share a tile (a trailing squad following
+	# another through a single-file corridor, a reinforcement landing
+	# alongside the main force, etc.), so a friendly-occupied hex must
+	# never be treated as a dead end here — that was leaving a squad
+	# with nowhere to go if the only way forward ran through an ally.
 	for n in neighbors:
 		if not _has_enemy_unit(n):
 			return n
-	return ""
+
+	# Genuinely boxed in by enemies on every side — still hand back a
+	# hex rather than leaving the squad with no target at all; combat
+	# resolution takes it from there.
+	return neighbors[0]
 
 
 func get_best_attack_target(from_sector: String) -> String:

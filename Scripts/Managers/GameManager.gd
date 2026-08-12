@@ -762,7 +762,7 @@ var missions: Array = [
 		"interference": 0.2,
 		"objective":    "Secure 8 sectors. Enemy reinforcements inbound.",
 		"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
-		"reinforcement_pool": 2,
+		"reinforcement_pool": 1,
 		"sectors":    M2_SECTORS,
 		"adjacency":  M2_ADJACENCY,
 		"axial":      M2_AXIAL,
@@ -800,7 +800,7 @@ var missions: Array = [
 	# down the same corridor instead of scattering across the map.
 	"route_waypoint":    "Alpha-7B",
 	"supply_pool":       { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
-	"reinforcement_pool": 2,
+	"reinforcement_pool": 1,
 	"orbital_strikes":   1,
 	"sectors":    M3_SECTORS,
 	"adjacency":  M3_ADJACENCY,
@@ -853,7 +853,7 @@ var missions: Array = [
 		"interference": 0.75,
 		"objective":    "Push through the cave network and hold 55 sectors. Comms are failing.",
 		"supply_pool":        { "Armaments": 12, "Medi-Packs": 10, "Fuel Cells": 12 },
-		"reinforcement_pool": 2,
+		"reinforcement_pool": 1,
 		"orbital_strikes":    2,
 		"sectors":    M4_SECTORS,
 		"adjacency":  M4_ADJACENCY,
@@ -1032,6 +1032,16 @@ func debug_jump_to_mission(index: int) -> void:
 	data_carrier_squad = ""
 	extraction_zone = ""
 	mission_type = "capture"
+
+	# Mission 5's extract objective needs a squad already carrying the
+	# intel — normally that's whoever eliminates Vreth mid-Mission-4, but
+	# debug-jumping straight to Mission 5 skips that entirely. Hand it to
+	# the mission's first scripted squad so the mission is testable on
+	# its own; SquadManager picks this up when it builds the roster.
+	if index == 4:
+		var jump_squads = missions[index].get("squads", [])
+		if jump_squads.size() > 0:
+			data_carrier_squad = jump_squads[0].name
 
 	# Same as advance_to_next_mission() — let CommandCentre show the
 	# briefing/dossier rather than dropping straight into gameplay.

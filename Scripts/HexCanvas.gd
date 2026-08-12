@@ -32,6 +32,7 @@ const PULSE_SPEED: float = 2.5
 const HEX_RADIUS: float  = 38.0
 const HEX_INNER: float   = 38.0
 const GRID_CENTER: Vector2 = Vector2(315, 205)
+const SQUAD_LINE_HEIGHT: float = 10.0
 
 const COLOR_HELD:         Color = Color(0.1,  0.8,  0.3,  0.85)
 const COLOR_CONTESTED:    Color = Color(0.9,  0.7,  0.1,  0.85)
@@ -209,7 +210,7 @@ func _draw() -> void:
 		var sector: String   = entry.sector
 		var data             = zone_states.get(sector, {})
 		var state: String    = data.get("state", "enemy")
-		var squad: String    = data.get("squad", "")
+		var squad_names: Array = data.get("squad", [])
 		var enemy_count: int = data.get("enemy_count", 0)
 
 		var enemy_visible = true
@@ -279,31 +280,41 @@ func _draw() -> void:
 			center + Vector2(-len(sector) * 3.0, -7),
 			sector, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, lc)
 
-		if squad != "":
-			var short = squad.replace("Squad ", "")
+		# Squad name(s) — stacked one per line underneath the sector
+		# label instead of a single cramped line, so a hex with more
+		# than one squad on it (a trailing squad sharing a tile with
+		# another, a reinforcement landing alongside the main force)
+		# shows every name instead of just squeezing them onto one line.
+		for i in range(squad_names.size()):
+			var short = String(squad_names[i]).replace("Squad ", "")
 			draw_string(ThemeDB.fallback_font,
-				center + Vector2(-len(short) * 2.8, 4),
-				short, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 1, 1, 0.7))
+				center + Vector2(-len(short) * 2.8, 4 + i * SQUAD_LINE_HEIGHT),
+				short, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 1, 1, 0.85))
+
+		# Enemy/placement markers below whatever squad names were just
+		# drawn, so a busy (contested, multi-squad) hex doesn't overlap
+		# its own labels.
+		var below_names_y = 16 + max(0, squad_names.size() - 1) * SQUAD_LINE_HEIGHT
 
 		if not placement_mode:
 			if enemy_count > 0 and enemy_visible:
 				var marker = "✕" if enemy_count == 1 else "✕×%d" % enemy_count
 				draw_string(ThemeDB.fallback_font,
-					center + Vector2(-len(marker) * 3.5, 16),
+					center + Vector2(-len(marker) * 3.5, below_names_y),
 					marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.95))
 			elif enemy_count > 0 and not enemy_visible:
 				draw_string(ThemeDB.fallback_font,
-					center + Vector2(-6, 16),
+					center + Vector2(-6, below_names_y),
 					"░░", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.5, 0.3, 0.3, 0.35))
 		else:
 			# Placement mode — show drop indicator on hovered/placed hex
 			if sector == placed_sector:
 				draw_string(ThemeDB.fallback_font,
-					center + Vector2(-8, 16),
+					center + Vector2(-8, below_names_y),
 					"▼ DROP", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, COLOR_PLACED)
 			elif sector == hovered_sector:
 				draw_string(ThemeDB.fallback_font,
-					center + Vector2(-8, 16),
+					center + Vector2(-8, below_names_y),
 					"▼", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, COLOR_PLACEMENT_HOVER)
 		
 		# Special sector symbols
