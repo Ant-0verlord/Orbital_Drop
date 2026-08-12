@@ -39,7 +39,7 @@ func start_mission(mission_data: Dictionary) -> void:
 	var sectors      = mission_data.get("sectors", [])
 	var adj          = mission_data.get("adjacency", {})
 
-	var rally_candidates = _find_rally_candidates(squad_list, enemy_list, sectors, adj)
+	var rally_candidates = find_rally_candidates(squad_list, enemy_list, sectors, adj)
 	SquadManager.init_squads(squad_list, interference, rally_candidates)
 
 	if not SquadManager.squad_lost.is_connected(_on_squad_lost):
@@ -70,8 +70,12 @@ func start_mission(mission_data: Dictionary) -> void:
 # since EnemyManager hasn't built its name-based copy yet at this point
 # in mission setup (init_enemies runs after this, once squad_sectors —
 # which depends on squad placement — is known).
+#
+# Public (not just used internally): CommandCentre's mission briefing
+# calls this too, to preview where carried-over reinforcement squads will
+# land before the mission actually starts and assigns them for real.
 # -------------------------------------------------------
-func _find_rally_candidates(squad_list: Array, enemy_list: Array, sectors: Array, adj: Dictionary) -> Array:
+func find_rally_candidates(squad_list: Array, enemy_list: Array, sectors: Array, adj: Dictionary) -> Array:
 	if squad_list.is_empty() or sectors.is_empty():
 		return []
 

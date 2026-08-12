@@ -24,6 +24,11 @@ var guide_active: bool = false
 var turn_1_done:  bool = false
 var dismissed:    bool = false
 var popup_open:   bool = false
+# Once the guide has been ended — manually via the dismiss button, or
+# automatically after turn 1 — it's done for the whole campaign. Without
+# this, start_guide() (called at the start of every mission) would just
+# reset everything and bring the tutorial prompts back for mission 2 on.
+var guide_completed: bool = false
 
 func _ready() -> void:
 	TurnManager.turn_ended.connect(on_turn_ended)
@@ -41,14 +46,17 @@ const CONSOLE_POSITIONS = {
 }
 
 func start_guide() -> void:
+	if guide_completed:
+		return
 	guide_active = true
 	dismissed    = false
 	turn_1_done  = false
 	_set_step(Step.VISIT_INTEL)
 
 func dismiss() -> void:
-	dismissed    = true
-	guide_active = false
+	dismissed       = true
+	guide_active    = false
+	guide_completed = true
 	_set_step(Step.NONE)
 	emit_signal("guide_dismissed")
 
@@ -85,9 +93,11 @@ func on_turn_ended() -> void:
 		return
 	if not turn_1_done:
 		turn_1_done = true
-		# After turn 1 — guide fully retires: hide prompt bar and arrow
+		# After turn 1 — guide fully retires: hide prompt bar and arrow,
+		# and mark it done for good so it doesn't come back next mission.
 		_set_step(Step.NONE)
-		guide_active = false
+		guide_active    = false
+		guide_completed = true
 		emit_signal("guide_dismissed")
 
 func get_target_console() -> String:

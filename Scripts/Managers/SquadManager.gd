@@ -308,6 +308,19 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 			# Either way, this squad stays put — the movement block below
 			# is skipped entirely (anchored_at_tower gates it off).
 			# Jump straight to medi-pack and banking sections below
+		elif at_tower and squad.goal == Goal.HOLD_TOWER:
+			# Once the tower is powered, the squad holding it needs to
+			# actually stay there. Nothing previously anchored a HOLD_TOWER
+			# squad in place — the goal-directed movement override further
+			# below only redirects a squad TOWARD the tower when it isn't
+			# already standing on it, so a squad already there fell through
+			# to the default attack/advance targeting and would happily
+			# wander off to fight or capture some other sector, abandoning
+			# the tower it was meant to be holding. That surfaced at
+			# mission end as a false "tower lost — enemy forces recaptured"
+			# failure even though the enemy never actually retook it.
+			anchored_at_tower = true
+			action = "holding_tower"
 
 		# -------------------------------------------------------
 		# Obstacle check — only risk this when relying on the
@@ -685,6 +698,8 @@ func _generate_report(squad: Dictionary, action: String, moved_to: String, used_
 			return prefix + "%s is at the tower in %s awaiting fuel supply. Will abandon in %d turn(s)." % [n, s, 2 - squad.tower_fuel_turns_waited]
 		"abandoned_tower":
 			return prefix + "%s has abandoned the comms tower at %s — no fuel received. Falling back." % [n, s]
+		"holding_tower":
+			return prefix + "%s is holding the comms tower at %s. Tower remains operational." % [n, s]
 		"defend_carrier":
 			return prefix + "%s is moving to protect the data carrier." % n
 	return "%s — no report." % n

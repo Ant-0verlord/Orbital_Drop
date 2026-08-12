@@ -38,6 +38,7 @@ func _show_briefing() -> void:
 	var axial_list   = mission_data.get("axial", [])
 	var enemies      = mission_data.get("enemies", [])
 	var squads       = mission_data.get("squads", [])
+	var adjacency    = mission_data.get("adjacency", {})
 
 	var axial_map: Dictionary = {}
 	for i in range(min(sectors.size(), axial_list.size())):
@@ -50,13 +51,38 @@ func _show_briefing() -> void:
 		var sec = e.get("sector", "")
 		if sec != "" and zone_states.has(sec):
 			zone_states[sec]["state"] = "enemy"
+
+	var mission_squad_names: Array = []
 	for sq in squads:
+		mission_squad_names.append(sq.get("name", ""))
 		var sec = sq.get("sector", "")
 		if sec != "" and zone_states.has(sec):
 			zone_states[sec]["state"] = "held"
 			# Array, not a single overwrite — more than one squad can
 			# share a landing hex.
 			zone_states[sec]["squad"].append(sq.get("name", ""))
+
+	# Reinforcement squads spawned in during an earlier mission aren't part
+	# of this mission's scripted roster above, so without this they'd be
+	# invisible on the briefing map even though they're about to drop in
+	# alongside the main force. Preview them on the same rally hexes
+	# TurnManager will actually place them on once the mission starts.
+	var carried_over: Array = []
+	for key in SquadManager.squads:
+		if key in mission_squad_names:
+			continue
+		if SquadManager.squads[key].status == SquadManager.Status.LOST:
+			continue
+		carried_over.append(key)
+
+	if carried_over.size() > 0:
+		var rally_candidates = TurnManager.find_rally_candidates(squads, enemies, sectors, adjacency)
+		var fallback_sector = squads[0].get("sector", "") if squads.size() > 0 else ""
+		for i in range(carried_over.size()):
+			var sec = rally_candidates[i] if i < rally_candidates.size() else fallback_sector
+			if sec != "" and zone_states.has(sec):
+				zone_states[sec]["state"] = "held"
+				zone_states[sec]["squad"].append(carried_over[i])
 
 	briefing_overlay.briefing_dismissed.connect(_on_briefing_dismissed, CONNECT_ONE_SHOT)
 	briefing_overlay.show_briefing(GameManager.current_mission, zone_states, axial_map)

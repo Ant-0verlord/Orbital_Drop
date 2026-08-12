@@ -18,6 +18,19 @@ var supply_spent: Dictionary = {
 	"Fuel Cells": 0,
 }
 
+# Snapshot of supply_pool taken right after start_current_mission() adds
+# this mission's grant on top of whatever carried over from earlier
+# missions — i.e. the true total budget available this mission, not just
+# this mission's own slice of it. calculate_score()'s supply_bonus scores
+# against this, not the mission's base_pool alone (see note there for why
+# that was scoring frugal players as if they'd blown their budget).
+var mission_starting_supply: Dictionary = {}
+
+# Guards start_current_mission()'s per-mission resource grant against
+# running twice for the same mission — see the comment inside that
+# function for why it's called twice per mission in the first place.
+var _mission_resources_granted_for: int = -1
+
 var reinforcement_pool: int = 0
 var pending_reinforcement: Dictionary = {}
 var used_reinforcement_names: Array = []
@@ -732,7 +745,12 @@ var missions: Array = [
 		"win_hexes":    4,
 		"interference": 0.0,
 		"objective":    "Capture and hold 4 sectors by the end of Turn 5.",
-		"supply_pool":        { "Armaments": 8, "Medi-Packs": 6, "Fuel Cells": 8 },
+		# Supply pools across all 5 missions cut ~40% from their original
+		# values (M1 was 8/6/8) -- squads' per-turn supply draw is forced,
+		# not optional, so the old pools comfortably covered a mission's
+		# full length. This makes running dry, and letting a squad go
+		# unsupplied for a turn, a real possibility.
+		"supply_pool":        { "Armaments": 5, "Medi-Packs": 4, "Fuel Cells": 5 },
 		"reinforcement_pool": 0,
 		"orbital_strikes": 0,
 		"sectors":    M1_SECTORS,
@@ -761,7 +779,7 @@ var missions: Array = [
 		"win_hexes":    8,
 		"interference": 0.2,
 		"objective":    "Secure 8 sectors. Enemy reinforcements inbound.",
-		"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
+		"supply_pool":        { "Armaments": 6, "Medi-Packs": 5, "Fuel Cells": 6 },
 		"reinforcement_pool": 1,
 		"sectors":    M2_SECTORS,
 		"adjacency":  M2_ADJACENCY,
@@ -799,7 +817,7 @@ var missions: Array = [
 	# everyone through Alpha-7B first keeps the whole squad funnelling
 	# down the same corridor instead of scattering across the map.
 	"route_waypoint":    "Alpha-7B",
-	"supply_pool":       { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
+	"supply_pool":       { "Armaments": 6, "Medi-Packs": 5, "Fuel Cells": 6 },
 	"reinforcement_pool": 1,
 	"orbital_strikes":   1,
 	"sectors":    M3_SECTORS,
@@ -852,7 +870,7 @@ var missions: Array = [
 		"win_hexes":    55,
 		"interference": 0.75,
 		"objective":    "Push through the cave network and hold 55 sectors. Comms are failing.",
-		"supply_pool":        { "Armaments": 12, "Medi-Packs": 10, "Fuel Cells": 12 },
+		"supply_pool":        { "Armaments": 7, "Medi-Packs": 6, "Fuel Cells": 7 },
 		"reinforcement_pool": 1,
 		"orbital_strikes":    2,
 		"sectors":    M4_SECTORS,
@@ -895,7 +913,7 @@ var missions: Array = [
 	"priority_target_name": "",
 	"radio_tower_sector": "",
 	"objective":          "Reach the extraction zone. Data carrier must extract.",
-	"supply_pool":        { "Armaments": 14, "Medi-Packs": 12, "Fuel Cells": 14 },
+	"supply_pool":        { "Armaments": 8, "Medi-Packs": 7, "Fuel Cells": 8 },
 	"reinforcement_pool": 1,
 	"orbital_strikes":    1,
 	"sectors":    M5_SECTORS,
@@ -989,17 +1007,11 @@ func start_current_mission() -> void:
 		push_error("GameManager: No mission data for index %d" % current_mission)
 		return
 
-	var base_pool = data.get("supply_pool", { "Armaments": 8, "Medi-Packs": 6, "Fuel Cells": 8 })
-	for s in base_pool:
-		supply_pool[s] = supply_pool.get(s, 0) + base_pool[s]
-
 	for key in seen_attention_events.keys():
 		if key.begins_with("mission_"):
 			seen_attention_events.erase(key)
 
 	enemy_ai_mode = data.get("enemy_ai_mode", "aggressive")
-	reinforcement_pool += data.get("reinforcement_pool", 0)
-	supply_spent = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	pending_reinforcement = {}
 	tower_powered = false
 	tower_sector = data.get("radio_tower_sector", "")
@@ -1009,7 +1021,27 @@ func start_current_mission() -> void:
 	# data_carrier_squad and extraction_zone NOT reset here —
 	# data_carrier carries across missions, extraction_zone set dynamically later
 
-	TurnManager.start_mission(data)
+	# CommandCentre calls start_current_mission() twice per mission: once
+	# to prep data for the briefing screen, again when the briefing is
+	# dismissed and the mission actually starts. Without this guard, the
+	# per-mission supply and reinforcement grants below ran twice — every
+	# mission silently handed out double supplies, which is also what was
+	# quietly wrecking the supply_bonus score (see calculate_score) since
+	# that scores against a single mission's intended grant.
+	if _mission_resources_granted_for != current_mission:
+		_mission_resources_granted_for = current_mission
+
+		var base_pool = data.get("supply_pool", { "Armaments": 5, "Medi-Packs": 4, "Fuel Cells": 5 })
+		for s in base_pool:
+			supply_pool[s] = supply_pool.get(s, 0) + base_pool[s]
+		mission_starting_supply = supply_pool.duplicate()
+
+		reinforcement_pool += data.get("reinforcement_pool", 0)
+		supply_spent = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
+
+	# Actually starting the mission's turn loop (squad/enemy init, turn 1)
+	# is CommandCentre._start_mission()'s job, called once the briefing is
+	# dismissed — not this function's, which briefing-prep also calls.
 
 func debug_jump_to_mission(index: int) -> void:
 	data_destroyed = false
@@ -1020,6 +1052,8 @@ func debug_jump_to_mission(index: int) -> void:
 	current_mission = index
 	supply_pool   = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	supply_spent  = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
+	mission_starting_supply  = {}
+	_mission_resources_granted_for = -1
 	reinforcement_pool      = 0
 	orbital_strikes_pool    = 0
 	pending_reinforcement   = {}
@@ -1055,6 +1089,8 @@ func start_campaign() -> void:
 	supply_pool = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
 	reinforcement_pool = 0
 	supply_spent = { "Armaments": 0, "Medi-Packs": 0, "Fuel Cells": 0 }
+	mission_starting_supply = {}
+	_mission_resources_granted_for = -1
 	start_current_mission()
 
 
@@ -1133,15 +1169,32 @@ func has_pending_reinforcement() -> bool:
 
 
 func calculate_score(held_hexes: int, turns_taken: int, win_hexes: int) -> Dictionary:
-	var tile_score = int((float(held_hexes) / float(win_hexes)) * 400)
+	# win_hexes is legitimately 0 for non-capture mission types (hold_tower,
+	# eliminate_priority, extract) — tile-count scoring just doesn't apply
+	# to them. Dividing by it produced +-inf, and casting that to int gave
+	# the int64 "indefinite" sentinel (-9223372036854775808), which then
+	# wrecked the total score and the S/A/B/C rating entirely.
+	var tile_score = 0
+	if win_hexes > 0:
+		tile_score = int((float(held_hexes) / float(win_hexes)) * 400)
 	var max_turns  = get_current_mission_data().get("turns", 5)
 	var turn_bonus = int((float(max_turns - turns_taken) / float(max_turns)) * 300)
-	var base_pool    = get_current_mission_data().get("supply_pool", {})
+	# Score against the pool actually available this mission (this
+	# mission's own grant PLUS whatever carried over from being frugal in
+	# earlier missions) — not just this mission's slice of it. Scoring
+	# against the slice alone punished players for spending banked supply
+	# they legitimately had on hand, on top of double-counting effects
+	# from the resource-grant bug fixed in start_current_mission().
 	var max_supplies = 0
-	for s in base_pool: max_supplies += base_pool[s]
+	for s in mission_starting_supply: max_supplies += mission_starting_supply[s]
 	var total_spent  = 0
 	for s in supply_spent: total_spent += supply_spent[s]
 	var supply_bonus = int((1.0 - float(total_spent) / float(max(max_supplies, 1))) * 300)
+	# Clamp to the same +-300 range turn_bonus already operates in — an
+	# unbounded penalty let a single overspent mission wipe out an
+	# otherwise clean win's tile/turn bonuses and bury the total in
+	# negative numbers for a mission that was, in gameplay terms, a win.
+	supply_bonus = clampi(supply_bonus, -300, 300)
 	var total = tile_score + turn_bonus + supply_bonus
 	var rating = "F"
 	if   total >= 900: rating = "S"
