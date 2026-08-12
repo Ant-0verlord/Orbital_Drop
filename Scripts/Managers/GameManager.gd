@@ -816,7 +816,10 @@ var missions: Array = [
 	{
 	# Mission 3
 	"title":             "Mission 3 — The Iron Salient",
-	"turns":             6,
+	# Later missions (3-5) given more breathing room — 6 turns was tight
+	# for powering the tower over 2 consecutive turns AND holding it
+	# against wave assaults afterward.
+	"turns":             8,
 	"win_hexes":         0,
 	"interference":      0.5,
 	"mission_type":      "hold_tower",
@@ -881,11 +884,16 @@ var missions: Array = [
 		"priority_target_name": "Commander Vreth",
 		"radio_tower_sector":   "Beta-5C",   # central cave sector — adjust after testing
 		"title":        "Mission 4 — Contested Hive Spire",
-		"turns":        10,
+		"turns":        12,
 		"win_hexes":    55,
 		"interference": 0.75,
 		"objective":    "Push through the cave network and hold 55 sectors. Comms are failing.",
-		"supply_pool":        { "Armaments": 6, "Medi-Packs": 6, "Fuel Cells": 6 },
+		# Bumped up across the board — this is the longest mission (10
+		# turns), has the most enemies on the map (17), and now always
+		# splits at least one squad off to hunt the priority target
+		# separately from whoever's on tower duty, so demand on the pool
+		# is genuinely higher than the other missions.
+		"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
 		"reinforcement_pool": 1,
 		"orbital_strikes":    2,
 		"sectors":    M4_SECTORS,
@@ -919,7 +927,7 @@ var missions: Array = [
 	{
 		# Mission 5
 		"title":              "Mission 5 — Final Assault",
-	"turns":              7,
+	"turns":              12,
 	"win_hexes":          0,
 	"interference":       0.9,
 	"mission_type":       "extract",
@@ -928,7 +936,11 @@ var missions: Array = [
 	"priority_target_name": "",
 	"radio_tower_sector": "",
 	"objective":          "Reach the extraction zone. Data carrier must extract.",
-	"supply_pool":        { "Armaments": 8, "Medi-Packs": 6, "Fuel Cells": 8 },
+	"extraction_sector":  "Beta-1D",
+	# Bumped up a bit like M4 — final mission, enemies rushing the
+	# extraction zone from multiple vectors, worth having some buffer
+	# left to fight through rather than running dry right before the end.
+	"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
 	"reinforcement_pool": 1,
 	"orbital_strikes":    1,
 	"sectors":    M5_SECTORS,
@@ -1028,6 +1040,11 @@ func start_current_mission() -> void:
 
 	enemy_ai_mode = data.get("enemy_ai_mode", "aggressive")
 	pending_reinforcement = {}
+	# Bombardment status ("Strike resolved at ...") was never cleared between
+	# missions here — only pending_reinforcement was — so a resolved strike
+	# from a previous mission kept showing as "resolved" in the Logistics
+	# Terminal on every mission after it, overlapping with the fresh state.
+	pending_bombardment = {}
 	tower_powered = false
 	tower_sector = data.get("radio_tower_sector", "")
 	priority_target_alive = data.get("has_priority_target", false)

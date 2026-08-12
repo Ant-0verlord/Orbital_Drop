@@ -125,6 +125,13 @@ func _step(text: String, path: NodePath) -> TutorialStep:
 
 func _on_turn_started(_turn: int) -> void:
 	_reset_allocations()
+	# TurnManager.start_mission() fires turn_started with turn 0 exactly once,
+	# right when a new mission begins — every other turn_started fires with
+	# turn >= 1. Use that to clear the previous mission's end-of-mission
+	# overlay, which otherwise stays visible forever and overlaps the fresh
+	# mission's UI (this must run even if the popup isn't currently open).
+	if _turn == 0:
+		end_overlay.visible = false
 	if not GameManager.has_seen_attention("logistics_turn"):
 		set_help_attention(true)
 	if visible: refresh()

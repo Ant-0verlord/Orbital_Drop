@@ -51,7 +51,11 @@ const NEED_NAMES: Dictionary = {
 }
 
 const ARM_CASUALTY_CHANCE: float = 0.25
-const NO_FUEL_OBSTACLE_CHANCE: float = 0.2
+# Chance a squad moving without fuel gets bogged down by rough terrain and
+# held in place for the turn. Was 0.2 (1 in 5 every unfueled move) — with
+# fuel already scarce, that was tripping squads up too often. Lowered to
+# make it a real but less frequent risk.
+const NO_FUEL_OBSTACLE_CHANCE: float = 0.1
 const BANK_CAP: int = 3
 
 var squads: Dictionary = {}
@@ -122,42 +126,6 @@ func init_squads(squad_list: Array, mission_interference: float, rally_candidate
 			squads[key].sector = fallback_sector
 
 	_generate_briefings()
-
-func _try_pass_data(carrier_name: String) -> void:
-	var carrier = squads.get(carrier_name, {})
-	if carrier.is_empty():
-		return
-	if not carrier.get("has_data", false):
-		return
-
-	# Only pass if carrier is wounded or critical
-	if carrier.status == Status.ACTIVE:
-		return
-
-	# Find healthiest adjacent squad
-	var carrier_sector = carrier.sector
-	var best_candidate = ""
-	var best_status = 99
-
-	for squad_name in squads:
-		if squad_name == carrier_name:
-			continue
-		var squad = squads[squad_name]
-		if squad.status == Status.LOST:
-			continue
-		# Check adjacency
-		if squad.sector in EnemyManager.adjacency.get(carrier_sector, []):
-			var status_val = squad.status  # ACTIVE=0, WOUNDED=1, CRITICAL=2
-			if int(status_val) < best_status:
-				best_status = int(status_val)
-				best_candidate = squad_name
-
-	if best_candidate != "":
-		carrier["has_data"] = false
-		squads[best_candidate]["has_data"] = true
-		GameManager.data_carrier_squad = best_candidate
-		print("DATA PASSED: %s → %s" % [carrier_name, best_candidate])
-		emit_signal("data_passed", carrier_name, best_candidate)
 
 func _make_squad(s: Dictionary) -> Dictionary:
 	return {
@@ -413,12 +381,22 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 								step_target = n
 								engaging_enemy = true
 							break
-						# Otherwise path toward carrier
-					if step_target == "" and carrier_sector != current_sector:
-						if carrier_sector in EnemyManager.adjacency.get(current_sector, []):
-							step_target = carrier_sector
-						else:
-							step_target = _path_toward(current_sector, carrier_sector)
+
+					# No immediate threat to intercept — head for the
+					# extraction zone directly instead of chasing the
+					# carrier's live position. The carrier is heading there
+					# too, so this keeps escorts making real progress toward
+					# the objective every turn rather than perpetually
+					# trailing a moving target, which produced a wandering,
+					# indirect route to extraction for the whole group.
+					if step_target == "":
+						var ez = GameManager.extraction_zone
+						var escort_dest = ez if ez != "" else carrier_sector
+						if escort_dest != current_sector:
+							if escort_dest in EnemyManager.adjacency.get(current_sector, []):
+								step_target = escort_dest
+							else:
+								step_target = _path_toward(current_sector, escort_dest)
 
 				# A goal override above may have swapped step_target to a
 				# different tile than the one engaging_enemy was set for
@@ -717,12 +695,10 @@ func _assign_goals() -> void:
 		if squads.has(carrier_name):
 			carrier_sector = squads[carrier_name].sector
 
-		# Try to pass data if carrier is hurt
-		if carrier_name != "":
-			_try_pass_data(carrier_name)
-			# Refresh after potential pass
-			carrier_name   = GameManager.data_carrier_squad
-			carrier_sector = squads.get(carrier_name, {}).get("sector", "")
+		# Data hand-off between squads is disabled — whichever squad is
+		# carrying stays the carrier for the rest of the mission, even if
+		# wounded/critical. (Previously _try_pass_data() would hand the data
+		# to the healthiest adjacent squad once the carrier was hurt.)
 
 		# Check if carrier is under immediate threat
 		var carrier_under_threat = false
@@ -769,23 +745,56 @@ func _assign_goals() -> void:
 	var tower_missions = ["hold_tower", "eliminate_priority", "extract"]
 	var tower_candidates: Array = []
 
+	# Mission 4 has BOTH a priority target and a tower on the map. Without
+	# this, a squad dropped near the tower could get swept into tower duty
+	# purely by the distance sort below, with nobody ever actually sent
+	# after the priority target. Guarantee the closest living, non-carrier
+	# squad hunts the target first, every turn — only once that's
+	# happening (a squad is confirmed near/targeting it) does the tower
+	# even become an option for anyone else.
+	var priority_hunter = ""
+	if mission_type == "eliminate_priority" and GameManager.priority_target_alive:
+		var pt_sector = EnemyManager.get_priority_target_sector()
+		if pt_sector != "":
+			var best_dist = 999999
+			for squad_name in squads:
+				var s = squads[squad_name]
+				if s.status == Status.LOST or s.get("has_data", false):
+					continue
+				var d = EnemyManager.get_distance_between(s.sector, pt_sector)
+				if d < best_dist:
+					best_dist = d
+					priority_hunter = squad_name
+			if priority_hunter != "":
+				squads[priority_hunter].goal = Goal.ATTACK_PRIORITY
+
+	# True only if the target still needs a hunter and none could be
+	# found (e.g. every squad is lost or carrying data) — blocks tower
+	# duty in that edge case too, same rule either way.
+	var target_needs_attention = (mission_type == "eliminate_priority"
+		and GameManager.priority_target_alive and priority_hunter == "")
+
 	for squad_name in squads:
 		var squad = squads[squad_name]
 		if squad.status == Status.LOST:
 			continue
 
+		if squad_name == priority_hunter:
+			continue  # already committed to the priority target above
+
 		if squad.get("has_data", false) and mission_type in ["eliminate_priority", "extract"]:
 			squad.goal = Goal.EXTRACT
 			continue
 
-		if has_tower and mission_type in tower_missions:
+		if has_tower and mission_type in tower_missions and not target_needs_attention:
 			tower_candidates.append({
 				"name": squad_name,
 				"dist": EnemyManager.get_distance_between(squad.sector, tower_sector),
 			})
 			continue
 
-		# No tower relevant to this mission — default advance / priority hunt
+		# No tower relevant to this mission (or the target still needs a
+		# hunter) — default advance / priority hunt
 		squad.goal = Goal.ATTACK_PRIORITY if (mission_type == "eliminate_priority" and GameManager.priority_target_alive) else Goal.ADVANCE
 
 	if tower_candidates.is_empty():
