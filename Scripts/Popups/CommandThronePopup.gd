@@ -131,10 +131,10 @@ func _get_objective_text(data: Dictionary) -> String:
 			if GameManager.priority_target_alive:
 				return "Eliminate %s. Optional: power the comms tower." % GameManager.priority_target_name
 			else:
-				return "Priority target eliminated. Data secured — extract if possible."
+				return "Data secured. Break contact — get the carrier at least %d tiles from every remaining enemy before extraction is authorised." % TurnManager.DATA_CARRIER_SAFE_DISTANCE
 		"extract":
 			var ez = GameManager.extraction_zone
-			return "Reach extraction zone (%s) by end of final turn. Data carrier must extract." % ez
+			return "Hold the theatre around the extraction zone (%s) — engage freely. Once the shuttle is inbound (%d turns before mission end), break off and converge to board. Data carrier must extract." % [ez, TurnManager.SHUTTLE_ARRIVAL_WINDOW]
 	return data.get("objective", "")
 
 func _update_held_label() -> void:
@@ -160,18 +160,40 @@ func _update_held_label() -> void:
 				Color(0.4, 0.9, 0.4) if powered else Color(0.9, 0.6, 0.2))
 		"eliminate_priority":
 			var alive = GameManager.priority_target_alive
-			held_label.text = "Target: %s" % ("ELIMINATED ✓" if not alive else "AT LARGE ✦")
-			held_label.add_theme_color_override("font_color",
-				Color(0.4, 0.9, 0.4) if not alive else Color(0.9, 0.3, 0.3))
+			if alive:
+				held_label.text = "Target: AT LARGE ✦"
+				held_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+			else:
+				# Target's dead, but the mission isn't won until the data
+				# carrier has actually put real distance between itself
+				# and every enemy still standing — show that progress
+				# instead of just a flat "eliminated" flag.
+				var carrier_name = GameManager.data_carrier_squad
+				var carrier_ok = carrier_name != "" and SquadManager.squads.has(carrier_name) \
+					and SquadManager.squads[carrier_name].status != SquadManager.Status.LOST
+				if not carrier_ok:
+					held_label.text = "Data carrier lost ✗"
+					held_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+				else:
+					var dist = EnemyManager.get_distance_to_nearest_enemy(SquadManager.squads[carrier_name].sector)
+					var safe = dist >= TurnManager.DATA_CARRIER_SAFE_DISTANCE
+					held_label.text = "Carrier clear: %d / %d tiles" % [min(dist, TurnManager.DATA_CARRIER_SAFE_DISTANCE), TurnManager.DATA_CARRIER_SAFE_DISTANCE]
+					held_label.add_theme_color_override("font_color",
+						Color(0.4, 0.9, 0.4) if safe else Color(0.9, 0.6, 0.2))
 		"extract":
 			var ez = GameManager.extraction_zone
 			var at_ez = 0
 			for squad in SquadManager.get_squads_for_ui():
 				if squad.sector == ez and squad.status != SquadManager.Status.LOST:
 					at_ez += 1
-			held_label.text = "At extraction: %d squad(s)" % at_ez
-			held_label.add_theme_color_override("font_color",
-				Color(0.4, 0.9, 0.4) if at_ez > 0 else Color(0.9, 0.6, 0.2))
+			var turns_left = TurnManager.max_turns - TurnManager.current_turn
+			if turns_left > TurnManager.SHUTTLE_ARRIVAL_WINDOW:
+				held_label.text = "Holding theatre — shuttle in %d turns" % (turns_left - TurnManager.SHUTTLE_ARRIVAL_WINDOW)
+				held_label.add_theme_color_override("font_color", Color(0.6, 0.75, 0.95))
+			else:
+				held_label.text = "SHUTTLE INBOUND — At extraction: %d squad(s)" % at_ez
+				held_label.add_theme_color_override("font_color",
+					Color(0.4, 0.9, 0.4) if at_ez > 0 else Color(0.9, 0.6, 0.2))
 
 func _update_squad_summary() -> void:
 	for child in squad_summary.get_children():
@@ -285,6 +307,19 @@ func _show_report(report: Dictionary) -> void:
 			carry_reinf,
 		]
 
+	# Data package status — only relevant on missions with a priority
+	# target/data carrier at all (eliminate_priority, extract).
+	var data_text = ""
+	match report.get("data_status", ""):
+		"secured":
+			data_text = "\n\nData package: SECURED — carried by %s." % report.get("data_carrier", "")
+		"destroyed":
+			data_text = "\n\nData package: DESTROYED — did not survive."
+		"at_large":
+			data_text = "\n\nData package: NOT RECOVERED — priority target still at large."
+		"unaccounted":
+			data_text = "\n\nData package: STATUS UNKNOWN — recovery not confirmed."
+
 	if report_title:
 		report_title.text = "MISSION COMPLETE" if won else "MISSION FAILED"
 		report_title.add_theme_color_override("font_color",
@@ -313,14 +348,14 @@ func _show_report(report: Dictionary) -> void:
 	if report_body:
 		if won:
 			report_body.text = (
-				"Sectors held: %d / %d\nSquads operational: %d   Squads lost: %d\nTurns taken: %d%s"
-				% [held, req, alive, lost_c, turns, carry_text]
+				"Sectors held: %d / %d\nSquads operational: %d   Squads lost: %d\nTurns taken: %d%s%s"
+				% [held, req, alive, lost_c, turns, data_text, carry_text]
 			)
 		else:
 			var reason = report.get("reason", "Mission objectives not met.")
 			report_body.text = (
-				"%s\n\nSectors held: %d / %d required\nSquads lost: %d   Turns: %d%s"
-				% [reason, held, req, lost_c, turns, carry_text]
+				"%s\n\nSectors held: %d / %d required\nSquads lost: %d   Turns: %d%s%s"
+				% [reason, held, req, lost_c, turns, data_text, carry_text]
 			)
 		report_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		report_body.autowrap_mode = TextServer.AUTOWRAP_WORD

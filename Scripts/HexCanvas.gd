@@ -7,8 +7,15 @@ extends Control
 
 var zone_states: Dictionary = {}
 var hex_entries: Array = []
-var flicker_states: Dictionary = {}
 var pulse_time: float = 0.0
+
+# Enemy sensor "glitch" effect — occasional brief static bursts on enemy
+# hexes, rather than a steady on/off flash. Most of the time an enemy
+# marker just reads clean; every so often (rolled per-sector, weighted by
+# interference) it drops into a short burst of randomised static/noise
+# before returning to normal.
+var glitch_states: Dictionary = {}   # sector -> bool, currently glitching
+var glitch_timers: Dictionary = {}   # sector -> seconds left in current burst
 
 # Reinforcement placement mode
 var placement_mode: bool = false
@@ -25,8 +32,11 @@ var special_sectors: Dictionary = {}
 
 signal hex_clicked(sector: String)
 
-var flicker_timer: float = 0.0
-const FLICKER_INTERVAL: float = 0.4  # seconds between flicker re-rolls
+var glitch_check_timer: float = 0.0
+const GLITCH_CHECK_INTERVAL: float  = 0.6   # how often we roll the dice for a new burst
+const GLITCH_CHANCE_PER_CHECK: float = 0.12 # base odds per roll, scaled by interference
+const GLITCH_DURATION_MIN: float = 0.12     # a burst is short — a flicker of static, not a hold
+const GLITCH_DURATION_MAX: float = 0.4
 
 const PULSE_SPEED: float = 2.5
 const HEX_RADIUS: float  = 38.0
@@ -84,12 +94,26 @@ func _process(delta: float) -> void:
 
 	var interference = SquadManager.interference
 	if interference > 0.2:
-		flicker_timer += delta
-		if flicker_timer >= FLICKER_INTERVAL:
-			flicker_timer = 0.0
+		# Occasionally roll a new static burst on an enemy hex that isn't
+		# already glitching — rare and brief, not a steady rhythm.
+		glitch_check_timer += delta
+		if glitch_check_timer >= GLITCH_CHECK_INTERVAL:
+			glitch_check_timer = 0.0
 			for sector in zone_states:
-				if zone_states[sector].get("enemy_count", 0) > 0:
-					flicker_states[sector] = randf() > interference * 0.35
+				if zone_states[sector].get("enemy_count", 0) > 0 and not glitch_states.get(sector, false):
+					if randf() < GLITCH_CHANCE_PER_CHECK * interference:
+						glitch_states[sector] = true
+						glitch_timers[sector] = randf_range(GLITCH_DURATION_MIN, GLITCH_DURATION_MAX)
+
+		# Tick down any bursts already in progress and clear them when done.
+		for sector in glitch_states.keys():
+			if glitch_states[sector]:
+				glitch_timers[sector] = glitch_timers.get(sector, 0.0) - delta
+				if glitch_timers[sector] <= 0.0:
+					glitch_states[sector] = false
+	else:
+		glitch_states.clear()
+		glitch_timers.clear()
 
 	queue_redraw()
 
@@ -213,9 +237,9 @@ func _draw() -> void:
 		var squad_names: Array = data.get("squad", [])
 		var enemy_count: int = data.get("enemy_count", 0)
 
-		var enemy_visible = true
+		var enemy_glitching = false
 		if enemy_count > 0 and interference > 0.2:
-			enemy_visible = flicker_states.get(sector, true)
+			enemy_glitching = glitch_states.get(sector, false)
 
 		# -------------------------------------------------------
 		# Placement mode overrides fill colour
@@ -230,15 +254,25 @@ func _draw() -> void:
 				fill = _state_color(state).lerp(COLOR_PLACEMENT, 0.35)
 		else:
 			fill = _state_color(state)
-			if enemy_count > 0 and enemy_visible:
-				fill = fill.lerp(COLOR_ENEMY, 0.55) if state in ["held", "contested"] else COLOR_ENEMY
+			if enemy_count > 0:
+				if enemy_glitching:
+					# Brief static burst — jittered noise tint, redrawn fresh
+					# every frame for the burst's short lifetime so it reads
+					# as flickering static rather than a clean colour swap.
+					var noise = randf()
+					fill = Color(noise, noise, noise, 1.0)
+				else:
+					fill = fill.lerp(COLOR_ENEMY, 0.55) if state in ["held", "contested"] else COLOR_ENEMY
 			if state == "contested" and enemy_count == 0:
 				var pulse = sin(pulse_time) * 0.5 + 0.5
 				fill.a = lerp(0.5, 0.95, pulse)
 				fill = fill.lerp(Color(1.0, 0.95, 0.4, fill.a), pulse * 0.25)
-			if enemy_count > 0 and enemy_visible:
-				var pulse = sin(pulse_time * 1.6) * 0.5 + 0.5
-				fill.a = lerp(0.6, 1.0, pulse)
+			if enemy_count > 0:
+				if enemy_glitching:
+					fill.a = randf_range(0.25, 0.9)
+				else:
+					var pulse = sin(pulse_time * 1.6) * 0.5 + 0.5
+					fill.a = lerp(0.6, 1.0, pulse)
 
 		draw_colored_polygon(_hex_points(center, HEX_INNER), fill)
 		
@@ -266,7 +300,10 @@ func _draw() -> void:
 				border = COLOR_PLACEMENT_HOVER
 			else:
 				border = COLOR_PLACEMENT * Color(1, 1, 1, 0.5)
-		elif enemy_count > 0 and enemy_visible:
+		elif enemy_count > 0 and enemy_glitching:
+			var noise = randf()
+			border = Color(noise, noise, noise, randf_range(0.5, 1.0))
+		elif enemy_count > 0:
 			border = COLOR_ENEMY_BORDER.lerp(Color(1, 0.5, 0.5, 1), sin(pulse_time * 1.6) * 0.3)
 		elif state == "contested":
 			border = Color(1.0, 0.85, 0.2, 0.9)
@@ -301,15 +338,21 @@ func _draw() -> void:
 		var below_names_y = 16 + max(0, squad_names.size() - 1) * SQUAD_LINE_HEIGHT
 
 		if not placement_mode:
-			if enemy_count > 0 and enemy_visible:
+			if enemy_count > 0 and enemy_glitching:
+				# Static burst — a couple of randomised noise glyphs standing
+				# in for the marker while the sensor read is scrambled.
+				const GLITCH_GLYPHS = ["▓", "▒", "░", "#", "%", "&", "¤"]
+				var marker = ""
+				for i in range(randi_range(1, 3)):
+					marker += GLITCH_GLYPHS[randi() % GLITCH_GLYPHS.size()]
+				draw_string(ThemeDB.fallback_font,
+					center + Vector2(-len(marker) * 3.5, below_names_y),
+					marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.6, 0.6, 0.6, randf_range(0.3, 0.9)))
+			elif enemy_count > 0:
 				var marker = "✕" if enemy_count == 1 else "✕×%d" % enemy_count
 				draw_string(ThemeDB.fallback_font,
 					center + Vector2(-len(marker) * 3.5, below_names_y),
 					marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.95))
-			elif enemy_count > 0 and not enemy_visible:
-				draw_string(ThemeDB.fallback_font,
-					center + Vector2(-6, below_names_y),
-					"░░", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.5, 0.3, 0.3, 0.35))
 		else:
 			# Placement mode — show drop indicator on hovered/placed hex
 			if sector == placed_sector:

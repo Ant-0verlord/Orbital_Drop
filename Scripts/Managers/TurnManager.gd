@@ -20,6 +20,23 @@ var pending_allocations: Dictionary = {}
 var mission_over: bool = false
 var reinforcement_schedule: Dictionary = {}
 
+# Mission 4 ("eliminate_priority"): killing Vreth alone used to end the
+# mission on the spot. But the data package is what the whole campaign was
+# authorised to recover, and enemy forces still standing know exactly who's
+# carrying it — they converge on the carrier once the target falls. So
+# eliminating Vreth isn't the finish line by itself: the carrier also has
+# to put real distance between itself and every remaining hostile (by
+# squads killing them or pushing them back) before extraction is safe to
+# hand off to Mission 5. This is that required distance, in hex tiles.
+const DATA_CARRIER_SAFE_DISTANCE: int = 3
+
+# Mission 5 ("extract"): the extraction shuttle isn't sitting on the ground
+# waiting from turn 1 — squads fight the theatre normally around the
+# extraction zone until the shuttle actually arrives. Once this many turns
+# remain before the mission's turn limit runs out, the shuttle is inbound
+# and every squad breaks off to converge on the extraction zone and board.
+const SHUTTLE_ARRIVAL_WINDOW: int = 2
+
 func _ready() -> void:
 	EnemyManager.priority_target_eliminated.connect(SquadManager._on_priority_target_eliminated)
 
@@ -172,12 +189,21 @@ func end_turn() -> void:
 	# checking who actually controls the tile afterward.
 	GameManager.check_tower_still_held()
 
+	# If the enemy has fought through to the data carrier's own tile, the
+	# package doesn't survive contact — this is an immediate, hard mission
+	# failure rather than the tile just quietly flipping to enemy control
+	# like any other sector. Squads have to actually keep the enemy off
+	# the carrier; winning the fight after the fact isn't good enough.
+	_check_carrier_overrun()
+	if mission_over:
+		return
+
 	# Mid-turn win check for eliminate-type missions
 	var mission_type = GameManager.mission_type
 	if mission_type == "eliminate" and not EnemyManager.is_any_enemy_alive():
 		_end_mission(true, "")
 		return
-	if mission_type == "eliminate_priority" and not GameManager.priority_target_alive:
+	if mission_type == "eliminate_priority" and not GameManager.priority_target_alive and _data_carrier_is_safe():
 		_end_mission(true, "")
 		return
 
@@ -311,11 +337,48 @@ func _check_hold_tower_win() -> void:
 
 
 func _check_eliminate_priority_win() -> void:
-	if not GameManager.priority_target_alive:
-		_end_mission(true, "")
-	else:
+	if GameManager.priority_target_alive:
 		_end_mission(false,
 			"Priority target '%s' was not eliminated. Mission failed." % GameManager.priority_target_name)
+	elif _data_carrier_is_safe():
+		_end_mission(true, "")
+	elif GameManager.data_destroyed:
+		_end_mission(false,
+			"%s was eliminated, but the data carrier was lost in the field. The intel did not survive." % GameManager.priority_target_name)
+	else:
+		_end_mission(false,
+			"%s was eliminated, but the data carrier never broke contact with enemy forces. Extraction compromised." % GameManager.priority_target_name)
+
+
+# Instant fail: an enemy has reached the exact tile the data carrier is
+# standing on. This only applies to missions where a data carrier can
+# exist at all (eliminate_priority, extract) — everything else no-ops.
+func _check_carrier_overrun() -> void:
+	if GameManager.mission_type not in ["eliminate_priority", "extract"]:
+		return
+	var carrier_name = GameManager.data_carrier_squad
+	if carrier_name == "" or not SquadManager.squads.has(carrier_name):
+		return
+	var carrier = SquadManager.squads[carrier_name]
+	if carrier.status == SquadManager.Status.LOST:
+		return
+	if EnemyManager.get_enemy_count_at(carrier.sector) > 0:
+		GameManager.data_destroyed = true
+		GameManager.data_carrier_squad = ""
+		_end_mission(false,
+			"%s was overrun at %s — enemy forces reached the data carrier. The intel did not survive contact." % [carrier_name, carrier.sector])
+
+
+# Carrier needs to be alive, on the board, and at least
+# DATA_CARRIER_SAFE_DISTANCE tiles from every remaining living enemy.
+func _data_carrier_is_safe() -> bool:
+	var carrier_name = GameManager.data_carrier_squad
+	if carrier_name == "" or not SquadManager.squads.has(carrier_name):
+		return false
+	var carrier = SquadManager.squads[carrier_name]
+	if carrier.status == SquadManager.Status.LOST:
+		return false
+	return EnemyManager.get_distance_to_nearest_enemy(carrier.sector) >= DATA_CARRIER_SAFE_DISTANCE
 
 
 func _check_extract_win() -> void:
@@ -365,9 +428,26 @@ func _end_mission(won: bool, reason: String) -> void:
 		extracted_count  = eb.extracted_count
 		data_extracted   = eb.data_extracted
 
-	var score = GameManager.calculate_score(held, current_turn, win_condition_hexes)
+	var score = GameManager.calculate_score(held, current_turn, win_condition_hexes, won)
 	var final_score = score.total + extraction_bonus
-	
+
+	# Surface what actually happened to the data package at the end of any
+	# mission where recovering it mattered — this used to be invisible
+	# outside of a one-off in-mission notification, which made it easy to
+	# miss that the intel was lost (e.g. destroyed by an orbital strike,
+	# or previously: silently dropped if the priority target was killed by
+	# a reinforcement hot-drop instead of a normal squad kill).
+	var data_status = ""
+	if GameManager.mission_type in ["eliminate_priority", "extract"]:
+		if GameManager.data_destroyed:
+			data_status = "destroyed"
+		elif GameManager.data_carrier_squad != "" and SquadManager.squads.has(GameManager.data_carrier_squad) \
+				and SquadManager.squads[GameManager.data_carrier_squad].get("has_data", false):
+			data_status = "secured"
+		elif GameManager.priority_target_alive:
+			data_status = "at_large"
+		else:
+			data_status = "unaccounted"
 
 	var report = {
 		"won":            won,
@@ -387,6 +467,8 @@ func _end_mission(won: bool, reason: String) -> void:
 		"extraction_bonus":  extraction_bonus,
 		"extracted_count":   extracted_count,
 		"data_extracted":    data_extracted,
+		"data_status":       data_status,
+		"data_carrier":      GameManager.data_carrier_squad,
 	}
 
 	GameManager.campaign_record.append({

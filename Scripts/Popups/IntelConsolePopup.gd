@@ -212,8 +212,8 @@ func _on_data_destroyed_by_enemy(squad_name: String) -> void:
 	if visible:
 		refresh()
 
-func _on_player_reinforcement_landed(squad_name: String, sector: String, surprise: bool) -> void:
-	player_reinforcement_info = { "squad_name": squad_name, "sector": sector, "surprise": surprise, "turn": SquadManager.current_turn }
+func _on_player_reinforcement_landed(squad_name: String, sector: String, surprise: bool, priority_hit: bool) -> void:
+	player_reinforcement_info = { "squad_name": squad_name, "sector": sector, "surprise": surprise, "priority_hit": priority_hit, "turn": SquadManager.current_turn }
 	if not GameManager.has_seen_attention("intel_player_reinf_%s" % squad_name):
 		set_help_attention(true)
 	if visible: refresh()
@@ -455,6 +455,8 @@ func _add_player_reinforcement_card(info: Dictionary) -> void:
 	var body := Label.new()
 	var surprise_text = " — caught enemy forces by surprise on landing" if info.get("surprise", false) else ""
 	body.text = "%s has dropped into %s%s." % [info.get("squad_name", ""), info.get("sector", ""), surprise_text]
+	if info.get("priority_hit", false):
+		body.text += " %s was caught in the drop — priority target eliminated, data package recovered." % GameManager.priority_target_name
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD
 	body.add_theme_font_size_override("font_size", 12)
 	body.add_theme_color_override("font_color", Color(0.7, 0.9, 0.75))

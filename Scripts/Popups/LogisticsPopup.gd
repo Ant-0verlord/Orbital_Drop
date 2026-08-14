@@ -178,10 +178,10 @@ func _get_objective_text(data: Dictionary) -> String:
 			if GameManager.priority_target_alive:
 				return "Eliminate %s. Optional: power the comms tower." % GameManager.priority_target_name
 			else:
-				return "Priority target eliminated. Data secured — extract if possible."
+				return "Data secured. Break contact — get the carrier at least %d tiles from every remaining enemy before extraction is authorised." % TurnManager.DATA_CARRIER_SAFE_DISTANCE
 		"extract":
 			var ez = GameManager.extraction_zone
-			return "Reach extraction zone (%s) by end of final turn. Data carrier must extract." % ez
+			return "Hold the theatre around the extraction zone (%s) — engage freely. Once the shuttle is inbound (%d turns before mission end), break off and converge to board. Data carrier must extract." % [ez, TurnManager.SHUTTLE_ARRIVAL_WINDOW]
 	return data.get("objective", "")
 
 func _rebuild_squad_rows() -> void:
@@ -498,14 +498,27 @@ func _show_mission_end(report: Dictionary) -> void:
 			carry_reinf,
 		]
 
+	# Data package status — only relevant on missions with a priority
+	# target/data carrier (eliminate_priority, extract).
+	var data_text = ""
+	match report.get("data_status", ""):
+		"secured":
+			data_text = "\n\nData package: SECURED — carried by %s." % report.get("data_carrier", "")
+		"destroyed":
+			data_text = "\n\nData package: DESTROYED — did not survive."
+		"at_large":
+			data_text = "\n\nData package: NOT RECOVERED — priority target still at large."
+		"unaccounted":
+			data_text = "\n\nData package: STATUS UNKNOWN — recovery not confirmed."
+
 	end_title.text = "MISSION COMPLETE" if won else "MISSION FAILED"
 	end_title.add_theme_color_override("font_color",
 		Color(0.4, 0.9, 0.4) if won else Color(0.9, 0.3, 0.3))
 	end_title.add_theme_font_size_override("font_size", 32)
 
 	end_body.text = (
-		"Rating: %s  |  Score: %d\n\nTile: %d   Turn bonus: %d   Supply bonus: %d\nSectors held: %d / %d   Turns: %d%s\n\nSee Command Throne for full debrief."
-		% [rating, score, t_score, t_bonus, s_bonus, held, req, turns, carry_text]
+		"Rating: %s  |  Score: %d\n\nTile: %d   Turn bonus: %d   Supply bonus: %d\nSectors held: %d / %d   Turns: %d%s%s\n\nSee Command Throne for full debrief."
+		% [rating, score, t_score, t_bonus, s_bonus, held, req, turns, data_text, carry_text]
 	)
 	end_body.add_theme_font_size_override("font_size", 14)
 	end_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

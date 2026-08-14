@@ -301,6 +301,7 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 
 		var fought_this_turn = false
 
+		var fleeing_with_data = false
 		if can_attempt_move:
 			var steps_taken = 0
 			while steps_taken < move_range and not fought_this_turn:
@@ -366,6 +367,24 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 							step_target = ez
 						else:
 							step_target = _path_toward(current_sector, ez)
+					elif ez == "":
+						# No fixed extraction zone (eliminate_priority — M4)
+						# — this squad is carrying the data with nowhere
+						# scripted to run to, so instead of sitting idle it
+						# actively seeks out the nearest sector that clears
+						# TurnManager's carrier-safe-distance requirement
+						# and heads straight there, no matter what it was
+						# about to do otherwise (attack, advance, etc.).
+						# Enemies can still catch it en route — this only
+						# picks the destination, not a guaranteed-safe path.
+						var safe_sector = EnemyManager.find_nearest_safe_sector(
+							current_sector, TurnManager.DATA_CARRIER_SAFE_DISTANCE)
+						if safe_sector != "" and safe_sector != current_sector:
+							fleeing_with_data = true
+							if safe_sector in EnemyManager.adjacency.get(current_sector, []):
+								step_target = safe_sector
+							else:
+								step_target = _path_toward(current_sector, safe_sector)
 
 				elif squad.goal == Goal.DEFEND_CARRIER:
 					var carrier_name = GameManager.data_carrier_squad
@@ -435,7 +454,7 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 					squad.turns_unsupplied = 0
 				else:
 					EnemyManager.capture_tile(squad.sector)
-					action = "moved"
+					action = "retreating_with_data" if fleeing_with_data else "moved"
 					squad.turns_unsupplied = 0
 
 		# -------------------------------------------------------
@@ -573,6 +592,7 @@ func _next_need(squad: Dictionary, last_action: String) -> int:
 		return Need.MEDI_PACKS if randf() > 0.4 else Need.ARMAMENTS
 	match last_action:
 		"moved":                         return Need.ARMAMENTS
+		"retreating_with_data":          return Need.FUEL_CELLS  # fuel = 2-hex moves, covers ground faster
 		"fought_armed":                  return Need.MEDI_PACKS
 		"moved_and_fought_armed":        return Need.MEDI_PACKS
 		"moved_and_fought_unarmed_won":  return Need.ARMAMENTS
@@ -647,6 +667,8 @@ func _generate_report(squad: Dictionary, action: String, moved_to: String, used_
 	match action:
 		"moved":
 			return prefix + "%s advanced to %s. Sector secured." % [n, s]
+		"retreating_with_data":
+			return prefix + "%s is falling back through %s with the data package, breaking contact with enemy forces." % [n, s]
 		"fought_armed":
 			return prefix + "%s engaged and eliminated enemy forces at %s. Sector held.%s" % [n, s, casualty_suffix]
 		"moved_and_fought_armed":
@@ -699,6 +721,26 @@ func _assign_goals() -> void:
 		# carrying stays the carrier for the rest of the mission, even if
 		# wounded/critical. (Previously _try_pass_data() would hand the data
 		# to the healthiest adjacent squad once the carrier was hurt.)
+
+		var turns_left     = TurnManager.max_turns - TurnManager.current_turn
+		var shuttle_inbound = turns_left <= TurnManager.SHUTTLE_ARRIVAL_WINDOW
+
+		if not shuttle_inbound:
+			# The extraction shuttle isn't down yet. Instead of beelining
+			# for the extraction zone for the whole mission, every squad —
+			# carrier included — fights the theatre normally around it:
+			# advancing, engaging enemies, capturing ground. Only once the
+			# shuttle is actually inbound (below) does everyone break off
+			# and converge to board.
+			for squad_name in squads:
+				var squad = squads[squad_name]
+				if squad.status == Status.LOST:
+					continue
+				squad.goal = Goal.ADVANCE
+			return
+
+		# Shuttle inbound — break off whatever fight is underway and
+		# converge on the extraction zone with the remaining turns.
 
 		# Check if carrier is under immediate threat
 		var carrier_under_threat = false
@@ -840,7 +882,22 @@ func _default_advance_target(squad: Dictionary, current_sector: String) -> Strin
 		var toward_tower = _route_target_toward_tower(current_sector, tower)
 		if toward_tower != "":
 			return toward_tower
-	return EnemyManager.get_best_move_target(current_sector)
+
+	# Steer away from hexes a living ally already occupies (checked live,
+	# so a squad resolving later this same turn sees where earlier squads
+	# already moved) — spreads the group out instead of letting them
+	# pile onto the same tile, which only captures one hex instead of
+	# several. get_best_move_target() still allows stacking as a last
+	# resort if there's genuinely nowhere else to go.
+	var ally_sectors: Array = []
+	for other_name in squads:
+		if other_name == squad.name:
+			continue
+		var other = squads[other_name]
+		if other.status != Status.LOST:
+			ally_sectors.append(other.sector)
+
+	return EnemyManager.get_best_move_target(current_sector, ally_sectors)
 
 # -------------------------------------------------------
 # Picks the next hex on the way to the tower. Raw shortest-path BFS

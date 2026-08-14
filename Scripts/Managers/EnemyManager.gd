@@ -4,7 +4,7 @@ extends Node
 # =============================================================
 
 signal enemies_updated
-signal reinforcement_landed(squad_name: String, sector: String, surprise: bool)
+signal reinforcement_landed(squad_name: String, sector: String, surprise: bool, priority_hit: bool)
 signal priority_target_eliminated(squad_name: String, sector: String)
 signal data_destroyed_by_strike(sector: String)
 
@@ -155,28 +155,39 @@ func fight_at_unarmed(sector: String) -> Dictionary:
 	return { "squad_won": squad_won, "enemies_present": true }
 
 
-func get_best_move_target(from_sector: String) -> String:
+func get_best_move_target(from_sector: String, avoid_sectors: Array = []) -> String:
 	var neighbors = adjacency.get(from_sector, [])
 	if neighbors.is_empty():
 		return ""
 
-	# Prefer unclaimed enemy territory with no enemy unit actually
-	# camped on it — genuine forward progress. Checked against the
-	# turn-start snapshot (see hex_control_turn_start above), not the
-	# live map, so a squad that moves later in this same turn isn't
-	# steered away from a tile just because an ally captured it a
-	# moment ago in this same turn's resolution.
+	# Tier 1 — fresh, unclaimed enemy territory with no enemy unit on it
+	# AND no living ally already standing there: genuine forward progress
+	# that also spreads the squad out. Two squads parked on the same hex
+	# only ever nets one captured tile between them instead of two, so
+	# this is checked before anything that would stack them.
+	for n in neighbors:
+		if not _has_enemy_unit(n) and hex_control_turn_start.get(n, "") == "enemy" and n not in avoid_sectors:
+			return n
+
+	# Tier 2 — any hex without an enemy unit and without an ally on it.
+	# Not "fresh" enemy territory, but still spreads out rather than
+	# stacking, e.g. re-treading already-held ground to reach open space.
+	for n in neighbors:
+		if not _has_enemy_unit(n) and n not in avoid_sectors:
+			return n
+
+	# Tier 3 — fresh enemy territory, but only reachable by stacking onto
+	# an ally-occupied hex. Prefer this over settling for tier 4 below.
 	for n in neighbors:
 		if not _has_enemy_unit(n) and hex_control_turn_start.get(n, "") == "enemy":
 			return n
 
-	# Any tile without an enemy unit standing on it — this deliberately
-	# includes a hex already held by one of OUR OWN other squads.
-	# Squads are allowed to share a tile (a trailing squad following
-	# another through a single-file corridor, a reinforcement landing
-	# alongside the main force, etc.), so a friendly-occupied hex must
-	# never be treated as a dead end here — that was leaving a squad
-	# with nowhere to go if the only way forward ran through an ally.
+	# Tier 4 (fallback) — any tile without an enemy unit standing on it,
+	# including one already held by one of OUR OWN other squads. Squads
+	# are still allowed to share a tile as a last resort (a trailing
+	# squad following another through a single-file corridor, boxed in
+	# with nowhere else to go, etc.) — this just stops it being the
+	# default first choice.
 	for n in neighbors:
 		if not _has_enemy_unit(n):
 			return n
@@ -278,12 +289,29 @@ func advance_enemies(allocations: Dictionary) -> void:
 		if target_sector != "" and squad_name != "":
 			var surprise = _has_enemy_unit(target_sector)
 			SquadManager.add_squad(squad_name, target_sector, surprise)
+			var priority_hit = false
 			if surprise:
 				for unit in enemy_units.duplicate():
 					if unit.sector == target_sector:
+						if unit.get("is_priority", false):
+							priority_hit = true
 						enemy_units.erase(unit)
+			# A hot-drop kill wasn't routed through fight_at()/bombardment,
+			# so if the priority target happened to be standing on this
+			# hex, none of the usual "target eliminated" bookkeeping ran —
+			# priority_target_alive stayed true forever (the mission's win
+			# check would then wrongly report the target as still at
+			# large), and nobody was ever handed the data package (no
+			# squad's has_data got set, so the intel was simply lost even
+			# though the target carrying it was dead). Mirror fight_at()'s
+			# handling here so a reinforcement drop is just as valid a way
+			# to take the target out as walking a squad into them.
+			if priority_hit:
+				GameManager.priority_target_alive = false
+				GameManager.data_carrier_squad = squad_name
+				emit_signal("priority_target_eliminated", squad_name, target_sector)
 			hex_control[target_sector] = "held"
-			emit_signal("reinforcement_landed", squad_name, target_sector, surprise)
+			emit_signal("reinforcement_landed", squad_name, target_sector, surprise, priority_hit)
 		GameManager.clear_pending_reinforcement()
 	
 	
@@ -498,6 +526,45 @@ func _bfs_distance_to_nearest(from: String, targets: Array) -> int:
 func get_distance_between(from: String, to: String) -> int:
 	return _bfs_distance(from, to)
 
+# Mission 4's win condition needs the data carrier to actually break
+# contact after Vreth falls, not just have him dead — this is what
+# TurnManager checks that against. With no enemies left on the map at all
+# there's nothing to be far away from, so this returns a large number —
+# the carrier is trivially as safe as it's going to get.
+func get_distance_to_nearest_enemy(from_sector: String) -> int:
+	if enemy_units.is_empty():
+		return 999
+	var enemy_sectors: Array = []
+	for unit in enemy_units:
+		enemy_sectors.append(unit.sector)
+	return _bfs_distance_to_nearest(from_sector, enemy_sectors)
+
+
+# The data carrier's flee logic needs to "pinpoint the nearest far enough
+# away position" rather than just greedily stepping toward whichever
+# neighbour looks furthest this instant (which can zigzag or settle for a
+# worse spot than a genuinely nearby safe one a couple of hexes further
+# down a corridor). BFS outward from from_sector and return the first
+# sector encountered that already clears safe_distance from every living
+# enemy — BFS visits sectors in non-decreasing distance order, so the
+# first hit is guaranteed nearest. Returns "" if nothing on the reachable
+# map clears the threshold (e.g. enemies are spread thin enough that
+# nowhere is far enough from all of them).
+func find_nearest_safe_sector(from_sector: String, safe_distance: int) -> String:
+	if enemy_units.is_empty():
+		return from_sector
+	var visited = { from_sector: true }
+	var queue = [from_sector]
+	while queue.size() > 0:
+		var current = queue.pop_front()
+		if get_distance_to_nearest_enemy(current) >= safe_distance:
+			return current
+		for neighbor in adjacency.get(current, []):
+			if not visited.has(neighbor):
+				visited[neighbor] = true
+				queue.append(neighbor)
+	return ""
+
 func _bfs_distance(start: String, end_sector: String) -> int:
 	if start == end_sector:
 		return 0
@@ -576,6 +643,37 @@ func get_total_enemy_count() -> int:
 
 func _defensive_movement_score(sector: String, squad_sectors: Array, unit_id: int) -> int:
 	var score = 0
+
+	# Once the priority target falls, there's nothing left at the anchor
+	# to defend and the data package on the field becomes the objective —
+	# "defensive" AI flips from holding position and keeping its distance
+	# (see the "keep some distance from squads" term below) to actively
+	# hunting the data carrier, same weighting M5's rush_extraction mode
+	# uses for the same job. Without this, M4's enemies never approached
+	# squads in the first place, so the "get the carrier clear of every
+	# enemy" win condition would be trivial to stall out on — the carrier
+	# could just wait, since nothing was ever coming for it.
+	if not GameManager.priority_target_alive:
+		var data_carrier = GameManager.data_carrier_squad
+		if data_carrier != "" and not GameManager.data_destroyed:
+			for squad in SquadManager.get_squads_for_ui():
+				if squad.name == data_carrier and squad.status != SquadManager.Status.LOST:
+					var dist_to_carrier = _bfs_distance(sector, squad.sector)
+					score += (15 - min(dist_to_carrier, 15)) * 35
+					break
+
+		var hunt_control = hex_control.get(sector, "enemy")
+		if hunt_control == "held" or hunt_control == "contested":
+			score += 10  # willing to push into player-held ground to reach the carrier
+
+		var hunt_nearby_enemies = 0
+		for n in adjacency.get(sector, []):
+			for unit in enemy_units:
+				if unit.id != unit_id and unit.sector == n:
+					hunt_nearby_enemies += 1
+		score -= hunt_nearby_enemies * 10
+
+		return score
 
 	# Strongly prefer staying near tower or priority target home
 	var anchor = GameManager.tower_sector

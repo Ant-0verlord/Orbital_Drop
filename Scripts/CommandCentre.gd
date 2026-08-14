@@ -46,11 +46,29 @@ func _show_briefing() -> void:
 
 	var zone_states: Dictionary = {}
 	for s in sectors:
-		zone_states[s] = { "state": "neutral", "squad": [], "enemy_count": 0 }
+		zone_states[s] = { "state": "neutral", "squad": [], "enemy_count": 0, "marker": "", "marker_label": "" }
 	for e in enemies:
 		var sec = e.get("sector", "")
 		if sec != "" and zone_states.has(sec):
 			zone_states[sec]["state"] = "enemy"
+			if e.get("is_priority", false):
+				zone_states[sec]["marker"] = "priority"
+				# Use whatever this mission's actual priority target is
+				# called instead of a hardcoded name, so this still makes
+				# sense on future missions with a different target.
+				var target_name = mission_data.get("priority_target_name", "TARGET")
+				zone_states[sec]["marker_label"] = String(target_name).replace("Commander ", "").to_upper()
+
+	# Flag the tower and (if this mission has a fixed one) extraction zone
+	# on the briefing map too, so the player can plan a route before
+	# committing to the mission rather than discovering them mid-fight.
+	var tower_sector = mission_data.get("radio_tower_sector", "")
+	if tower_sector != "" and zone_states.has(tower_sector) and zone_states[tower_sector]["marker"] == "":
+		zone_states[tower_sector]["marker"] = "tower"
+
+	var extraction_sector = mission_data.get("extraction_sector", "")
+	if extraction_sector != "" and zone_states.has(extraction_sector) and zone_states[extraction_sector]["marker"] == "":
+		zone_states[extraction_sector]["marker"] = "extract"
 
 	var mission_squad_names: Array = []
 	for sq in squads:

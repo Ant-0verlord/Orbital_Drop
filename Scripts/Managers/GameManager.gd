@@ -927,7 +927,7 @@ var missions: Array = [
 	{
 		# Mission 5
 		"title":              "Mission 5 — Final Assault",
-	"turns":              12,
+	"turns":              16,
 	"win_hexes":          0,
 	"interference":       0.9,
 	"mission_type":       "extract",
@@ -935,7 +935,7 @@ var missions: Array = [
 	"has_priority_target": false,
 	"priority_target_name": "",
 	"radio_tower_sector": "",
-	"objective":          "Reach the extraction zone. Data carrier must extract.",
+	"objective":          "Hold the theatre around the extraction zone. Once the shuttle is inbound, all squads converge to board.",
 	"extraction_sector":  "Beta-1D",
 	# Bumped up a bit like M4 — final mission, enemies rushing the
 	# extraction zone from multiple vectors, worth having some buffer
@@ -1200,7 +1200,7 @@ func has_pending_reinforcement() -> bool:
 	return not pending_reinforcement.is_empty() and pending_reinforcement.get("placed", false)
 
 
-func calculate_score(held_hexes: int, turns_taken: int, win_hexes: int) -> Dictionary:
+func calculate_score(held_hexes: int, turns_taken: int, win_hexes: int, mission_won: bool = false) -> Dictionary:
 	# win_hexes is legitimately 0 for non-capture mission types (hold_tower,
 	# eliminate_priority, extract) — tile-count scoring just doesn't apply
 	# to them. Dividing by it produced +-inf, and casting that to int gave
@@ -1233,6 +1233,17 @@ func calculate_score(held_hexes: int, turns_taken: int, win_hexes: int) -> Dicti
 	elif total >= 700: rating = "A"
 	elif total >= 500: rating = "B"
 	elif total >= 300: rating = "C"
+	elif mission_won:
+		# F is meant to mean "failed the mission" — a mission that actually
+		# succeeded (tower held, target eliminated, extraction made, etc.)
+		# could still land under 300 here on missions where win_hexes is 0
+		# (tile_score is forced to 0 for those — see above) and turn/supply
+		# bonuses alone don't clear the C threshold. That showed up as an
+		# "F" grade on a screen literally titled "MISSION COMPLETE", which
+		# reads as a bug/contradiction rather than a low score. Floor a win
+		# at the lowest passing grade instead — F stays reserved for
+		# missions that were actually lost.
+		rating = "C"
 	return {
 		"total":        total,
 		"rating":       rating,

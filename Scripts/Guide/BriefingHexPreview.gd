@@ -104,6 +104,49 @@ func _draw() -> void:
 				pixel + Vector2(-label.length() * 2.2, r + 8),
 				label, HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(1, 1, 1, 0.9))
 
+		# Priority target / tower / extraction-zone callouts — lets the
+		# player scope out the objective before committing to the
+		# mission instead of finding out where everything is mid-fight.
+		var marker = zone_states[sector].get("marker", "")
+		if marker != "":
+			var marker_color: Color
+			var marker_glyph: String
+			var marker_label: String
+			match marker:
+				"priority":
+					marker_color = Color(1.0, 0.55, 0.15)
+					marker_glyph = "★"
+					var override_label = String(zone_states[sector].get("marker_label", ""))
+					marker_label = override_label if override_label != "" else "TARGET"
+				"tower":
+					marker_color = Color(0.3, 0.75, 1.0)
+					marker_glyph = "▲"
+					marker_label = "TOWER"
+				"extract":
+					marker_color = Color(0.4, 0.9, 0.6)
+					marker_glyph = "⇑"
+					marker_label = "EXTRACT"
+				_:
+					marker_color = Color.WHITE
+					marker_glyph = ""
+					marker_label = ""
+
+			if marker_glyph != "":
+				# Highlighted outline so the hex stands out from the rest
+				# of the map at a glance, on top of the glyph itself.
+				draw_polyline(outline, marker_color, 2.5)
+				draw_string(ThemeDB.fallback_font,
+					pixel + Vector2(-5, 4),
+					marker_glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, marker_color)
+				# Only label if the hex isn't already carrying a squad
+				# name in that same spot — these marker hexes shouldn't
+				# normally have a squad on them at briefing time, but
+				# this keeps it safe if one ever does.
+				if squad_names.is_empty():
+					draw_string(ThemeDB.fallback_font,
+						pixel + Vector2(-marker_label.length() * 2.2, r + 8),
+						marker_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 7, marker_color)
+
 func _hex_points(centre: Vector2, r: float) -> PackedVector2Array:
 	var pts = PackedVector2Array()
 	for i in range(6):

@@ -56,6 +56,15 @@ func _unhandled_input(event: InputEvent) -> void:
 				current_console = hit
 				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 				GuideManager.set_popup_open(true)
+				# _physics_process() is what normally keeps this label's
+				# visibility in sync with the raycast, but it bails out
+				# immediately while a popup is open (movement is locked
+				# too), so it never got a chance to turn this back off.
+				# It was staying visible — frozen "on" from the moment
+				# right before opening the console — and rendering on
+				# top of every popup's UI for as long as it stayed open,
+				# including the mission debrief report screen.
+				interact_label.visible = false
 
 	# Close popup with Esc
 	if event.is_action_pressed("ui_cancel") and popup_open:
