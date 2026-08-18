@@ -374,6 +374,7 @@ func _next_mission_title() -> String:
 
 
 func _on_next_mission_pressed() -> void:
+	AudioManager.play_button_other()
 	# Hide report, reset popup state
 	report_panel.visible = false
 	next_mission_btn.visible = false
@@ -405,6 +406,7 @@ func _on_end_turn_pressed() -> void:
 	_on_close_pressed()
 
 func _on_help_pressed() -> void:
+	AudioManager.play_button_bottom()
 	set_help_attention(false)
 	GameManager.mark_attention_seen("throne_tower_activated")
 	GameManager.mark_attention_seen("throne_priority_eliminated")

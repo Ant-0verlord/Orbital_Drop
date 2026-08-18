@@ -156,6 +156,7 @@ func set_help_attention(on: bool) -> void:
 		help_btn.modulate = Color.WHITE
 
 func _on_help_pressed() -> void:
+	AudioManager.play_button_bottom()
 	set_help_attention(false)
 	GameManager.mark_attention_seen("vox_turn_%d" % SquadManager.current_turn)
 	var steps: Array[TutorialStep] = [

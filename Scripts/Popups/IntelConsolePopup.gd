@@ -159,6 +159,7 @@ func _add_data_passed_card(info: Dictionary) -> void:
 	report_container.add_child(spacer)
 
 func _on_help_pressed() -> void:
+	AudioManager.play_button_bottom()
 	set_help_attention(false)
 	GameManager.mark_attention_seen("intel_reinf_warning_%d" % reinforcement_warning_turn)
 	GameManager.mark_attention_seen("intel_reinf_landed_%d" % landed_turn)

@@ -26,6 +26,7 @@ GameManager="*uid://1jy5j18fq4vt"
 EnemyManager="*uid://br81g4sx2pa3f"
 SettingsManager="*uid://ursnnpijwoys"
 GuideManager="*uid://cctykd5fme5oq"
+AudioManager="*res://Scripts/Managers/AudioManager.gd"
 
 [input]
 

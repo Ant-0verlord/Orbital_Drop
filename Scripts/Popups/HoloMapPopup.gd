@@ -255,6 +255,7 @@ func set_help_attention(on: bool) -> void:
 		help_btn.modulate = Color.WHITE
 
 func _on_help_pressed() -> void:
+	AudioManager.play_button_bottom()
 	set_help_attention(false)
 	GameManager.mark_attention_seen("holomap_placement_%d" % SquadManager.current_turn)
 	GameManager.mark_attention_seen("holomap_priority_eliminated")
@@ -297,6 +298,7 @@ func _on_placement_confirmed() -> void:
 	if sector == "":
 		return
 
+	AudioManager.play_button_other()
 	if current_action_mode == "bombardment":
 		GameManager.place_bombardment(sector)
 		current_action_mode = ""
@@ -310,6 +312,7 @@ func _on_placement_confirmed() -> void:
 
 
 func _on_placement_cancelled() -> void:
+	AudioManager.play_button_other()
 	if current_action_mode == "bombardment":
 		GameManager.clear_pending_bombardment()
 		GameManager.orbital_strikes_pool += 1

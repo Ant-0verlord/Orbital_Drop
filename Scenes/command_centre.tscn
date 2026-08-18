@@ -152,6 +152,7 @@ shape = SubResource("BoxShape3D_tslkb")
 
 [node name="Orbital_Drop_Room" parent="MeshInstance3D" unique_id=547262151 instance=ExtResource("9_0dw1l")]
 transform = Transform3D(0.98979414, 0, 0, 0, 1.0994227, 0, 0, 0, 1.0375594, -0.13247909, 0.042581033, 0.03254445)
+visible = false
 
 [node name="Player" parent="." unique_id=542213915 instance=ExtResource("2_ludm1")]
 transform = Transform3D(-3.743831e-08, 0, -0.8564885, 0, 0.8564886, 0, 0.85648865, 0, -3.74383e-08, -2.2679906, 2.5670242, 0.21827985)

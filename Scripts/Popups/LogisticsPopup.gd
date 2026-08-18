@@ -78,6 +78,7 @@ func set_help_attention(on: bool) -> void:
 		help_btn.modulate = Color.WHITE
 
 func _on_help_pressed() -> void:
+	AudioManager.play_button_bottom()
 	set_help_attention(false)
 	GameManager.mark_attention_seen("logistics_turn")
 	GameManager.mark_attention_seen("logistics_reinforcement")
@@ -387,6 +388,7 @@ func _on_call_reinforcement_pressed() -> void:
 	if not GameManager.consume_reinforcement():
 		return  # safety guard, shouldn't happen given the check above
 
+	AudioManager.play_button_other()
 	GameManager.queue_reinforcement(chosen_name)
 	_refresh_reinforcement_panel()
 
@@ -468,6 +470,7 @@ func _on_lock_pressed() -> void:
 			return
 
 	warning_label.text = ""
+	AudioManager.play_button_bottom()
 	TurnManager.lock_allocations(allocations)
 
 
@@ -531,6 +534,7 @@ func _on_arm_bombardment_pressed() -> void:
 	if not GameManager.consume_orbital_strike(): return
 	if not GameManager.queue_bombardment():
 		return
+	AudioManager.play_button_other()
 	_refresh_bombardment_panel()
 
 func _on_close_pressed() -> void:

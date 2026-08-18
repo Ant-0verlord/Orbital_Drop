@@ -311,6 +311,7 @@ func advance_enemies(allocations: Dictionary) -> void:
 				GameManager.data_carrier_squad = squad_name
 				emit_signal("priority_target_eliminated", squad_name, target_sector)
 			hex_control[target_sector] = "held"
+			AudioManager.play_alarm()
 			emit_signal("reinforcement_landed", squad_name, target_sector, surprise, priority_hit)
 		GameManager.clear_pending_reinforcement()
 	

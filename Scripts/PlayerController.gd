@@ -51,6 +51,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if ray.is_colliding():
 			var hit = ray.get_collider()
 			if hit and hit.has_method("open_popup"):
+				AudioManager.play_button_bottom()
 				hit.open_popup()
 				popup_open = true
 				current_console = hit
@@ -112,6 +113,7 @@ func on_popup_closed() -> void:
 
 
 func _close_popup() -> void:
+	AudioManager.play_button_bottom()
 	if current_console and current_console.has_method("close_popup"):
 		current_console.close_popup()
 	popup_open = false

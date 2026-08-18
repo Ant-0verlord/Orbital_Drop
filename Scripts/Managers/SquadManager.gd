@@ -176,6 +176,10 @@ func reset_tower_progress() -> void:
 			squad.goal = Goal.ADVANCE
 
 func _on_priority_target_eliminated(squad_name: String, sector: String) -> void:
+	# Fires for every way the priority target can go down — normal combat,
+	# a reinforcement hot-drop, or an orbital strike — so this is the one
+	# place to alert on it rather than three separate call sites.
+	AudioManager.play_alarm()
 	if squad_name == "":
 		return  # orbital strike kill — data destroyed, no carrier
 	if squads.has(squad_name):
@@ -583,6 +587,7 @@ func _worsen_status(squad: Dictionary) -> void:
 				squad["has_data"] = false
 				GameManager.data_destroyed = true
 				GameManager.data_carrier_squad = ""
+				AudioManager.play_alarm()
 				emit_signal("data_destroyed_by_enemy", squad.name)
 
 

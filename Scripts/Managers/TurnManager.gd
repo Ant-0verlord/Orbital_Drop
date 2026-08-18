@@ -210,10 +210,12 @@ func end_turn() -> void:
 	# Resolve any armed orbital strike
 	var bombardment_report = _process_bombardment()
 	if not bombardment_report.is_empty():
+		AudioManager.play_cannon_fire()
 		emit_signal("orbital_strike_resolved", bombardment_report)
 
 	# Notify Intel Console of where reinforcements landed
 	if spawned_sectors.size() > 0:
+		AudioManager.play_alarm()
 		emit_signal("enemy_reinforcements_landed", spawned_sectors)
 	
 
@@ -272,6 +274,7 @@ func _check_reinforcement_warning(after_turn: int) -> void:
 	var next_turn = after_turn + 1
 	if reinforcement_schedule.has(next_turn):
 		var count = reinforcement_schedule[next_turn]
+		AudioManager.play_alarm()
 		emit_signal("enemy_reinforcements_incoming", next_turn, count)
 
 
