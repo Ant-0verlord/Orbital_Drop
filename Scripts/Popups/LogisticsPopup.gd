@@ -391,6 +391,13 @@ func _on_call_reinforcement_pressed() -> void:
 	if TurnManager.mission_over: return
 	if GameManager.get_reinforcement_pool() <= 0: return
 	if not GameManager.get_pending_reinforcement().is_empty(): return
+	# Reinforcement and bombardment are mutually exclusive for the turn —
+	# check this BEFORE consuming a reinforcement charge below. Bombardment
+	# used to only be re-disabled on its own panel's next refresh, so this
+	# button could still be clicked while a strike was pending; that
+	# consumed a reinforcement charge that queue_reinforcement() then
+	# silently refused to queue, permanently losing the charge.
+	if not GameManager.get_pending_bombardment().is_empty(): return
 
 	var idx = reinforcement_name_btn.selected
 	if idx < 0: return
@@ -399,9 +406,13 @@ func _on_call_reinforcement_pressed() -> void:
 	if not GameManager.consume_reinforcement():
 		return  # safety guard, shouldn't happen given the check above
 
+	if not GameManager.queue_reinforcement(chosen_name):
+		GameManager.reinforcement_pool += 1  # roll back — shouldn't happen given the check above
+		return
+
 	AudioManager.play_button_other()
-	GameManager.queue_reinforcement(chosen_name)
 	_refresh_reinforcement_panel()
+	_refresh_bombardment_panel()  # keep the other panel's button state in sync too
 
 	# Unlock if locked — player needs to visit Holo-Map before locking
 	if TurnManager.allocations_are_locked:
@@ -542,11 +553,16 @@ func _on_arm_bombardment_pressed() -> void:
 	if TurnManager.mission_over: return
 	if GameManager.get_orbital_strikes_pool() <= 0: return
 	if not GameManager.get_pending_bombardment().is_empty(): return
+	# Same mutual-exclusion check as the reinforcement side, and for the
+	# same reason — see the comment in _on_call_reinforcement_pressed().
+	if not GameManager.get_pending_reinforcement().is_empty(): return
 	if not GameManager.consume_orbital_strike(): return
 	if not GameManager.queue_bombardment():
+		GameManager.orbital_strikes_pool += 1  # roll back — shouldn't happen given the check above
 		return
 	AudioManager.play_button_other()
 	_refresh_bombardment_panel()
+	_refresh_reinforcement_panel()  # keep the other panel's button state in sync too
 
 func _on_close_pressed() -> void:
 	visible = false

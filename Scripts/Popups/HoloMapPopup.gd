@@ -334,6 +334,7 @@ func _on_placement_cancelled() -> void:
 
 	GameManager.clear_pending_reinforcement()
 	GameManager.reinforcement_pool += 1
+	current_action_mode = ""
 	hex_canvas.exit_placement_mode()
 	_exit_placement_mode()
 

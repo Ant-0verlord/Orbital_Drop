@@ -171,7 +171,7 @@ transform = Transform3D(-2.076493e-08, 0, 0.47504622, 0, 0.47504622, 0, -0.47504
 transform = Transform3D(-4.3711385e-08, 0, 0.99999994, 0, 1, 0, -0.99999994, 0, -4.3711385e-08, 0.28378534, 0.4066226, 3.5638595)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="." unique_id=1473983525]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -0.96145487, 14.550118, 0)
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0.87684727, 20.291512, 0)
 light_energy = 25.495
 spot_range = 17.835012
 spot_angle = 39.765095

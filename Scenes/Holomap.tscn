@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://poa3ylhykd1g"]
 
-[ext_resource type="ArrayMesh" uid="uid://u81f72ndgnjf" path="res://Models/Holomap 2.0 .obj" id="1_ftbq4"]
+[ext_resource type="PackedScene" uid="uid://dmpyyjt6svl4n" path="res://Models/Holomap 3.0 .glb" id="1_rx362"]
 [ext_resource type="Script" uid="uid://8ctke7lqmu2p" path="res://Scripts/Consoles/HoloMap.gd" id="2_ftbq4"]
 [ext_resource type="Script" uid="uid://r5yd045oo1mc" path="res://Scripts/Popups/HoloMapPopup.gd" id="3_h4dqx"]
 [ext_resource type="Script" uid="uid://cogsku6dfaxqm" path="res://Scripts/HexCanvas.gd" id="4_h4dqx"]
@@ -21,7 +21,9 @@ transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1674610407]
 transform = Transform3D(0.6439341, 0, 0.37177548, 0, 0.74355096, 0, -0.37177548, 0, 0.6439341, 0, -1.342751, 0)
-mesh = ExtResource("1_ftbq4")
+
+[node name="Holomap 3_0 " parent="MeshInstance3D" unique_id=1028077130 instance=ExtResource("1_rx362")]
+transform = Transform3D(0.5137595, 0, -0.88985753, 0, 1.0275191, 0, 0.88985753, 0, 0.5137595, 0, 0, 0)
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=180638729]
 transform = Transform3D(1.8770475, 0, -1.0837138, 0, 2.167428, 0, 1.0837138, 0, 1.8770475, 0, 1.8058628, 0)
@@ -153,5 +155,5 @@ text = "Help"
 [node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/HoloMapPopup" unique_id=45888852 instance=ExtResource("5_8x6yk")]
 layout_mode = 1
 
-[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/HoloMapPopup" instance=ExtResource("6_hlpndg")]
+[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/HoloMapPopup" unique_id=1202379078 instance=ExtResource("6_hlpndg")]
 layout_mode = 1

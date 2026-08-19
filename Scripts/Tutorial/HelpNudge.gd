@@ -80,11 +80,14 @@ func _update_positions() -> void:
 
 	var target_rect: Rect2 = _target.get_global_rect()
 
-	# The arrow tip always sits right at the button — only the tail (and
-	# the label anchored to it) get pulled in from the edges below, so
-	# the arrow keeps pointing at the right place even when the target
-	# button is close to a panel edge.
-	var tip:  Vector2 = Vector2(target_rect.get_center().x, target_rect.position.y - 8.0)
+	# The arrow approaches from below-left and should stop just short of
+	# the button, not land on top of it. Anchor the tip to the button's
+	# bottom-left corner, pulled outward (left and down) by a fixed gap —
+	# that keeps it clearly outside the button's rect regardless of the
+	# button's own size, rather than a small fixed offset from the top
+	# edge that a short button could swallow.
+	const TIP_GAP: float = 16.0
+	var tip: Vector2 = target_rect.position + Vector2(-TIP_GAP, target_rect.size.y + TIP_GAP)
 	var tail: Vector2 = tip + Vector2(-50.0, 80.0)
 	tail.x = clamp(tail.x, bounds.position.x + SCREEN_MARGIN, bounds.position.x + bounds.size.x - SCREEN_MARGIN)
 	tail.y = clamp(tail.y, bounds.position.y + SCREEN_MARGIN, bounds.position.y + bounds.size.y - SCREEN_MARGIN)

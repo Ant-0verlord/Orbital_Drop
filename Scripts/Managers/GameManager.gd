@@ -1177,10 +1177,11 @@ func register_reinforcement_name(squad_name: String) -> void:
 		used_reinforcement_names.append(squad_name)
 
 
-func queue_reinforcement(squad_name: String) -> void:
+func queue_reinforcement(squad_name: String) -> bool:
 	if not pending_bombardment.is_empty():
-		return
+		return false  # mutual exclusion with bombardment
 	pending_reinforcement = { "squad_name": squad_name, "sector": "", "placed": false }
+	return true
 
 
 func place_reinforcement(sector: String) -> void:
