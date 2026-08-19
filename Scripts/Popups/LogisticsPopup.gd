@@ -42,6 +42,7 @@ var _attention_pulse: float = 0.0
 
 @onready var help_btn: Button = $PanelContainer/VBoxContainer/ButtonRow/HelpBtn
 @onready var tutorial_overlay: Control = $TutorialOverlay  # add TutorialOverlay.tscn as a child
+@onready var help_nudge: Control = $HelpNudge
 
 
 
@@ -63,6 +64,16 @@ func _ready() -> void:
 	_refresh_reinforcement_panel()
 	_refresh_bombardment_panel()
 	help_btn.pressed.connect(_on_help_pressed)
+	visibility_changed.connect(_on_visibility_changed)
+
+
+func _on_visibility_changed() -> void:
+	if not visible:
+		return
+	if GameManager.has_seen_attention("help_nudge_seen_logistics"):
+		return
+	GameManager.mark_attention_seen("help_nudge_seen_logistics")
+	help_nudge.point_at(help_btn)
 
 func _process(delta: float) -> void:
 	if not _help_attention or help_btn == null:

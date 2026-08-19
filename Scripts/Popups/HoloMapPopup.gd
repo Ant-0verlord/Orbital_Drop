@@ -31,6 +31,7 @@ const COLOR_NEUTRAL:   Color = Color(0.12, 0.18, 0.25, 0.7)
 @onready var placement_confirm_btn: Button    = $PanelContainer/VBoxContainer/PlacementBanner/HBoxContainer/PlacementConfirmBtn
 @onready var placement_cancel_btn: Button     = $PanelContainer/VBoxContainer/PlacementBanner/HBoxContainer/PlacementCancelBtn
 @onready var tutorial_overlay: Control = $TutorialOverlay
+@onready var help_nudge: Control = $HelpNudge
 
 
 func _ready() -> void:
@@ -44,8 +45,18 @@ func _ready() -> void:
 	placement_cancel_btn.pressed.connect(_on_placement_cancelled)
 
 	help_btn.pressed.connect(_on_help_pressed)
+	visibility_changed.connect(_on_visibility_changed)
 
 	placement_banner.visible = false
+
+
+func _on_visibility_changed() -> void:
+	if not visible:
+		return
+	if GameManager.has_seen_attention("help_nudge_seen_holomap"):
+		return
+	GameManager.mark_attention_seen("help_nudge_seen_holomap")
+	help_nudge.point_at(help_btn)
 
 
 func refresh(new_zone_states: Dictionary, axial_by_sector: Dictionary = {}) -> void:

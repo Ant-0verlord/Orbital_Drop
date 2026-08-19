@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://2eyud7n0r8s6" path="res://Scripts/Consoles/VoxCaster.gd" id="2_3hiqr"]
 [ext_resource type="Script" uid="uid://lvgv4kp058x1" path="res://Scripts/Popups/VoxCasterPopup.gd" id="3_ch73s"]
 [ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_ch73s"]
+[ext_resource type="PackedScene" path="res://Scenes/HelpNudge.tscn" id="5_hlpndg"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_dl7dm"]
 size = Vector3(1.4224539, 3, 2.9299383)
@@ -80,11 +81,14 @@ alignment = 2
 
 [node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=2009053580]
 layout_mode = 2
-text = "Close  [Esc]"
+text = "Close  [Tab]"
 
 [node name="HelpBtn" type="Button" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=1362015181]
 layout_mode = 2
 text = "Help"
 
 [node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup" unique_id=45888852 instance=ExtResource("4_ch73s")]
+layout_mode = 1
+
+[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup" instance=ExtResource("5_hlpndg")]
 layout_mode = 1

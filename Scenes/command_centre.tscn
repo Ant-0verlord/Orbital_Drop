@@ -1,13 +1,13 @@
 [gd_scene format=3 uid="uid://d3ixugoora46y"]
 
 [ext_resource type="Script" uid="uid://brmhi6pjtlhey" path="res://Scripts/CommandCentre.gd" id="1_r3tsr"]
+[ext_resource type="PackedScene" uid="uid://5fcnposov73g" path="res://Models/Orbital_Drop_Room.glb" id="2_0dw1l"]
 [ext_resource type="PackedScene" uid="uid://cwcetb2j4yciv" path="res://Scenes/Player.tscn" id="2_ludm1"]
 [ext_resource type="PackedScene" uid="uid://poa3ylhykd1g" path="res://Scenes/Holomap.tscn" id="3_pelsp"]
 [ext_resource type="PackedScene" uid="uid://bj4d3r48vrf44" path="res://Scenes/Vox-Caster_Array.tscn" id="4_23xtj"]
 [ext_resource type="PackedScene" uid="uid://dksywdr8xyjsf" path="res://Scenes/Command_Throne.tscn" id="5_5ts7m"]
 [ext_resource type="PackedScene" uid="uid://ecaj1srmx3pq" path="res://Scenes/Logistics_Terminal.tscn" id="6_23xtj"]
 [ext_resource type="PackedScene" uid="uid://caglsrgxql7v5" path="res://Scenes/Intel_Desk.tscn" id="7_5ts7m"]
-[ext_resource type="PackedScene" uid="uid://ikcfagbyljtt" path="res://Models/Orbital_Drop_Room.blend" id="9_0dw1l"]
 [ext_resource type="PackedScene" uid="uid://1qfkfl330bb6" path="res://Scenes/MissionBriefingOverlay.tscn" id="9_uagpp"]
 [ext_resource type="PackedScene" uid="uid://dbhi1rx25cidk" path="res://Scenes/GuideOverlay.tscn" id="10_0dw1l"]
 
@@ -150,9 +150,7 @@ shape = SubResource("BoxShape3D_1e6n8")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.02165983, 0.99862486, 5.998108)
 shape = SubResource("BoxShape3D_tslkb")
 
-[node name="Orbital_Drop_Room" parent="MeshInstance3D" unique_id=547262151 instance=ExtResource("9_0dw1l")]
-transform = Transform3D(0.98979414, 0, 0, 0, 1.0994227, 0, 0, 0, 1.0375594, -0.13247909, 0.042581033, 0.03254445)
-visible = false
+[node name="Orbital_Drop_Room" parent="MeshInstance3D" unique_id=136328569 instance=ExtResource("2_0dw1l")]
 
 [node name="Player" parent="." unique_id=542213915 instance=ExtResource("2_ludm1")]
 transform = Transform3D(-3.743831e-08, 0, -0.8564885, 0, 0.8564886, 0, 0.85648865, 0, -3.74383e-08, -2.2679906, 2.5670242, 0.21827985)

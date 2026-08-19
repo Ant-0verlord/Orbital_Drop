@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://r5yd045oo1mc" path="res://Scripts/Popups/HoloMapPopup.gd" id="3_h4dqx"]
 [ext_resource type="Script" uid="uid://cogsku6dfaxqm" path="res://Scripts/HexCanvas.gd" id="4_h4dqx"]
 [ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="5_8x6yk"]
+[ext_resource type="PackedScene" path="res://Scenes/HelpNudge.tscn" id="6_hlpndg"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_jvvyk"]
 size = Vector3(3.659912, 0.61828613, 2.064331)
@@ -143,11 +144,14 @@ alignment = 2
 
 [node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=1417490459]
 layout_mode = 2
-text = "Close  [Esc]"
+text = "Close  [Tab]"
 
 [node name="HelpBtn" type="Button" parent="MeshInstance3D/StaticBody3D/HoloMapPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=1482527822]
 layout_mode = 2
 text = "Help"
 
 [node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/HoloMapPopup" unique_id=45888852 instance=ExtResource("5_8x6yk")]
+layout_mode = 1
+
+[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/HoloMapPopup" instance=ExtResource("6_hlpndg")]
 layout_mode = 1

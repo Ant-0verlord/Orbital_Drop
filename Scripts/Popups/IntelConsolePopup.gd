@@ -22,6 +22,7 @@ var data_destroyed_turn: int = -1
 @onready var report_container: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/ReportContainer
 @onready var close_btn: Button              = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
 @onready var tutorial_overlay: Control = $TutorialOverlay
+@onready var help_nudge: Control = $HelpNudge
 
 
 
@@ -37,6 +38,21 @@ func _ready() -> void:
 	SquadManager.data_destroyed_by_enemy.connect(_on_data_destroyed_by_enemy)
 	close_btn.pressed.connect(_on_close_pressed)
 	help_btn.pressed.connect(_on_help_pressed)
+	visibility_changed.connect(_on_visibility_changed)
+
+
+# The first time this console is ever opened, nudge an arrow at the
+# Help button so new players know a walkthrough is one click away.
+# Uses the same sticky "seen it" dictionary as the attention-pulse
+# system elsewhere in this file — in-memory for the session, same as
+# GuideManager.guide_completed.
+func _on_visibility_changed() -> void:
+	if not visible:
+		return
+	if GameManager.has_seen_attention("help_nudge_seen_intel"):
+		return
+	GameManager.mark_attention_seen("help_nudge_seen_intel")
+	help_nudge.point_at(help_btn)
 
 var _help_attention: bool = false
 var _attention_pulse: float = 0.0

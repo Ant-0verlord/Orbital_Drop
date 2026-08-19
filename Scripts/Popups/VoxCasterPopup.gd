@@ -47,6 +47,7 @@ const DELAYED_BURST = [
 @onready var close_btn: Button                     = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
 @onready var tutorial_overlay: Control = $TutorialOverlay
 @onready var help_btn: Button = $PanelContainer/VBoxContainer/ButtonRow/HelpBtn
+@onready var help_nudge: Control = $HelpNudge
 
 
 func _ready() -> void:
@@ -55,6 +56,16 @@ func _ready() -> void:
 	TurnManager.mission_complete.connect(_on_mission_complete)
 	close_btn.pressed.connect(_on_close_pressed)
 	help_btn.pressed.connect(_on_help_pressed)
+	visibility_changed.connect(_on_visibility_changed)
+
+
+func _on_visibility_changed() -> void:
+	if not visible:
+		return
+	if GameManager.has_seen_attention("help_nudge_seen_vox"):
+		return
+	GameManager.mark_attention_seen("help_nudge_seen_vox")
+	help_nudge.point_at(help_btn)
 
 
 func _on_turn_started(_turn: int) -> void:

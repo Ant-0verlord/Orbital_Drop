@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://d1hkamug1ie0r" path="res://Scripts/Consoles/LogisticsTerminal.gd" id="2_jyj6u"]
 [ext_resource type="Script" uid="uid://l7snwg4vd2ji" path="res://Scripts/Popups/LogisticsPopup.gd" id="3_lbbgb"]
 [ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_lbbgb"]
+[ext_resource type="PackedScene" path="res://Scenes/HelpNudge.tscn" id="5_hlpndg"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_i6nf8"]
 size = Vector3(5.276805, 3.2378602, 2.3159518)
@@ -131,7 +132,7 @@ layout_mode = 2
 
 [node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=2142155908]
 layout_mode = 2
-text = "Close  [Esc]"
+text = "Close  [Tab]"
 
 [node name="HelpBtn" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=298784176]
 layout_mode = 2
@@ -166,4 +167,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/LogisticsPopup" unique_id=45888852 instance=ExtResource("4_lbbgb")]
+layout_mode = 1
+
+[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/LogisticsPopup" instance=ExtResource("5_hlpndg")]
 layout_mode = 1

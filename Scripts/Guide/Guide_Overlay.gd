@@ -14,6 +14,17 @@ var camera: Camera3D = null
 var target_console: String = ""
 var arrow_pulse: float = 0.0
 
+# While walking around outside any console, attention is on the 3D
+# world and the "point at the next console" arrow — easy to lose track
+# of the prompt bar sitting quietly at the bottom of the screen. So
+# every so often, for a couple of seconds, a small arrow also nudges
+# down at the prompt bar to remind the player it's there guiding them.
+# (Deliberately NOT shown while a popup is open — the popup covers most
+# of the screen and already has the player's full attention.)
+const PROMPT_NUDGE_CYCLE: float    = 14.0  # seconds between nudges
+const PROMPT_NUDGE_DURATION: float = 2.5   # how long each nudge stays up
+var prompt_nudge_timer: float = 0.0
+
 func _ready() -> void:
 	dismiss_btn.pressed.connect(_on_dismiss_pressed)
 	GuideManager.step_changed.connect(_on_step_changed)
@@ -28,6 +39,17 @@ func _process(delta: float) -> void:
 	if not GuideManager.guide_active:
 		return
 	arrow_pulse += delta * 3.0
+
+	if not GuideManager.popup_open:
+		prompt_nudge_timer += delta
+		if prompt_nudge_timer > PROMPT_NUDGE_CYCLE:
+			prompt_nudge_timer = 0.0
+	else:
+		# Always start a fresh cycle the next time the player steps back
+		# out of a console, rather than picking up mid-cycle from
+		# whenever they last walked outside.
+		prompt_nudge_timer = 0.0
+
 	arrow_canvas.queue_redraw()
 	prompt_label.text = GuideManager.get_prompt_text()
 	prompt_bar.visible = GuideManager.get_prompt_text() != ""
@@ -51,6 +73,9 @@ func _draw_arrows() -> void:
 		return
 	if GuideManager.popup_open:
 		return
+
+	_draw_prompt_nudge_arrow()
+
 	if target_console == "":
 		return
 
@@ -106,3 +131,29 @@ func _draw_arrows() -> void:
 	var label_pos  = screen_pos + Vector2(-40, bounce + 12)
 	arrow_canvas.draw_string(font, label_pos, label_text,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 13, col_outer)
+
+
+func _draw_prompt_nudge_arrow() -> void:
+	if prompt_nudge_timer > PROMPT_NUDGE_DURATION:
+		return
+	if not prompt_bar.visible:
+		return
+
+	# Fade in/out at the edges of the short window instead of popping
+	# on and off abruptly.
+	var t_in  = clamp(prompt_nudge_timer / 0.4, 0.0, 1.0)
+	var t_out = clamp((PROMPT_NUDGE_DURATION - prompt_nudge_timer) / 0.4, 0.0, 1.0)
+	var alpha = min(t_in, t_out)
+	if alpha <= 0.0:
+		return
+
+	var bounce = sin(arrow_pulse * 2.0) * 6.0
+	var bar_rect: Rect2 = prompt_bar.get_global_rect()
+	var tip:  Vector2 = Vector2(bar_rect.get_center().x, bar_rect.position.y - 10.0 + bounce)
+	var tail: Vector2 = tip + Vector2(0, -46.0)
+
+	var col = Color(1.0, 0.85, 0.2, alpha)
+	arrow_canvas.draw_line(tail, tip, col, 4.0)
+	var back1 = tip + Vector2(-9, -13)
+	var back2 = tip + Vector2( 9, -13)
+	arrow_canvas.draw_colored_polygon(PackedVector2Array([tip, back1, back2]), col)

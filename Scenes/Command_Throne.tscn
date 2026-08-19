@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://caj7dobn8fawx" path="res://Scripts/Consoles/CommandThrone.gd" id="2_id48o"]
 [ext_resource type="Script" uid="uid://fkuvbocfiykr" path="res://Scripts/Popups/CommandThronePopup.gd" id="3_602gn"]
 [ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_602gn"]
+[ext_resource type="PackedScene" path="res://Scenes/HelpNudge.tscn" id="5_hlpndg"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_oohax"]
 size = Vector3(20.830643, 42.779057, 23.661272)
@@ -124,7 +125,7 @@ text = "ENGAGE TURN SEAL"
 
 [node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=751594385]
 layout_mode = 2
-text = "Close  [Esc]"
+text = "Close  [Tab]"
 
 [node name="HelpBtn" type="Button" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=1451015832]
 layout_mode = 2
@@ -213,4 +214,7 @@ visible = false
 layout_mode = 2
 
 [node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=45888852 instance=ExtResource("4_602gn")]
+layout_mode = 1
+
+[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" instance=ExtResource("5_hlpndg")]
 layout_mode = 1

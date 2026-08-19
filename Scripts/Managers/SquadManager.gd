@@ -19,6 +19,8 @@ enum Goal {
 					  # digs in and fights off attackers instead of advancing
 	EXTRACT,          # moving toward extraction zone
 	DEFEND_CARRIER,
+	SECURE_ZONE,      # pushing to hold the extraction zone pre-emptively,
+					  # before the shuttle is actually inbound (M5)
 	FALLBACK,         # abandoned tower goal, reverting to advance
 }
 
@@ -30,12 +32,18 @@ const GOAL_NAMES: Dictionary = {
 	Goal.DEFEND_TOWER:     "Defending tower perimeter",
 	Goal.EXTRACT:          "Moving to extract",
 	Goal.DEFEND_CARRIER:   "Defending data carrier",
+	Goal.SECURE_ZONE:      "Securing extraction zone",
 	Goal.FALLBACK:         "Falling back",
 }
 
 # How close (in hexes) a squad needs to be to the tower to be put on
 # perimeter-defence duty instead of wandering off to advance elsewhere.
 const DEFEND_TOWER_RADIUS: int = 2
+
+# How close a SECURE_ZONE squad needs to stay to the extraction zone once
+# it's dug in there — mirrors DEFEND_TOWER_RADIUS's "anchor but allow local
+# mop-up" behaviour.
+const SECURE_ZONE_RADIUS: int = 2
 
 const STATUS_NAMES: Dictionary = {
 	Status.ACTIVE:   "Active",
@@ -363,6 +371,22 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 								step_target = tower_d
 							else:
 								step_target = _path_toward(current_sector, tower_d)
+
+				elif squad.goal == Goal.SECURE_ZONE:
+					# Push toward the extraction zone ahead of the shuttle
+					# call, the same way DEFEND_TOWER pushes toward the
+					# tower — once within range, stop closing the distance
+					# and let default targeting fight/capture locally so
+					# the squad actually holds the ground instead of just
+					# passing through it.
+					var ez_s = GameManager.extraction_zone
+					if ez_s != "" and not engaging_enemy:
+						var dist_to_ez = EnemyManager.get_distance_between(current_sector, ez_s)
+						if dist_to_ez > SECURE_ZONE_RADIUS:
+							if ez_s in EnemyManager.adjacency.get(current_sector, []):
+								step_target = ez_s
+							else:
+								step_target = _path_toward(current_sector, ez_s)
 
 				elif squad.goal == Goal.EXTRACT:
 					var ez = GameManager.extraction_zone
@@ -731,17 +755,43 @@ func _assign_goals() -> void:
 		var shuttle_inbound = turns_left <= TurnManager.SHUTTLE_ARRIVAL_WINDOW
 
 		if not shuttle_inbound:
-			# The extraction shuttle isn't down yet. Instead of beelining
-			# for the extraction zone for the whole mission, every squad —
-			# carrier included — fights the theatre normally around it:
-			# advancing, engaging enemies, capturing ground. Only once the
-			# shuttle is actually inbound (below) does everyone break off
-			# and converge to board.
+			# The extraction shuttle isn't down yet, so most of the squad
+			# still fights the theatre normally — advancing, engaging
+			# enemies, capturing ground. But the extraction zone itself
+			# shouldn't be left to chance: the nearest squad(s) push to
+			# reach it and dig in early, holding it clear for when the
+			# shuttle does call in, rather than everyone only converging
+			# on it in the last couple of turns. Mirrors the tower-mission
+			# pattern of committing a couple of squads to the objective by
+			# distance while the rest keep fighting.
+			var ez_pre = GameManager.extraction_zone
+			var zone_candidates: Array = []
+
 			for squad_name in squads:
 				var squad = squads[squad_name]
 				if squad.status == Status.LOST:
 					continue
-				squad.goal = Goal.ADVANCE
+				if squad_name == carrier_name:
+					# Carrier stays flexible/fighting until the shuttle is
+					# actually inbound — no point sitting it at the zone
+					# early and advertising exactly where the data is.
+					squad.goal = Goal.ADVANCE
+					continue
+				if ez_pre == "":
+					squad.goal = Goal.ADVANCE
+					continue
+				zone_candidates.append({
+					"name": squad_name,
+					"dist": EnemyManager.get_distance_between(squad.sector, ez_pre),
+				})
+
+			if not zone_candidates.is_empty():
+				zone_candidates.sort_custom(func(a, b): return a.dist < b.dist)
+				var zone_slots = 2  # up to 2 squads pre-emptively secure the zone
+				for i in range(zone_candidates.size()):
+					var entry = zone_candidates[i]
+					squads[entry.name].goal = Goal.SECURE_ZONE if i < zone_slots else Goal.ADVANCE
+
 			return
 
 		# Shuttle inbound — break off whatever fight is underway and
@@ -779,6 +829,58 @@ func _assign_goals() -> void:
 
 			# Everyone else heads to extraction
 			squad.goal = Goal.EXTRACT
+
+		return
+
+	# ---- M4 CARRIER PROTECTION (post-Vreth) ----
+	# The moment Vreth goes down, the mission stops being "hunt the
+	# target" and becomes "get the carrier clear" — every enemy left
+	# standing now knows exactly who's carrying the data and converges
+	# on them. Nearby squads need to actively escort/shield the carrier
+	# instead of falling back to tower duty, which stopped mattering the
+	# instant the target fell. Mirrors the M5 DEFEND_CARRIER logic.
+	if mission_type == "eliminate_priority" and not GameManager.priority_target_alive:
+		var carrier_name   = GameManager.data_carrier_squad
+		var carrier_sector = ""
+		if squads.has(carrier_name):
+			carrier_sector = squads[carrier_name].sector
+
+		var carrier_under_threat = false
+		if carrier_sector != "":
+			carrier_under_threat = EnemyManager.get_enemy_count_at(carrier_sector) > 0
+
+		for squad_name in squads:
+			var squad = squads[squad_name]
+			if squad.status == Status.LOST:
+				continue
+
+			# Carrier flees to the nearest sector clear of every enemy —
+			# handled by the existing Goal.EXTRACT / ez=="" branch in
+			# resolve_turn().
+			if squad_name == carrier_name:
+				squad.goal = Goal.EXTRACT
+				continue
+
+			var dist_to_carrier = 999
+			if carrier_sector != "":
+				dist_to_carrier = EnemyManager._bfs_distance(squad.sector, carrier_sector)
+
+			# Carrier under direct attack — nearby squads break off
+			# whatever else they were doing and come intercept.
+			if carrier_under_threat and dist_to_carrier <= 3:
+				squad.goal = Goal.DEFEND_CARRIER
+				continue
+
+			# Close enough to matter as an escort even without an
+			# immediate threat — stick with the carrier.
+			if dist_to_carrier <= 2:
+				squad.goal = Goal.DEFEND_CARRIER
+				continue
+
+			# Too far to escort directly — keep fighting. Killing or
+			# pushing back enemies anywhere on the map still helps clear
+			# the distance the carrier needs from every remaining hostile.
+			squad.goal = Goal.ADVANCE
 
 		return
 

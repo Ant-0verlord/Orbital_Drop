@@ -30,6 +30,7 @@ var player: Node = null
 @onready var next_mission_btn: Button     = $ReportPanel/ReportVBox/NextMissionBtn
 @onready var help_btn: Button = $PanelContainer/VBoxContainer/ButtonRow/HelpBtn
 @onready var tutorial_overlay: Control = $TutorialOverlay  # add TutorialOverlay.tscn as a child
+@onready var help_nudge: Control = $HelpNudge
 
 
 func _ready() -> void:
@@ -45,10 +46,20 @@ func _ready() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 	report_close.pressed.connect(_on_close_pressed)
 	next_mission_btn.pressed.connect(_on_next_mission_pressed)
-	help_btn.pressed.connect(_on_help_pressed) 
+	help_btn.pressed.connect(_on_help_pressed)
+	visibility_changed.connect(_on_visibility_changed)
 
 	report_panel.visible = false
 	next_mission_btn.visible = false
+
+
+func _on_visibility_changed() -> void:
+	if not visible:
+		return
+	if GameManager.has_seen_attention("help_nudge_seen_throne"):
+		return
+	GameManager.mark_attention_seen("help_nudge_seen_throne")
+	help_nudge.point_at(help_btn)
 
 
 func _on_tower_activated() -> void:
