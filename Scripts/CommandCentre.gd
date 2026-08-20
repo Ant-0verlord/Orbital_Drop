@@ -39,6 +39,14 @@ func _ready() -> void:
 # what's visible in the empty space around the platform, not how any
 # existing surface is lit. Switch it to AMBIENT_SOURCE_SKY later if the
 # deck should pick up some ambient colour/light from the sky itself.
+#
+# planet_dir / planet_angular_radius (both uniforms on SpaceSky.gdshader)
+# are best-effort guesses at which way is "forward" for the deck — there's
+# no way to check that from here. Fastest way to dial them in without
+# waiting on a round of edits: while the game is running from the editor,
+# open the "Remote" tab in the Scene dock (next to the normal scene
+# tree), find SpaceEnvironment > Environment > Sky > Sky Material, and
+# edit the Shader Parameters there directly — changes apply live.
 # -------------------------------------------------------------------
 func _build_space_sky() -> void:
 	var shader = load("res://Shaders/SpaceSky.gdshader")
@@ -50,6 +58,11 @@ func _build_space_sky() -> void:
 
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
+	# The sky shader gets baked into a cubemap at this resolution before
+	# it's shown — the default is low enough that our procedural planet
+	# terrain (fine noise detail) came out as visibly blocky squares
+	# instead of smooth continents. Bumping this fixed that.
+	sky.radiance_size = Sky.RADIANCE_SIZE_1024
 
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
