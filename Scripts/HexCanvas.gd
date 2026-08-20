@@ -61,6 +61,13 @@ const COLOR_TOWER:        Color = Color(0.1,  0.8,  0.85, 0.9)   # teal/cyan
 const COLOR_TOWER_ACTIVE: Color = Color(0.0,  1.0,  0.75, 0.95)  # bright powered teal
 const COLOR_EXTRACTION:   Color = Color(0.95, 0.8,  0.1,  0.9)   # gold
 
+# Special-sector marker icons — plain white/grey art, tinted per state via
+# modulate at draw time (see the "Special sector symbols" block below)
+# rather than the old "[!]" / "[T]" / "[EXT]" ASCII tags.
+const ICON_PRIORITY: Texture2D = preload("res://UI/Icons/icon_marker_priority.png")
+const ICON_TOWER:     Texture2D = preload("res://UI/Icons/icon_marker_tower.png")
+const ICON_EXTRACTION: Texture2D = preload("res://UI/Icons/icon_marker_extract.png")
+
 func _ready() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -404,27 +411,29 @@ func _draw() -> void:
 					center + Vector2(-len(enemy_marker) * 3.5, below_names_y),
 					enemy_marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.85))
 		
-		# Special sector symbols
+		# Special sector symbols — real icon art (tinted per state) instead
+		# of the old "[!]" / "[T]" / "[EXT]" ASCII tags, now that the icons
+		# exist. Colours match what each state used to render its tag in.
 		if not placement_mode and special_type != "":
-			var symbol = ""
+			var icon: Texture2D = null
 			var sym_color = Color.WHITE
 			match special_type:
 				"priority":
-					symbol = "[!]"
+					icon = ICON_PRIORITY
 					sym_color = Color(0.9, 0.6, 1.0, 0.95)
 				"tower":
-					symbol = "[T]"
+					icon = ICON_TOWER
 					sym_color = Color(0.5, 0.95, 1.0, 0.9)
 				"tower_powered":
-					symbol = "[T]"
+					icon = ICON_TOWER
 					sym_color = Color(0.0, 1.0, 0.8, 1.0)
 				"extraction":
-					symbol = "[EXT]"
+					icon = ICON_EXTRACTION
 					sym_color = Color(1.0, 0.9, 0.3, 1.0)
-			if symbol != "":
-				draw_string(ThemeDB.fallback_font,
-					center + Vector2(-6, 26),
-					symbol, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, sym_color)
+			if icon != null:
+				var icon_size = Vector2(20, 20)
+				var icon_rect = Rect2(center + Vector2(-icon_size.x / 2.0, 16), icon_size)
+				draw_texture_rect(icon, icon_rect, false, sym_color)
 
 
 func _hex_points(center: Vector2, radius: float) -> PackedVector2Array:

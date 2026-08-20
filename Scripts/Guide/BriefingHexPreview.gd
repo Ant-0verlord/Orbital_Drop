@@ -14,6 +14,13 @@ const MIN_SIZE    = Vector2(300, 150)
 # clipped right at the control's edge.
 const PADDING     = HEX_R * 2.0
 
+# Same tintable marker art HexCanvas uses for its special-sector symbols —
+# reused here (at a smaller draw size) so the briefing preview and the
+# in-mission Holo-Map show a consistent icon for the same marker type.
+const ICON_PRIORITY: Texture2D = preload("res://UI/Icons/icon_marker_priority.png")
+const ICON_TOWER:     Texture2D = preload("res://UI/Icons/icon_marker_tower.png")
+const ICON_EXTRACT:   Texture2D = preload("res://UI/Icons/icon_marker_extract.png")
+
 var _bounds_min: Vector2 = Vector2.ZERO
 var _bounds_max: Vector2 = Vector2.ZERO
 
@@ -114,38 +121,37 @@ func _draw() -> void:
 		var marker = zone_states[sector].get("marker", "")
 		if marker != "":
 			var marker_color: Color
-			var marker_glyph: String
+			var marker_icon: Texture2D
 			var marker_label: String
-			# Glyphs are plain ASCII, not Unicode symbols (★ ▲ ⇑) — those
-			# codepoints aren't in the project's default font, and the
-			# web/itch.io export has no OS font fallback, so they were
-			# rendering as "tofu" boxes instead of the intended marker.
+			# Real icon art (tinted per marker type) instead of a single
+			# ASCII glyph ("!" / "T" / "^") — matches the icons now used
+			# for the same markers on the in-mission Holo-Map.
 			match marker:
 				"priority":
 					marker_color = Color(1.0, 0.55, 0.15)
-					marker_glyph = "!"
+					marker_icon = ICON_PRIORITY
 					var override_label = String(zone_states[sector].get("marker_label", ""))
 					marker_label = override_label if override_label != "" else "TARGET"
 				"tower":
 					marker_color = Color(0.3, 0.75, 1.0)
-					marker_glyph = "T"
+					marker_icon = ICON_TOWER
 					marker_label = "TOWER"
 				"extract":
 					marker_color = Color(0.4, 0.9, 0.6)
-					marker_glyph = "^"
+					marker_icon = ICON_EXTRACT
 					marker_label = "EXTRACT"
 				_:
 					marker_color = Color.WHITE
-					marker_glyph = ""
+					marker_icon = null
 					marker_label = ""
 
-			if marker_glyph != "":
+			if marker_icon != null:
 				# Highlighted outline so the hex stands out from the rest
-				# of the map at a glance, on top of the glyph itself.
+				# of the map at a glance, on top of the icon itself.
 				draw_polyline(outline, marker_color, 2.5)
-				draw_string(ThemeDB.fallback_font,
-					pixel + Vector2(-5, 4),
-					marker_glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, marker_color)
+				var icon_size = Vector2(14, 14)
+				var icon_rect = Rect2(pixel - icon_size / 2.0, icon_size)
+				draw_texture_rect(marker_icon, icon_rect, false, marker_color)
 				# Only label if the hex isn't already carrying a squad
 				# name in that same spot — these marker hexes shouldn't
 				# normally have a squad on them at briefing time, but

@@ -17,6 +17,13 @@ const COLOR_LOST:      Color = Color(0.4,  0.4,  0.4,  0.7)
 const COLOR_ENEMY:     Color = Color(0.7,  0.1,  0.1,  0.85)
 const COLOR_NEUTRAL:   Color = Color(0.12, 0.18, 0.25, 0.7)
 
+# Same tintable marker art HexCanvas draws on the map itself — reused here
+# for the sector-list's special-sector tag row instead of the old
+# "[!]" / "[T]" / "[EXT]" ASCII tags.
+const ICON_PRIORITY: Texture2D = preload("res://UI/Icons/icon_marker_priority.png")
+const ICON_TOWER:     Texture2D = preload("res://UI/Icons/icon_marker_tower.png")
+const ICON_EXTRACTION: Texture2D = preload("res://UI/Icons/icon_marker_extract.png")
+
 @onready var title_label: Label         = $PanelContainer/VBoxContainer/Title
 @onready var turn_label: Label          = $PanelContainer/VBoxContainer/InfoRow/TurnLabel
 @onready var held_label: Label          = $PanelContainer/VBoxContainer/InfoRow/HeldLabel
@@ -418,7 +425,11 @@ func _rebuild_sector_list() -> void:
 			squad_text += squad_names[i]
 
 		var squad_lbl := Label.new()
-		squad_lbl.text = squad_text if squad_text != "" else "—"
+		# Plain ASCII hyphen rather than an em dash ("—") — that codepoint
+		# isn't in the project's default font either, and the web/itch.io
+		# export has no OS-level font fallback, so an empty-squad sector
+		# was rendering a "tofu" box here.
+		squad_lbl.text = squad_text if squad_text != "" else "-"
 		squad_lbl.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
 		squad_lbl.add_theme_font_size_override("font_size", 11)
 		row.add_child(squad_lbl)
@@ -427,17 +438,49 @@ func _rebuild_sector_list() -> void:
 
 		var special_type = _build_special_sectors().get(sector_name, "")
 		if special_type != "":
+			var tag_row := HBoxContainer.new()
+			tag_row.add_theme_constant_override("separation", 4)
+
+			var tag_icon := TextureRect.new()
+			# expand_mode defaults to EXPAND_KEEP_SIZE, which forces the
+			# control to the texture's native pixel size (96x96) no matter
+			# what custom_minimum_size says — that's what was blowing this
+			# up to fill the whole row. EXPAND_IGNORE_SIZE lets it actually
+			# shrink to the 12x12 box below.
+			tag_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tag_icon.custom_minimum_size = Vector2(12, 12)
+			tag_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			tag_icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			tag_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
 			var tag_lbl := Label.new()
 			var tag_text = ""
+			var tag_color = Color(0.9, 0.85, 0.5)
 			match special_type:
-				"priority":    tag_text = "[!] PRIORITY TARGET"
-				"tower":       tag_text = "[T] COMMS TOWER"
-				"tower_powered": tag_text = "[T] TOWER ACTIVE"
-				"extraction":  tag_text = "[EXT] EXTRACTION"
+				"priority":
+					tag_text = "PRIORITY TARGET"
+					tag_icon.texture = ICON_PRIORITY
+					tag_color = Color(0.9, 0.6, 1.0)
+				"tower":
+					tag_text = "COMMS TOWER"
+					tag_icon.texture = ICON_TOWER
+					tag_color = Color(0.5, 0.95, 1.0)
+				"tower_powered":
+					tag_text = "TOWER ACTIVE"
+					tag_icon.texture = ICON_TOWER
+					tag_color = Color(0.0, 1.0, 0.8)
+				"extraction":
+					tag_text = "EXTRACTION"
+					tag_icon.texture = ICON_EXTRACTION
+					tag_color = Color(1.0, 0.9, 0.3)
+			tag_icon.modulate = tag_color
 			tag_lbl.text = tag_text
 			tag_lbl.add_theme_font_size_override("font_size", 10)
-			tag_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 0.5))
-			row.add_child(tag_lbl)
+			tag_lbl.add_theme_color_override("font_color", tag_color)
+
+			tag_row.add_child(tag_icon)
+			tag_row.add_child(tag_lbl)
+			row.add_child(tag_row)
 
 		var spacer := Control.new()
 		spacer.custom_minimum_size.y = 2
