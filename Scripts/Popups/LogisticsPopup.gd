@@ -15,6 +15,7 @@ var _help_attention: bool = false
 var _attention_pulse: float = 0.0
 var pool_bars: Dictionary = {}
 var pool_val_labels: Dictionary = {}
+var _blank_checkbox_icon: ImageTexture = null
 
 
 @onready var title_label: Label             = $PanelContainer/VBoxContainer/Title
@@ -321,7 +322,15 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 
 		var cb := CheckBox.new()
 		cb.text = ""
-		cb.add_theme_constant_override("icon_max_width", 32)
+		cb.custom_minimum_size = Vector2(28, 28)
+		# The engine's own tick icon is hidden entirely here — see the big
+		# comment on _style_checkbox() for why — and a hand-built stylebox
+		# fill takes over as the only "is this ticked" indicator.
+		var blank_icon = _get_blank_checkbox_icon()
+		cb.add_theme_icon_override("checked", blank_icon)
+		cb.add_theme_icon_override("unchecked", blank_icon)
+		cb.add_theme_icon_override("checked_disabled", blank_icon)
+		cb.add_theme_icon_override("unchecked_disabled", blank_icon)
 		cb.disabled = TurnManager.mission_over
 		cb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
@@ -433,20 +442,60 @@ func _on_supply_toggled(pressed: bool, squad_name: String, supply: String, check
 
 
 # -------------------------------------------------------
-# Makes ticked supply checkboxes obviously highlighted —
-# the default theme checkbox is too subtle for new testers.
+# Bug fix: ticked checkboxes used to bump icon_max_width to 32 to make
+# the default theme's tiny built-in tick glyph obviously visible for
+# testers — but that glyph scales independently of the box background
+# behind it, and at 32px it grew past that background, spilling a chunk
+# of the checkmark outside the box's top-right corner (see bug report
+# screenshot: a small box with a checkmark badge floating half outside
+# it). Rather than keep chasing the engine's own icon-scaling behaviour,
+# the built-in glyph is hidden completely (blank icon override at
+# creation, above) and replaced with a plain hand-drawn box: solid green
+# fill + bright border when ticked, dark outline when not — same
+# StyleBoxFlat-override pattern as _style_primary_button() / _card_style()
+# elsewhere in this file, so there's no separate icon layer left that can
+# scale out of alignment with its own box.
 # -------------------------------------------------------
+func _get_blank_checkbox_icon() -> ImageTexture:
+	if _blank_checkbox_icon == null:
+		var img := Image.create(1, 1, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		_blank_checkbox_icon = ImageTexture.create_from_image(img)
+	return _blank_checkbox_icon
+
 func _style_checkbox(cb: CheckBox) -> void:
+	var box := StyleBoxFlat.new()
+	box.set_corner_radius_all(6)
+	box.set_border_width_all(2)
+	box.set_content_margin_all(0)
+
 	if cb.button_pressed:
-		cb.add_theme_color_override("font_color", Color(0.15, 0.9, 0.4))
-		cb.add_theme_color_override("font_color_hover", Color(0.15, 0.9, 0.4))
-		cb.add_theme_color_override("font_color_disabled", Color(0.15, 0.65, 0.35))
-		cb.modulate = Color(1.25, 1.25, 1.1)
+		box.bg_color     = Color(0.16, 0.42, 0.22, 1.0)
+		box.border_color = Color(0.15, 0.9, 0.4, 1.0)
 	else:
-		cb.remove_theme_color_override("font_color")
-		cb.remove_theme_color_override("font_color_hover")
-		cb.remove_theme_color_override("font_color_disabled")
-		cb.modulate = Color(1, 1, 1)
+		box.bg_color     = Color(0.106, 0.122, 0.153, 1.0)
+		box.border_color = Color(0.235, 0.259, 0.306, 1.0)
+
+	var hover := box.duplicate()
+	hover.border_color = Color(1.0, 0.851, 0.2, 1.0)
+
+	var disabled := StyleBoxFlat.new()
+	disabled.set_corner_radius_all(6)
+	disabled.set_border_width_all(2)
+	disabled.set_content_margin_all(0)
+	if cb.button_pressed:
+		disabled.bg_color     = Color(0.12, 0.28, 0.16, 1.0)
+		disabled.border_color = Color(0.15, 0.55, 0.3, 1.0)
+	else:
+		disabled.bg_color     = Color(0.055, 0.063, 0.078, 1.0)
+		disabled.border_color = Color(0.157, 0.173, 0.204, 1.0)
+
+	cb.add_theme_stylebox_override("normal", box)
+	cb.add_theme_stylebox_override("hover", hover)
+	cb.add_theme_stylebox_override("pressed", box)
+	cb.add_theme_stylebox_override("hover_pressed", hover)
+	cb.add_theme_stylebox_override("disabled", disabled)
+	cb.modulate = Color(1, 1, 1)
 
 
 # -------------------------------------------------------
