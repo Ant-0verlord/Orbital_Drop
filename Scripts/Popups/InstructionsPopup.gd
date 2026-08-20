@@ -18,6 +18,15 @@ extends Control
 #   - This is the full written rulebook: everything explained in one
 #     place, readable any time before a mission even starts or paused
 #     mid-mission, like a board game's instruction booklet.
+#
+# PAGES — split from what used to be one long scrolling document into
+# a page-per-topic array, front-loaded with a lore page and a short
+# "how to play" crash course before the detailed reference sections,
+# so a brand-new player gets oriented in two pages instead of being
+# handed the entire rulebook at once. Prev/Next controls and the page
+# indicator are built in code (see _build_page_nav()) rather than
+# added to the .tscn, consistent with this project's general practice
+# of keeping scene files minimal and building UI dynamically.
 # =============================================================
 
 signal closed
@@ -25,7 +34,42 @@ signal closed
 @onready var body: RichTextLabel = $PanelContainer/VBoxContainer/Body
 @onready var back_btn: Button    = $PanelContainer/VBoxContainer/ButtonRow/BackBtn
 
-const TEXT := """A campaign of 5 missions. Each one drops your squads into a hex-grid theatre where you manage supplies, direct combat from a safe command centre, and complete that mission's objective before the turn limit runs out or every squad you have is lost.
+const PAGES: Array[String] = [
+
+# ---------------------------------------------------------------
+# PAGE 0 — LORE / WHAT IS THIS
+# ---------------------------------------------------------------
+"""[font_size=22][b][color=#ffd933]WHAT IS ORBITAL DROP?[/color][/b][/font_size]
+
+Orbital Drop is a turn-based tactical command game. You never touch a rifle yourself — you run mission control from an orbital platform above [b]Kerath-IV[/b], directing five squads on the surface through five stations: the Intel Desk, the Vox-Caster Array, the Logistics Terminal, the Holo-Map, and the Command Throne.
+
+[font_size=16][b][color=#ffd933]THE SITUATION[/color][/b][/font_size]
+Kerath-IV is contested ground. Enemy forces are dug in across the theatre, and Command has authorised a five-mission campaign to break their hold, track down the enemy field commander directing the resistance, and recover the intelligence package that makes the whole operation worthwhile.
+
+Every decision happens from a distance: what supplies to allocate, when to call in reinforcements, when to risk an orbital strike. The squads on the ground live or die by the orders you send down from orbit — and losses are permanent for the rest of the campaign.
+
+[i]The next page is a two-minute crash course. Everything after it is the full reference manual, for whenever you need the details.[/i]""",
+
+# ---------------------------------------------------------------
+# PAGE 1 — HOW TO PLAY (QUICK START)
+# ---------------------------------------------------------------
+"""[font_size=22][b][color=#ffd933]HOW TO PLAY — QUICK START[/color][/b][/font_size]
+
+Every turn, visit the five stations in order:
+[b]1. Intel Console[/b] — see what happened last turn.
+[b]2. Vox-Caster Array[/b] — see what each squad needs right now.
+[b]3. Logistics Terminal[/b] — spend your shared supply points to answer those needs, then [b]Lock Allocations[/b].
+[b]4. Holo-Map[/b] — place anything you armed (a reinforcement drop or an orbital strike). Skipped if you didn't arm anything.
+[b]5. Command Throne[/b] — check the objective and turn summary, then press [b]Engage Turn Seal[/b] to end the turn.
+
+That's the whole loop, repeated until the mission's win condition is met or the turn limit runs out. [b]Ending a turn is final[/b] — there's no undo once the seal is engaged, so double check your allocations at Logistics before locking them in.
+
+The pages that follow cover every system in full detail: the turn cycle, all five consoles, supplies, squad status, combat odds, reinforcements, orbital strikes, the comms tower, the Holo-Map, mission types, and scoring.""",
+
+# ---------------------------------------------------------------
+# PAGE 2 — THE TURN CYCLE
+# ---------------------------------------------------------------
+"""A campaign of 5 missions. Each one drops your squads into a hex-grid theatre where you manage supplies, direct combat from a safe command centre, and complete that mission's objective before the turn limit runs out or every squad you have is lost.
 
 [font_size=20][b][color=#ffd933]1. THE TURN CYCLE[/color][/b][/font_size]
 You don't control squads directly — you run a command centre with five stations, and each turn plays out in this order:
@@ -36,9 +80,12 @@ You don't control squads directly — you run a command centre with five station
 [b]5. Command Throne[/b] — review the turn summary, then press [b]Engage Turn Seal[/b] to end the turn.
 Allocations must be [b]Locked[/b] at the Logistics Terminal before Command Throne will let you end the turn. Ending a turn is irreversible — squads act, the enemy moves, and the result is final before the next turn begins.
 
-[center][img=760]res://UI/Manual/turn_cycle.png[/img][/center]
+[center][img=760]res://UI/Manual/turn_cycle.png[/img][/center]""",
 
-[font_size=20][b][color=#ffd933]2. THE FIVE CONSOLES[/color][/b][/font_size]
+# ---------------------------------------------------------------
+# PAGE 3 — THE FIVE CONSOLES
+# ---------------------------------------------------------------
+"""[font_size=20][b][color=#ffd933]2. THE FIVE CONSOLES[/color][/b][/font_size]
 [b]Intel Console[/b] — one status card per squad: name, condition, current sector, and a report of what happened to them last turn. Also surfaces event cards — enemy reinforcement warnings, landings, orbital strike results, and data package updates. A Critical squad's report always comes through clearly here, no matter how bad radio interference is elsewhere.
 
 [center][img=760]res://UI/Manual/console_intel.png[/img][/center]
@@ -47,7 +94,7 @@ Allocations must be [b]Locked[/b] at the Logistics Terminal before Command Thron
 
 [center][img=760]res://UI/Manual/console_voxcaster.png[/img][/center]
 
-[b]Logistics Terminal[/b] — where you actually plan the turn. Tick up to 2 supply types per squad per turn from a shared mission-wide points pool (each tick costs [b]2 points[/b] — see Section 4). On later missions this is also where you spend a reinforcement charge to call in a new squad, or an orbital strike charge to arm a bombardment. You cannot Lock allocations while over budget on any supply, or while something is armed but not yet placed on the Holo-Map.
+[b]Logistics Terminal[/b] — where you actually plan the turn. Tick up to 2 supply types per squad per turn from a shared mission-wide points pool (each tick costs [b]2 points[/b] — see Section 3). On later missions this is also where you spend a reinforcement charge to call in a new squad, or an orbital strike charge to arm a bombardment. You cannot Lock allocations while over budget on any supply, or while something is armed but not yet placed on the Holo-Map.
 
 [center][img=760]res://UI/Manual/console_logistics.png[/img][/center]
 
@@ -57,9 +104,12 @@ Allocations must be [b]Locked[/b] at the Logistics Terminal before Command Thron
 
 [b]Holo-Map[/b] — the full hex-grid view of the battlefield: who holds what, where every squad and enemy unit currently is. Its second job is placement: whenever a reinforcement or orbital strike is armed, opening the Holo-Map forces placement mode — click a target hex, confirm, and only then can you close it (or cancel, which refunds the charge). See Section 9 for the hex legend.
 
-[i](The console screens above are illustrative layouts built from the actual button and label text in the game's files, not live screenshots.)[/i]
+[i](The console screens above are illustrative layouts built from the actual button and label text in the game's files, not live screenshots.)[/i]""",
 
-[font_size=20][b][color=#ffd933]3. SUPPLIES[/color][/b][/font_size]
+# ---------------------------------------------------------------
+# PAGE 4 — SUPPLIES / SQUAD STATUS
+# ---------------------------------------------------------------
+"""[font_size=20][b][color=#ffd933]3. SUPPLIES[/color][/b][/font_size]
 Three supply types, each answering a different need a squad might radio in:
 [b]Armaments[/b] — lets the squad fight this turn. An armed fight always kills the enemy on that tile, but risks a casualty to your own squad in the process (see Section 5).
 [b]Medi-Packs[/b] — heals the squad one step: Critical -> Wounded, or Wounded -> Active. Has no effect on an already-Active squad.
@@ -73,9 +123,12 @@ It worsens one step at a time from: losing an unarmed fight, an unlucky armed-co
 It improves one step at a time — Critical -> Wounded -> Active — from Medi-Packs, fresh or banked. You can't skip a step either direction.
 [b]Lost is permanent[/b] for the rest of the campaign — that squad does not return next mission. If a Lost squad was carrying the recovered data package, the package is destroyed with them.
 
-[center][img=760]res://UI/Manual/status_ladder.png[/img][/center]
+[center][img=760]res://UI/Manual/status_ladder.png[/img][/center]""",
 
-[font_size=20][b][color=#ffd933]5. COMBAT[/color][/b][/font_size]
+# ---------------------------------------------------------------
+# PAGE 5 — COMBAT / REINFORCEMENTS / ORBITAL STRIKES
+# ---------------------------------------------------------------
+"""[font_size=20][b][color=#ffd933]5. COMBAT[/color][/b][/font_size]
 [b]Armed[/b] (squad has effective Armaments this turn): the enemy on that tile is always killed and the tile captured — but there's a [b]25% chance[/b] your own squad still takes a casualty in the exchange.
 [b]Unarmed[/b]: a 60/40 roll. On a win, the enemy is pushed back and put on cooldown, and you hold the tile. On a loss, your squad takes a casualty and, if it was attacking, falls back to a nearby tile.
 [b]Overrun[/b]: if an enemy ends its turn on your squad's own tile and that squad has no arms, it tries to flee to a clear adjacent tile rather than just standing there — only a squad that's genuinely boxed in with nowhere to run takes a casualty.
@@ -88,18 +141,24 @@ From mission 2 onward you have a limited pool of reinforcement charges. Spend on
 
 [font_size=20][b][color=#ffd933]7. ORBITAL STRIKES[/color][/b][/font_size]
 From mission 3 onward you have a limited pool of orbital strike charges. Arm one at Logistics, target a hex on the Holo-Map — the strike hits that hex [b]and its 6 neighbours[/b], killing every enemy unit caught in the blast. Any of your own squads in that same radius take a casualty too, so check the map before you fire. If the strike kills a priority target, the data they were carrying is destroyed rather than recovered.
-[b]Reinforcements and orbital strikes are mutually exclusive[/b] — arming one locks out the other until it's placed/fired or cancelled.
+[b]Reinforcements and orbital strikes are mutually exclusive[/b] — arming one locks out the other until it's placed/fired or cancelled.""",
 
-[font_size=20][b][color=#ffd933]8. THE COMMS TOWER[/color][/b][/font_size]
+# ---------------------------------------------------------------
+# PAGE 6 — THE COMMS TOWER / THE HOLO-MAP
+# ---------------------------------------------------------------
+"""[font_size=20][b][color=#ffd933]8. THE COMMS TOWER[/color][/b][/font_size]
 On missions where one is present, a squad standing on the tower's sector with effective Fuel Cells for [b]2 consecutive turns[/b] powers it. Powering it reduces Vox-Caster interference for any squad within 3 hexes — a real reason to keep holding it even after its own objective is met. If fuel is interrupted mid-charge, progress resets to zero. If the enemy retakes the tower's tile at any point, power is lost immediately and has to be fully re-earned.
 
 [font_size=20][b][color=#ffd933]9. THE HOLO-MAP[/color][/b][/font_size]
 [center][img=600]res://UI/Manual/hex_legend.png[/img][/center]
 A [b]pulsing / flashing red[/b] hex means there's an actual enemy unit standing there right now — not just enemy-controlled territory. A solid, non-flashing red hex is enemy ground that's currently empty, so treat flashing red as "contact here this instant," worth reacting to before your next turn. Under heavy interference an occupied hex can also flicker to static for a moment — that's the same signal-quality problem from the Vox-Caster (Section 2) affecting the map too, not a different state.
 Special markers you may see: a Comms Tower icon (shows powered or unpowered), a priority target marker, and an extraction zone marker on the relevant missions.
-Whenever a reinforcement or strike is armed, the Holo-Map forces placement mode until you confirm a hex or cancel (cancelling refunds the charge).
+Whenever a reinforcement or strike is armed, the Holo-Map forces placement mode until you confirm a hex or cancel (cancelling refunds the charge).""",
 
-[font_size=20][b][color=#ffd933]10. MISSION TYPES & WIN CONDITIONS[/color][/b][/font_size]
+# ---------------------------------------------------------------
+# PAGE 7 — MISSION TYPES & WIN CONDITIONS / SCORING
+# ---------------------------------------------------------------
+"""[font_size=20][b][color=#ffd933]10. MISSION TYPES & WIN CONDITIONS[/color][/b][/font_size]
 [b]Capture[/b] — hold the required number of sectors by the turn limit.
 [b]Eliminate[/b] — destroy every enemy unit on the map. Ends the instant the last one falls, no need to wait for the turn limit.
 [b]Hold Tower[/b] — power the Comms Tower and still be holding it when the turn limit is reached. Losing the tower at any point resets your progress.
@@ -108,7 +167,13 @@ Whenever a reinforcement or strike is armed, the Holo-Map forces placement mode 
 [b]Any mission[/b] fails immediately if every squad you have reaches Lost status at the same time.
 
 [font_size=20][b][color=#ffd933]11. SCORING[/color][/b][/font_size]
-Missions are scored on tiles held, a turn-completion bonus, and a supply-efficiency bonus, combined into a letter rating from S down to F. Unspent supply points and surviving reinforcement charges carry forward into the next mission, so playing efficiently pays off later in the campaign too."""
+Missions are scored on tiles held, a turn-completion bonus, and a supply-efficiency bonus, combined into a letter rating from S down to F. Unspent supply points and surviving reinforcement charges carry forward into the next mission, so playing efficiently pays off later in the campaign too.""",
+]
+
+var current_page: int = 0
+var _page_label: Label = null
+var _prev_btn: Button = null
+var _next_btn: Button = null
 
 
 func _ready() -> void:
@@ -116,13 +181,57 @@ func _ready() -> void:
 	body.bbcode_enabled = true
 	body.scroll_active = true
 	body.fit_content = false
-	body.text = TEXT
 	back_btn.pressed.connect(_on_back_pressed)
+	_build_page_nav()
+	_show_page(0)
+
+
+# -------------------------------------------------------
+# Prev / page-indicator / Next controls, built in code and slotted into
+# the existing ButtonRow alongside the scene's BackBtn — this project
+# generally avoids hand-editing .tscn files for UI that a running Godot
+# editor might have open (stale-revert risk), building it in _ready()
+# instead. An expanding spacer keeps the paging cluster on the left and
+# BackBtn pinned to the right, so "close the manual" stays visually
+# distinct from "turn the page."
+# -------------------------------------------------------
+func _build_page_nav() -> void:
+	var row := back_btn.get_parent()
+	if row == null:
+		return
+
+	_prev_btn = Button.new()
+	_prev_btn.text = "<  Prev"
+	_prev_btn.focus_mode = Control.FOCUS_NONE
+	_prev_btn.pressed.connect(_on_prev_pressed)
+	row.add_child(_prev_btn)
+	row.move_child(_prev_btn, 0)
+
+	_page_label = Label.new()
+	_page_label.add_theme_font_size_override("font_size", 13)
+	_page_label.add_theme_color_override("font_color", Color(0.65, 0.68, 0.73))
+	_page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_page_label.custom_minimum_size.x = 90
+	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	row.add_child(_page_label)
+	row.move_child(_page_label, 1)
+
+	_next_btn = Button.new()
+	_next_btn.text = "Next  >"
+	_next_btn.focus_mode = Control.FOCUS_NONE
+	_next_btn.pressed.connect(_on_next_pressed)
+	row.add_child(_next_btn)
+	row.move_child(_next_btn, 2)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(spacer)
+	row.move_child(spacer, 3)
 
 
 func open() -> void:
 	visible = true
-	body.scroll_to_line(0)
+	_show_page(0)
 
 
 func close() -> void:
@@ -130,6 +239,28 @@ func close() -> void:
 		return
 	visible = false
 	emit_signal("closed")
+
+
+func _show_page(index: int) -> void:
+	current_page = clamp(index, 0, PAGES.size() - 1)
+	body.text = PAGES[current_page]
+	body.scroll_to_line(0)
+	if _page_label:
+		_page_label.text = "Page %d / %d" % [current_page + 1, PAGES.size()]
+	if _prev_btn:
+		_prev_btn.disabled = current_page == 0
+	if _next_btn:
+		_next_btn.disabled = current_page == PAGES.size() - 1
+
+
+func _on_prev_pressed() -> void:
+	AudioManager.play_button_other()
+	_show_page(current_page - 1)
+
+
+func _on_next_pressed() -> void:
+	AudioManager.play_button_other()
+	_show_page(current_page + 1)
 
 
 func _on_back_pressed() -> void:

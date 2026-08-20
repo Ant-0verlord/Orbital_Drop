@@ -27,6 +27,7 @@ func _ready() -> void:
 	_style_title()
 	_style_buttons()
 	_build_footer()
+	_build_instructions_flash()
 
 	play_btn.pressed.connect(_on_play_pressed)
 	settings_btn.pressed.connect(_on_settings_pressed)
@@ -59,6 +60,10 @@ func _on_settings_close_pressed() -> void:
 
 func _on_instructions_pressed() -> void:
 	instructions_popup.open()
+	# They've found it — stop mid-flash if one's playing and push the next
+	# occasional flash further out, rather than nagging right after a click.
+	_stop_instructions_flash()
+	_schedule_instructions_flash()
 
 
 func _on_exit_pressed() -> void:
@@ -257,3 +262,74 @@ func _on_ticker_timeout() -> void:
 	tween.tween_property(_ticker_label, "modulate:a", 0.0, 0.6)
 	tween.tween_callback(func(): _ticker_label.text = _next_ticker_line())
 	tween.tween_property(_ticker_label, "modulate:a", 1.0, 0.6)
+
+
+# -------------------------------------------------------
+# Occasional Instructions-button flash — a first-time player has no reason
+# to click "INSTRUCTIONS" before "PLAY", so every so often the button
+# gives itself a quick amber pulse + scale bump to catch the eye without
+# being an annoying constant animation. Timing is randomised per-cycle
+# (rather than a fixed repeating Timer) so it reads as an occasional
+# "notice me" nudge instead of a metronome. Reuses the same
+# create_tween()-driven approach as the footer ticker fade above.
+# -------------------------------------------------------
+const _INSTRUCTIONS_FLASH_MIN_WAIT: float = 13.0
+const _INSTRUCTIONS_FLASH_MAX_WAIT: float = 22.0
+
+var _instructions_flash_timer: Timer = null
+var _instructions_flash_tween: Tween = null
+
+func _build_instructions_flash() -> void:
+	if instructions_btn == null:
+		return
+	call_deferred("_update_instructions_pivot")
+
+	_instructions_flash_timer = Timer.new()
+	_instructions_flash_timer.one_shot = true
+	_instructions_flash_timer.timeout.connect(_on_instructions_flash_timeout)
+	add_child(_instructions_flash_timer)
+	_schedule_instructions_flash()
+
+
+func _update_instructions_pivot() -> void:
+	if instructions_btn:
+		instructions_btn.pivot_offset = instructions_btn.size / 2.0
+
+
+func _schedule_instructions_flash() -> void:
+	if _instructions_flash_timer == null:
+		return
+	_instructions_flash_timer.start(randf_range(_INSTRUCTIONS_FLASH_MIN_WAIT, _INSTRUCTIONS_FLASH_MAX_WAIT))
+
+
+func _on_instructions_flash_timeout() -> void:
+	_flash_instructions_btn()
+	_schedule_instructions_flash()
+
+
+func _stop_instructions_flash() -> void:
+	if _instructions_flash_tween and _instructions_flash_tween.is_valid():
+		_instructions_flash_tween.kill()
+	if instructions_btn:
+		instructions_btn.modulate = Color(1, 1, 1, 1)
+		instructions_btn.scale = Vector2.ONE
+
+
+func _flash_instructions_btn() -> void:
+	if instructions_btn == null or not is_instance_valid(instructions_btn):
+		return
+	instructions_btn.pivot_offset = instructions_btn.size / 2.0
+
+	if _instructions_flash_tween and _instructions_flash_tween.is_valid():
+		_instructions_flash_tween.kill()
+
+	var glow := Color(1.5, 1.3, 0.65, 1.0)
+	var rest := Color(1, 1, 1, 1)
+
+	_instructions_flash_tween = create_tween()
+	_instructions_flash_tween.set_trans(Tween.TRANS_SINE)
+	for i in range(2):
+		_instructions_flash_tween.tween_property(instructions_btn, "modulate", glow, 0.18)
+		_instructions_flash_tween.parallel().tween_property(instructions_btn, "scale", Vector2(1.06, 1.06), 0.18)
+		_instructions_flash_tween.tween_property(instructions_btn, "modulate", rest, 0.24)
+		_instructions_flash_tween.parallel().tween_property(instructions_btn, "scale", Vector2.ONE, 0.24)
