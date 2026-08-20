@@ -176,18 +176,14 @@ func _update_held_label() -> void:
 				held_label.text = "Target: AT LARGE ✦"
 				held_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
 			else:
-				var carrier_name = GameManager.data_carrier_squad
-				var carrier_ok = carrier_name != "" and SquadManager.squads.has(carrier_name) \
-					and SquadManager.squads[carrier_name].status != SquadManager.Status.LOST
-				if not carrier_ok:
-					held_label.text = "Data carrier lost ✗"
-					held_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
-				else:
-					var dist = EnemyManager.get_distance_to_nearest_enemy(SquadManager.squads[carrier_name].sector)
-					var safe = dist >= TurnManager.DATA_CARRIER_SAFE_DISTANCE
-					held_label.text = "Carrier clear: %d / %d tiles" % [min(dist, TurnManager.DATA_CARRIER_SAFE_DISTANCE), TurnManager.DATA_CARRIER_SAFE_DISTANCE]
-					held_label.add_theme_color_override("font_color",
-						Color(0.4, 0.9, 0.4) if safe else Color(0.9, 0.6, 0.2))
+				# Target down — the win requirement is now taking and powering
+				# the relay tower (it's what pinpoints the extraction zone for
+				# Mission 5), same readout as hold_tower above — not a
+				# carrier-distance check.
+				var powered = GameManager.tower_powered
+				held_label.text = "Tower: %s" % ("ACTIVE ⚡" if powered else "UNPOWERED")
+				held_label.add_theme_color_override("font_color",
+					Color(0.4, 0.9, 0.4) if powered else Color(0.9, 0.6, 0.2))
 		"extract":
 			var ez = GameManager.extraction_zone
 			var at_ez = 0

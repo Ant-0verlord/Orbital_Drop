@@ -103,7 +103,7 @@ Whenever a reinforcement or strike is armed, the Holo-Map forces placement mode 
 [b]Capture[/b] — hold the required number of sectors by the turn limit.
 [b]Eliminate[/b] — destroy every enemy unit on the map. Ends the instant the last one falls, no need to wait for the turn limit.
 [b]Hold Tower[/b] — power the Comms Tower and still be holding it when the turn limit is reached. Losing the tower at any point resets your progress.
-[b]Eliminate Priority[/b] — kill the named priority target, [i]then[/i] get the squad carrying the recovered data package a safe distance from every remaining living enemy before extraction is authorised. Losing that carrier squad after the kill fails the mission outright — the intel doesn't survive with them.
+[b]Eliminate Priority[/b] — kill the named priority target, [i]then[/i] take and power the relay tower — it's what lets Command pinpoint an extraction zone for the next phase. Losing the squad carrying the recovered data package after the kill fails the mission outright — the intel doesn't survive with them.
 [b]Extract[/b] — fight freely until the extraction shuttle's arrival window opens, then get squads (especially your data carrier) to the extraction zone and aboard before time runs out.
 [b]Any mission[/b] fails immediately if every squad you have reaches Lost status at the same time.
 

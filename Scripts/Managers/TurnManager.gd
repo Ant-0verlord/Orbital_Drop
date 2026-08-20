@@ -20,16 +20,6 @@ var pending_allocations: Dictionary = {}
 var mission_over: bool = false
 var reinforcement_schedule: Dictionary = {}
 
-# Mission 4 ("eliminate_priority"): killing Vreth alone used to end the
-# mission on the spot. But the data package is what the whole campaign was
-# authorised to recover, and enemy forces still standing know exactly who's
-# carrying it — they converge on the carrier once the target falls. So
-# eliminating Vreth isn't the finish line by itself: the carrier also has
-# to put real distance between itself and every remaining hostile (by
-# squads killing them or pushing them back) before extraction is safe to
-# hand off to Mission 5. This is that required distance, in hex tiles.
-const DATA_CARRIER_SAFE_DISTANCE: int = 3
-
 # Mission 5 ("extract"): the extraction shuttle isn't sitting on the ground
 # waiting from turn 1 — squads fight the theatre normally around the
 # extraction zone until the shuttle actually arrives. Once this many turns
@@ -215,7 +205,7 @@ func end_turn() -> void:
 	if mission_type == "eliminate" and not EnemyManager.is_any_enemy_alive():
 		_end_mission(true, "")
 		return
-	if mission_type == "eliminate_priority" and not GameManager.priority_target_alive and _data_carrier_is_safe():
+	if mission_type == "eliminate_priority" and not GameManager.priority_target_alive and _tower_secured():
 		_end_mission(true, "")
 		return
 
@@ -355,14 +345,14 @@ func _check_eliminate_priority_win() -> void:
 	if GameManager.priority_target_alive:
 		_end_mission(false,
 			"Priority target '%s' was not eliminated. Mission failed." % GameManager.priority_target_name)
-	elif _data_carrier_is_safe():
+	elif _tower_secured():
 		_end_mission(true, "")
 	elif GameManager.data_destroyed:
 		_end_mission(false,
 			"%s was eliminated, but the data carrier was lost in the field. The intel did not survive." % GameManager.priority_target_name)
 	else:
 		_end_mission(false,
-			"%s was eliminated, but the data carrier never broke contact with enemy forces. Extraction compromised." % GameManager.priority_target_name)
+			"%s was eliminated, but the relay tower was never taken and powered. Command couldn't pinpoint an extraction zone." % GameManager.priority_target_name)
 
 
 # Instant fail: the data carrier was actually killed this turn — not
@@ -388,16 +378,19 @@ func _check_carrier_overrun(carrier_name: String) -> void:
 		"%s was overrun at %s — enemy forces were too much and the carrier was lost. The intel did not survive contact." % [carrier_name, carrier.sector])
 
 
-# Carrier needs to be alive, on the board, and at least
-# DATA_CARRIER_SAFE_DISTANCE tiles from every remaining living enemy.
-func _data_carrier_is_safe() -> bool:
-	var carrier_name = GameManager.data_carrier_squad
-	if carrier_name == "" or not SquadManager.squads.has(carrier_name):
+# True once the comms tower is both powered AND currently held by a living
+# squad — the same requirement Mission 3's hold_tower win uses. Mission 4
+# now reuses this too: taking and powering the tower is what lets Command
+# pinpoint the extraction zone for the campaign to continue into Mission 5,
+# replacing the old "get the carrier clear of every enemy" requirement.
+func _tower_secured() -> bool:
+	var tower = GameManager.tower_sector
+	if tower == "" or not GameManager.tower_powered:
 		return false
-	var carrier = SquadManager.squads[carrier_name]
-	if carrier.status == SquadManager.Status.LOST:
-		return false
-	return EnemyManager.get_distance_to_nearest_enemy(carrier.sector) >= DATA_CARRIER_SAFE_DISTANCE
+	for squad in SquadManager.get_squads_for_ui():
+		if squad.sector == tower and squad.status != SquadManager.Status.LOST:
+			return true
+	return false
 
 
 func _check_extract_win() -> void:

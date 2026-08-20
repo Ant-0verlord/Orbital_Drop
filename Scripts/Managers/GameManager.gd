@@ -879,7 +879,12 @@ var missions: Array = [
 		{
 		# Mission 4
 		"mission_type":         "eliminate_priority",
-		"enemy_ai_mode": "defensive",
+		# Was "defensive" — a mode that made enemies hold position while
+		# Vreth lived, then flip to specifically hunting down the data
+		# carrier once he fell. That carrier-hunt no longer matches how
+		# this mission is won (see win-check below), so enemies just use
+		# the standard/default combat AI throughout, same as M1/M2.
+		"enemy_ai_mode": "aggressive",
 		"has_priority_target":  true,
 		"priority_target_name": "Commander Vreth",
 		"radio_tower_sector":   "Beta-5C",   # central cave sector — adjust after testing
@@ -887,7 +892,11 @@ var missions: Array = [
 		"turns":        12,
 		"win_hexes":    55,
 		"interference": 0.75,
-		"objective":    "Push through the cave network and hold 55 sectors. Comms are failing.",
+		# Win condition: eliminate Vreth, then take and power the relay
+		# tower — that's what pinpoints the extraction zone for Mission 5.
+		# No requirement anymore for the data carrier to put distance
+		# between itself and the remaining enemy forces.
+		"objective":    "Locate and eliminate Commander Vreth, then take and power the relay tower to pinpoint an extraction zone.",
 		# Bumped up across the board — this is the longest mission (10
 		# turns), has the most enemies on the map (17), and now always
 		# splits at least one squad off to hunt the priority target

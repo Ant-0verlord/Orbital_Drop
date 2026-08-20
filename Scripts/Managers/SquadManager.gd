@@ -389,30 +389,18 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 								step_target = _path_toward(current_sector, ez_s)
 
 				elif squad.goal == Goal.EXTRACT:
+					# Only reachable on mission_type == "extract" (Mission 5)
+					# now — Mission 4's carrier no longer flees to a
+					# distance-based "safe sector"; once the priority target
+					# falls it just joins the push to take/power the relay
+					# tower like any other squad (see _assign_goals()), so
+					# extraction_zone is always set here.
 					var ez = GameManager.extraction_zone
 					if ez != "" and ez != current_sector:
 						if ez in EnemyManager.adjacency.get(current_sector, []):
 							step_target = ez
 						else:
 							step_target = _path_toward(current_sector, ez)
-					elif ez == "":
-						# No fixed extraction zone (eliminate_priority — M4)
-						# — this squad is carrying the data with nowhere
-						# scripted to run to, so instead of sitting idle it
-						# actively seeks out the nearest sector that clears
-						# TurnManager's carrier-safe-distance requirement
-						# and heads straight there, no matter what it was
-						# about to do otherwise (attack, advance, etc.).
-						# Enemies can still catch it en route — this only
-						# picks the destination, not a guaranteed-safe path.
-						var safe_sector = EnemyManager.find_nearest_safe_sector(
-							current_sector, TurnManager.DATA_CARRIER_SAFE_DISTANCE)
-						if safe_sector != "" and safe_sector != current_sector:
-							fleeing_with_data = true
-							if safe_sector in EnemyManager.adjacency.get(current_sector, []):
-								step_target = safe_sector
-							else:
-								step_target = _path_toward(current_sector, safe_sector)
 
 				elif squad.goal == Goal.DEFEND_CARRIER:
 					var carrier_name = GameManager.data_carrier_squad
@@ -849,57 +837,12 @@ func _assign_goals() -> void:
 
 		return
 
-	# ---- M4 CARRIER PROTECTION (post-Vreth) ----
-	# The moment Vreth goes down, the mission stops being "hunt the
-	# target" and becomes "get the carrier clear" — every enemy left
-	# standing now knows exactly who's carrying the data and converges
-	# on them. Nearby squads need to actively escort/shield the carrier
-	# instead of falling back to tower duty, which stopped mattering the
-	# instant the target fell. Mirrors the M5 DEFEND_CARRIER logic.
-	if mission_type == "eliminate_priority" and not GameManager.priority_target_alive:
-		var carrier_name   = GameManager.data_carrier_squad
-		var carrier_sector = ""
-		if squads.has(carrier_name):
-			carrier_sector = squads[carrier_name].sector
-
-		var carrier_under_threat = false
-		if carrier_sector != "":
-			carrier_under_threat = EnemyManager.get_enemy_count_at(carrier_sector) > 0
-
-		for squad_name in squads:
-			var squad = squads[squad_name]
-			if squad.status == Status.LOST:
-				continue
-
-			# Carrier flees to the nearest sector clear of every enemy —
-			# handled by the existing Goal.EXTRACT / ez=="" branch in
-			# resolve_turn().
-			if squad_name == carrier_name:
-				squad.goal = Goal.EXTRACT
-				continue
-
-			var dist_to_carrier = 999
-			if carrier_sector != "":
-				dist_to_carrier = EnemyManager._bfs_distance(squad.sector, carrier_sector)
-
-			# Carrier under direct attack — nearby squads break off
-			# whatever else they were doing and come intercept.
-			if carrier_under_threat and dist_to_carrier <= 3:
-				squad.goal = Goal.DEFEND_CARRIER
-				continue
-
-			# Close enough to matter as an escort even without an
-			# immediate threat — stick with the carrier.
-			if dist_to_carrier <= 2:
-				squad.goal = Goal.DEFEND_CARRIER
-				continue
-
-			# Too far to escort directly — keep fighting. Killing or
-			# pushing back enemies anywhere on the map still helps clear
-			# the distance the carrier needs from every remaining hostile.
-			squad.goal = Goal.ADVANCE
-
-		return
+	# Mission 4, post-Vreth: no special carrier-protection detour anymore —
+	# once the target's down, everyone (carrier included) just falls through
+	# to the generic tower-duty assignment below like any other tower
+	# mission. Taking and powering the relay tower is now what pinpoints
+	# the extraction zone for Mission 5, so that's what squads should be
+	# converging on instead of escorting the carrier to safe distance.
 
 	# ---- ALL OTHER MISSIONS ----
 	# Squads still needing a tower-relevant goal are collected here first,
@@ -948,7 +891,12 @@ func _assign_goals() -> void:
 		if squad_name == priority_hunter:
 			continue  # already committed to the priority target above
 
-		if squad.get("has_data", false) and mission_type in ["eliminate_priority", "extract"]:
+		# Mission 4's carrier does NOT get an EXTRACT goal — there's no
+		# extraction zone to run to until the tower is taken, so it falls
+		# through to tower duty below like everyone else. Only Mission 5
+		# (which always has a fixed extraction zone from mission start)
+		# sends its data carrier straight to EXTRACT.
+		if squad.get("has_data", false) and mission_type == "extract":
 			squad.goal = Goal.EXTRACT
 			continue
 
