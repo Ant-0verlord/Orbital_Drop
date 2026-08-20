@@ -270,7 +270,7 @@ func _add_report_card(squad_name: String, report_text: String, squad_data: Dicti
 	# who actually has it right now.
 	if squad_data.get("has_data", false):
 		var data_lbl := Label.new()
-		data_lbl.text = "📦 DATA"
+		data_lbl.text = "[DATA]"
 		data_lbl.add_theme_font_size_override("font_size", 12)
 		data_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 		header.add_child(data_lbl)
@@ -447,7 +447,7 @@ func _add_reinforcements_warning_card(count: int, turn: int) -> void:
 	card.add_child(vbox)
 
 	var header := Label.new()
-	header.text = "⚠ SENSOR WARNING — ENEMY BUILDUP DETECTED"
+	header.text = "[!] SENSOR WARNING — ENEMY BUILDUP DETECTED"
 	header.add_theme_font_size_override("font_size", 13)
 	header.add_theme_color_override("font_color", Color(0.95, 0.7, 0.2))
 	vbox.add_child(header)
@@ -476,7 +476,7 @@ func _add_reinforcements_landed_card(sectors: Array) -> void:
 	card.add_child(vbox)
 
 	var header := Label.new()
-	header.text = "⚠ ENEMY REINFORCEMENTS HAVE LANDED"
+	header.text = "[!] ENEMY REINFORCEMENTS HAVE LANDED"
 	header.add_theme_font_size_override("font_size", 13)
 	header.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	vbox.add_child(header)
@@ -525,7 +525,7 @@ func _add_player_reinforcement_card(info: Dictionary) -> void:
 	card.add_child(vbox)
 
 	var header := Label.new()
-	header.text = "✓ REINFORCEMENT DEPLOYED"
+	header.text = "[OK] REINFORCEMENT DEPLOYED"
 	header.add_theme_font_size_override("font_size", 13)
 	header.add_theme_color_override("font_color", Color(0.4, 0.95, 0.5))
 	vbox.add_child(header)
@@ -556,7 +556,7 @@ func _add_bombardment_report_card(report: Dictionary) -> void:
 	card.add_child(vbox)
 
 	var header := Label.new()
-	header.text = "☄ ORBITAL STRIKE — IMPACT CONFIRMED"
+	header.text = "[STRIKE] ORBITAL STRIKE — IMPACT CONFIRMED"
 	header.add_theme_font_size_override("font_size", 13)
 	header.add_theme_color_override("font_color", Color(1.0, 0.65, 0.2))
 	vbox.add_child(header)
@@ -574,7 +574,7 @@ func _add_bombardment_report_card(report: Dictionary) -> void:
 	var squads_hit = report.get("squads_hit", [])
 	if squads_hit.size() > 0:
 		var ff_lbl := Label.new()
-		ff_lbl.text = "⚠ Friendly fire: %s caught in the blast radius." % ", ".join(squads_hit)
+		ff_lbl.text = "[!] Friendly fire: %s caught in the blast radius." % ", ".join(squads_hit)
 		ff_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 		ff_lbl.add_theme_font_size_override("font_size", 12)
 		ff_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
@@ -599,7 +599,7 @@ func _add_extraction_zone_card() -> void:
 	card.add_child(vbox)
 
 	var header := Label.new()
-	header.text = "▲ EXTRACTION ZONE CONFIRMED"
+	header.text = "[EXT] EXTRACTION ZONE CONFIRMED"
 	header.add_theme_font_size_override("font_size", 13)
 	header.add_theme_color_override("font_color", Color(0.95, 0.85, 0.2))
 	vbox.add_child(header)
@@ -626,7 +626,7 @@ func _add_data_destroyed_card(sector: String) -> void:
 	card.add_child(vbox)
 
 	var header := Label.new()
-	header.text = "⚠ CRITICAL — PRIORITY TARGET DATA DESTROYED"
+	header.text = "[!] CRITICAL — PRIORITY TARGET DATA DESTROYED"
 	header.add_theme_font_size_override("font_size", 13)
 	header.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	vbox.add_child(header)

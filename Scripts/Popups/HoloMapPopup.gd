@@ -25,6 +25,17 @@ const COLOR_NEUTRAL:   Color = Color(0.12, 0.18, 0.25, 0.7)
 @onready var close_btn: Button          = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
 @onready var help_btn: Button           =$PanelContainer/VBoxContainer/ButtonRow/HelpBtn
 
+# The colour-key legend below the map — text is baked into the scene with
+# a Unicode bullet (● Held / ● Contested / ● Enemy / ● Neutral) baked in.
+# That codepoint isn't in the project's default font, and the web/itch.io
+# export has no OS-level font fallback the way the desktop editor does,
+# so it rendered as a "tofu" box. Overridden here with plain ASCII rather
+# than editing the .tscn directly.
+@onready var legend_held: Label      = $PanelContainer/VBoxContainer/Legend/LegendHeld
+@onready var legend_contested: Label = $PanelContainer/VBoxContainer/Legend/LegendContested
+@onready var legend_enemy: Label     = $PanelContainer/VBoxContainer/Legend/LegendEnemy
+@onready var legend_neutral: Label   = $PanelContainer/VBoxContainer/Legend/LegendNeutral
+
 # Placement mode UI — add these nodes to the scene
 # under VBoxContainer, above ButtonRow
 @onready var placement_banner: PanelContainer = $PanelContainer/VBoxContainer/PlacementBanner
@@ -56,6 +67,13 @@ func _ready() -> void:
 	# available width if explicitly told to expand — otherwise it
 	# shrinks to its content's natural width.
 	sector_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	# Legend text is baked into the scene with a Unicode bullet (see the
+	# @onready comment above) — override with plain ASCII here instead.
+	legend_held.text      = "o Held"
+	legend_contested.text = "o Contested"
+	legend_enemy.text     = "o Enemy"
+	legend_neutral.text   = "o Neutral"
 
 
 func _on_visibility_changed() -> void:
@@ -167,13 +185,13 @@ func _update_held_label() -> void:
 				Color(0.4, 0.9, 0.4) if remaining == 0 else Color(0.9, 0.6, 0.2))
 		"hold_tower":
 			var powered = GameManager.tower_powered
-			held_label.text = "Tower: %s" % ("ACTIVE ⚡" if powered else "UNPOWERED")
+			held_label.text = "Tower: %s" % ("ACTIVE [T]" if powered else "UNPOWERED")
 			held_label.add_theme_color_override("font_color",
 				Color(0.4, 0.9, 0.4) if powered else Color(0.9, 0.6, 0.2))
 		"eliminate_priority":
 			var alive = GameManager.priority_target_alive
 			if alive:
-				held_label.text = "Target: AT LARGE ✦"
+				held_label.text = "Target: AT LARGE [!]"
 				held_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
 			else:
 				# Target down — the win requirement is now taking and powering
@@ -181,7 +199,7 @@ func _update_held_label() -> void:
 				# Mission 5), same readout as hold_tower above — not a
 				# carrier-distance check.
 				var powered = GameManager.tower_powered
-				held_label.text = "Tower: %s" % ("ACTIVE ⚡" if powered else "UNPOWERED")
+				held_label.text = "Tower: %s" % ("ACTIVE [T]" if powered else "UNPOWERED")
 				held_label.add_theme_color_override("font_color",
 					Color(0.4, 0.9, 0.4) if powered else Color(0.9, 0.6, 0.2))
 		"extract":
@@ -259,7 +277,7 @@ func _on_hex_clicked(sector: String) -> void:
 		var squad_name = pending.get("squad_name", "")
 		var hex_control = EnemyManager.get_hex_control()
 		var state = hex_control.get(sector, "")
-		var hot_drop_text = "  ⚠ HOT DROP — surprise elimination on landing" if state == "enemy" else ""
+		var hot_drop_text = "  [!] HOT DROP — surprise elimination on landing" if state == "enemy" else ""
 		placement_label.text = "DROP ZONE: %s%s  |  Confirm or pick another hex" % [sector, hot_drop_text]
 	placement_confirm_btn.disabled = false
 
@@ -276,7 +294,7 @@ func _on_help_pressed() -> void:
 	GameManager.mark_attention_seen("holomap_priority_eliminated")
 	var steps: Array[TutorialStep] = [
 		_step(
-			"THE MAP — Shows every sector and who controls it. Green = your squads holding it. Red = enemy controlled. Dark blue/grey = neutral (unclaimed). Squad names and enemy ✕ markers show current positions.",
+			"THE MAP — Shows every sector and who controls it. Green = your squads holding it. Red = enemy controlled. Dark blue/grey = neutral (unclaimed). Squad names and enemy X markers show current positions.",
 			^"HexCanvas"
 		),
 		_step(
@@ -284,7 +302,7 @@ func _on_help_pressed() -> void:
 			^"HexCanvas"
 		),
 		_step(
-			"SPECIAL MARKERS — ⚡ Comms Tower (power it with Fuel Cells). ✦ Priority Target (eliminate in M4 to secure data). ▲ Extraction Zone (all squads must reach this in M5).",
+			"SPECIAL MARKERS — [T] Comms Tower (power it with Fuel Cells). [!] Priority Target (eliminate in M4 to secure data). [EXT] Extraction Zone (all squads must reach this in M5).",
 			^"HexCanvas"
 		),
 		_step(
@@ -412,10 +430,10 @@ func _rebuild_sector_list() -> void:
 			var tag_lbl := Label.new()
 			var tag_text = ""
 			match special_type:
-				"priority":    tag_text = "✦ PRIORITY TARGET"
-				"tower":       tag_text = "⚡ COMMS TOWER"
-				"tower_powered": tag_text = "⚡ TOWER ACTIVE"
-				"extraction":  tag_text = "▲ EXTRACTION"
+				"priority":    tag_text = "[!] PRIORITY TARGET"
+				"tower":       tag_text = "[T] COMMS TOWER"
+				"tower_powered": tag_text = "[T] TOWER ACTIVE"
+				"extraction":  tag_text = "[EXT] EXTRACTION"
 			tag_lbl.text = tag_text
 			tag_lbl.add_theme_font_size_override("font_size", 10)
 			tag_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 0.5))

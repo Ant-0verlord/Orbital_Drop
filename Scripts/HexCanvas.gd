@@ -335,9 +335,13 @@ func _draw() -> void:
 		for i in range(squad_names.size()):
 			var short = String(squad_names[i]).replace("Squad ", "")
 			# Tag whichever squad is carrying the recovered data package —
-			# previously invisible on the map entirely.
+			# previously invisible on the map entirely. Plain "[D]" rather
+			# than the 📦 emoji — that codepoint isn't in the project's
+			# default font, and the web/itch.io export has no OS-level font
+			# fallback the way the desktop editor does, so it was rendering
+			# as a "tofu" box instead of the intended glyph.
 			if squad_names[i] == GameManager.data_carrier_squad:
-				short += " 📦"
+				short += " [D]"
 			draw_string(ThemeDB.fallback_font,
 				center + Vector2(-len(short) * 2.8, 4 + i * SQUAD_LINE_HEIGHT),
 				short, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 1, 1, 0.85))
@@ -351,7 +355,11 @@ func _draw() -> void:
 			if enemy_count > 0 and enemy_glitching:
 				# Static burst — a couple of randomised noise glyphs standing
 				# in for the marker while the sensor read is scrambled.
-				const GLITCH_GLYPHS = ["▓", "▒", "░", "#", "%", "&", "¤"]
+				# Plain ASCII/Latin-1 only (no ▓▒░ block-element glyphs) —
+				# those codepoints aren't in the project's default font,
+				# and the web/itch.io export has no OS-level font fallback,
+				# so they were rendering as "tofu" boxes.
+				const GLITCH_GLYPHS = ["#", "%", "&", "¤", "@", "=", "~", "?"]
 				var marker = ""
 				for i in range(randi_range(1, 3)):
 					marker += GLITCH_GLYPHS[randi() % GLITCH_GLYPHS.size()]
@@ -359,7 +367,12 @@ func _draw() -> void:
 					center + Vector2(-len(marker) * 3.5, below_names_y),
 					marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.6, 0.6, 0.6, randf_range(0.3, 0.9)))
 			elif enemy_count > 0:
-				var marker = "✕" if enemy_count == 1 else "✕×%d" % enemy_count
+				# ASCII "X" rather than the ✕ multiplication-sign glyph —
+				# that codepoint isn't in the project's default font, and
+				# the web/itch.io export has no OS-level font fallback the
+				# way the desktop editor does, so it rendered as a "tofu"
+				# box instead of the intended marker.
+				var marker = "X" if enemy_count == 1 else "%dX" % enemy_count
 				draw_string(ThemeDB.fallback_font,
 					center + Vector2(-len(marker) * 3.5, below_names_y),
 					marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.95))
@@ -369,11 +382,11 @@ func _draw() -> void:
 			# actually standing there. A plain, non-pulsing marker (the
 			# glitch/static variant is skipped here) keeps it readable
 			# while you're aiming.
-			var enemy_marker = ("✕" if enemy_count == 1 else "✕×%d" % enemy_count) if enemy_count > 0 else ""
+			var enemy_marker = ("X" if enemy_count == 1 else "%dX" % enemy_count) if enemy_count > 0 else ""
 			if sector == placed_sector:
 				draw_string(ThemeDB.fallback_font,
 					center + Vector2(-8, below_names_y),
-					"▼ DROP", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, COLOR_PLACED)
+					"V DROP", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, COLOR_PLACED)
 				if enemy_marker != "":
 					draw_string(ThemeDB.fallback_font,
 						center + Vector2(-len(enemy_marker) * 3.5, below_names_y + 13),
@@ -381,7 +394,7 @@ func _draw() -> void:
 			elif sector == hovered_sector:
 				draw_string(ThemeDB.fallback_font,
 					center + Vector2(-8, below_names_y),
-					"▼", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, COLOR_PLACEMENT_HOVER)
+					"V", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, COLOR_PLACEMENT_HOVER)
 				if enemy_marker != "":
 					draw_string(ThemeDB.fallback_font,
 						center + Vector2(-len(enemy_marker) * 3.5, below_names_y + 13),

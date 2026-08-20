@@ -173,7 +173,7 @@ func _on_turn_resolved() -> void:
 	if visible: refresh()
 
 func _on_allocations_locked() -> void:
-	lock_btn.text = "✓ Locked"
+	lock_btn.text = "[OK] Locked"
 	lock_btn.disabled = true
 
 func _on_mission_complete(report: Dictionary) -> void:
@@ -237,20 +237,20 @@ func _update_held_label() -> void:
 				Color(0.4, 0.9, 0.4) if remaining == 0 else Color(0.9, 0.6, 0.2))
 		"hold_tower":
 			var powered = GameManager.tower_powered
-			held_label.text = "Tower: %s" % ("ACTIVE ⚡" if powered else "UNPOWERED")
+			held_label.text = "Tower: %s" % ("ACTIVE [T]" if powered else "UNPOWERED")
 			held_label.add_theme_color_override("font_color",
 				Color(0.4, 0.9, 0.4) if powered else Color(0.9, 0.6, 0.2))
 		"eliminate_priority":
 			var alive = GameManager.priority_target_alive
 			if alive:
-				held_label.text = "Target: AT LARGE ✦"
+				held_label.text = "Target: AT LARGE [!]"
 				held_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
 			else:
 				# Target's down. The win condition is now taking and powering
 				# the relay tower — it's what pinpoints the extraction zone for
 				# Mission 5 — not a carrier-distance requirement.
 				var powered = GameManager.tower_powered
-				held_label.text = "Tower: %s" % ("ACTIVE ⚡" if powered else "UNPOWERED")
+				held_label.text = "Tower: %s" % ("ACTIVE [T]" if powered else "UNPOWERED")
 				held_label.add_theme_color_override("font_color",
 					Color(0.4, 0.9, 0.4) if powered else Color(0.9, 0.6, 0.2))
 		"extract":
@@ -295,7 +295,7 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 	# Tag the data carrier here too — this row was previously identical
 	# whether or not a squad was holding the recovered data package, with
 	# no lasting way to tell who has it.
-	name_lbl.text = squad.name + (" 📦" if squad.get("has_data", false) else "")
+	name_lbl.text = squad.name + (" [DATA]" if squad.get("has_data", false) else "")
 	name_lbl.custom_minimum_size.x = 120
 	name_lbl.add_theme_font_size_override("font_size", 13)
 	row.add_child(name_lbl)
@@ -681,10 +681,10 @@ func _refresh_reinforcement_panel() -> void:
 			var name  = drop.get("squad_name", "")
 			var sector = drop.get("sector", "")
 			if placed:
-				reinforcement_status_label.text = "✓ %s dropping to %s — visit Holo-Map to confirm" % [name, sector]
+				reinforcement_status_label.text = "[OK] %s dropping to %s — visit Holo-Map to confirm" % [name, sector]
 				reinforcement_status_label.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
 			else:
-				reinforcement_status_label.text = "⚠ %s queued — visit Holo-Map to place drop zone" % name
+				reinforcement_status_label.text = "[!] %s queued — visit Holo-Map to place drop zone" % name
 				reinforcement_status_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.2))
 		elif bombardment_active:
 			reinforcement_status_label.text = "— Locked while Orbital Strike is armed —"
@@ -718,10 +718,10 @@ func _refresh_bombardment_panel() -> void:
 			var drop = GameManager.get_pending_bombardment()
 			var placed = drop.get("placed", false)
 			if placed:
-				bombardment_status_label.text = "✓ Strike resolved at %s" % drop.get("sector", "")
+				bombardment_status_label.text = "[OK] Strike resolved at %s" % drop.get("sector", "")
 				bombardment_status_label.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
 			else:
-				bombardment_status_label.text = "⚠ Strike armed — visit Holo-Map to select target"
+				bombardment_status_label.text = "[!] Strike armed — visit Holo-Map to select target"
 				bombardment_status_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.2))
 		elif reinforcement_active:
 			bombardment_status_label.text = "— Locked while Reinforcement is queued —"

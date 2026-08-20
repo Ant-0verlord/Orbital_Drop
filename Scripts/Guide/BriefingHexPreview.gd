@@ -87,9 +87,13 @@ func _draw() -> void:
 		draw_polyline(outline, Color(0.15, 0.2, 0.3, 0.6), 1.0)
 
 		if squad_names.size() > 0:
+			# ASCII "o" rather than a Unicode bullet (●) — the project's
+			# default font doesn't cover that codepoint, and the web/itch.io
+			# export has no OS-level font fallback the way the desktop
+			# editor does, so it was rendering as a "tofu" box instead.
 			draw_string(ThemeDB.fallback_font,
 				pixel + Vector2(-4, 4),
-				"●", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
+				"o", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
 
 			# Name(s) underneath the hex — comma-joined on one small line
 			# since this preview's hexes are too small for one line each,
@@ -112,19 +116,23 @@ func _draw() -> void:
 			var marker_color: Color
 			var marker_glyph: String
 			var marker_label: String
+			# Glyphs are plain ASCII, not Unicode symbols (★ ▲ ⇑) — those
+			# codepoints aren't in the project's default font, and the
+			# web/itch.io export has no OS font fallback, so they were
+			# rendering as "tofu" boxes instead of the intended marker.
 			match marker:
 				"priority":
 					marker_color = Color(1.0, 0.55, 0.15)
-					marker_glyph = "★"
+					marker_glyph = "!"
 					var override_label = String(zone_states[sector].get("marker_label", ""))
 					marker_label = override_label if override_label != "" else "TARGET"
 				"tower":
 					marker_color = Color(0.3, 0.75, 1.0)
-					marker_glyph = "▲"
+					marker_glyph = "T"
 					marker_label = "TOWER"
 				"extract":
 					marker_color = Color(0.4, 0.9, 0.6)
-					marker_glyph = "⇑"
+					marker_glyph = "^"
 					marker_label = "EXTRACT"
 				_:
 					marker_color = Color.WHITE

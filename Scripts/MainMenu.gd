@@ -133,20 +133,33 @@ func _style_title() -> void:
 # Icon-prefixed, evenly-sized menu buttons, with Play given
 # the same filled amber "primary CTA" treatment used across
 # the console popups.
+#
+# Icons are real textures (UI/Icons/), not emoji glyphs baked into the
+# button text — the project's default font doesn't cover those emoji
+# codepoints, and the web/itch.io export has no OS-level font fallback
+# the way the desktop editor does, so ▶ ⚙ 📖 ✕ were rendering as "tofu"
+# boxes with the raw codepoint printed inside instead of the glyph.
 # -------------------------------------------------------
 func _style_buttons() -> void:
 	var vbox := play_btn.get_parent()
 	if vbox:
 		vbox.add_theme_constant_override("separation", 14)
 
-	play_btn.text = "▶  PLAY"
-	settings_btn.text = "⚙  SETTINGS"
-	instructions_btn.text = "📖  INSTRUCTIONS"
-	exit_btn.text = "✕  EXIT"
+	play_btn.text = "  PLAY"
+	settings_btn.text = "  SETTINGS"
+	instructions_btn.text = "  INSTRUCTIONS"
+	exit_btn.text = "  EXIT"
+
+	play_btn.icon         = load("res://UI/Icons/icon_play.png")
+	settings_btn.icon     = load("res://UI/Icons/icon_settings.png")
+	instructions_btn.icon = load("res://UI/Icons/icon_instructions.png")
+	exit_btn.icon         = load("res://UI/Icons/icon_exit.png")
 
 	for b in [play_btn, settings_btn, instructions_btn, exit_btn]:
 		b.custom_minimum_size = Vector2(280, 0)
 		b.add_theme_font_size_override("font_size", 16)
+		b.add_theme_constant_override("icon_max_width", 20)
+		b.expand_icon = false
 
 	_style_primary_button(play_btn)
 

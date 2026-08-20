@@ -62,15 +62,15 @@ Allocations must be [b]Locked[/b] at the Logistics Terminal before Command Thron
 [font_size=20][b][color=#ffd933]3. SUPPLIES[/color][/b][/font_size]
 Three supply types, each answering a different need a squad might radio in:
 [b]Armaments[/b] — lets the squad fight this turn. An armed fight always kills the enemy on that tile, but risks a casualty to your own squad in the process (see Section 5).
-[b]Medi-Packs[/b] — heals the squad one step: Critical → Wounded, or Wounded → Active. Has no effect on an already-Active squad.
+[b]Medi-Packs[/b] — heals the squad one step: Critical -> Wounded, or Wounded -> Active. Has no effect on an already-Active squad.
 [b]Fuel Cells[/b] — doubles movement to 2 hexes this turn, and is what a squad needs to be standing on and holding to power a Comms Tower.
 Each tick at Logistics costs [b]2 points[/b] from one shared pool for the whole mission (not per squad) — unspent points carry over into the next mission. A squad can receive at most 2 supply types in a single turn.
 If a squad is given a supply it doesn't end up using that turn (Armaments with no fight, Fuel Cells with no move), it's [b]banked[/b] instead of wasted — up to 3 items per squad — and automatically spent on a future turn it actually needs one, so a single missed or garbled request isn't fatal. A squad that goes [b]2 turns in a row[/b] with no effective supply (fresh or banked) automatically takes a casualty.
 
 [font_size=20][b][color=#ffd933]4. SQUAD STATUS[/color][/b][/font_size]
-Every squad sits on a four-step ladder: [b]Active → Wounded → Critical → Lost[/b].
+Every squad sits on a four-step ladder: [b]Active -> Wounded -> Critical -> Lost[/b].
 It worsens one step at a time from: losing an unarmed fight, an unlucky armed-combat casualty roll, going 2 turns unsupplied, getting caught in an orbital strike's blast radius, or being overrun with nowhere left to retreat.
-It improves one step at a time — Critical → Wounded → Active — from Medi-Packs, fresh or banked. You can't skip a step either direction.
+It improves one step at a time — Critical -> Wounded -> Active — from Medi-Packs, fresh or banked. You can't skip a step either direction.
 [b]Lost is permanent[/b] for the rest of the campaign — that squad does not return next mission. If a Lost squad was carrying the recovered data package, the package is destroyed with them.
 
 [center][img=760]res://UI/Manual/status_ladder.png[/img][/center]

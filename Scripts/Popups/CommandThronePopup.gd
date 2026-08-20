@@ -177,20 +177,20 @@ func _update_held_label() -> void:
 				Color(0.4, 0.9, 0.4) if remaining == 0 else Color(0.9, 0.6, 0.2))
 		"hold_tower":
 			var powered = GameManager.tower_powered
-			held_label.text = "Tower: %s" % ("ACTIVE ⚡" if powered else "UNPOWERED")
+			held_label.text = "Tower: %s" % ("ACTIVE [T]" if powered else "UNPOWERED")
 			held_label.add_theme_color_override("font_color",
 				Color(0.4, 0.9, 0.4) if powered else Color(0.9, 0.6, 0.2))
 		"eliminate_priority":
 			var alive = GameManager.priority_target_alive
 			if alive:
-				held_label.text = "Target: AT LARGE ✦"
+				held_label.text = "Target: AT LARGE [!]"
 				held_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
 			else:
 				# Target's down. The win condition is now taking and powering
 				# the relay tower — it's what pinpoints the extraction zone for
 				# Mission 5 — not a carrier-distance requirement.
 				var powered = GameManager.tower_powered
-				held_label.text = "Tower: %s" % ("ACTIVE ⚡" if powered else "UNPOWERED")
+				held_label.text = "Tower: %s" % ("ACTIVE [T]" if powered else "UNPOWERED")
 				held_label.add_theme_color_override("font_color",
 					Color(0.4, 0.9, 0.4) if powered else Color(0.9, 0.6, 0.2))
 		"extract":
@@ -269,13 +269,13 @@ func _update_lock_status() -> void:
 		return
 
 	if TurnManager.allocations_are_locked:
-		lock_status_lbl.text = "✓ Allocations locked. Ready to engage turn seal."
+		lock_status_lbl.text = "[OK] Allocations locked. Ready to engage turn seal."
 		lock_status_lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
 		end_turn_btn.disabled = false
 		end_turn_btn.text = "ENGAGE TURN SEAL"
 		end_turn_btn.modulate = Color(1, 1, 1)
 	else:
-		lock_status_lbl.text = "⚠ Allocations not locked. Visit Logistics Terminal first."
+		lock_status_lbl.text = "[!] Allocations not locked. Visit Logistics Terminal first."
 		lock_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.6, 0.2))
 		end_turn_btn.disabled = true
 		end_turn_btn.modulate = Color(0.5, 0.5, 0.5)
@@ -390,7 +390,7 @@ func _show_report(report: Dictionary) -> void:
 	# Next mission button — only on win and if missions remain
 	var more_missions = GameManager.current_mission + 1 < GameManager.missions.size()
 	next_mission_btn.visible = won and more_missions
-	next_mission_btn.text = "Advance to %s  →" % _next_mission_title()
+	next_mission_btn.text = "Advance to %s  ->" % _next_mission_title()
 
 
 func _next_mission_title() -> String:
