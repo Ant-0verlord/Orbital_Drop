@@ -178,24 +178,69 @@ func _style_primary_button(btn: Button) -> void:
 
 
 # -------------------------------------------------------
-# Small corner credit line — a tasteful, non-intrusive
-# detail for an assessment build.
+# Corner comms ticker — instead of a static credit line,
+# a short line of in-universe mission-control chatter sits
+# in the same spot and quietly fades to a different line
+# every so often, like a live channel murmuring in the
+# background of the command centre.
 # -------------------------------------------------------
+const _TICKER_LINES: Array[String] = [
+	"Comms check... all consoles green.",
+	"Command Throne standing by.",
+	"Holo-Map uplink stable.",
+	"Reinforcement pods fuelled and ready.",
+	"Orbital net status: nominal.",
+	"Awaiting your orders, Commander.",
+	"Vox-Caster channel clear.",
+	"Squad telemetry synced.",
+	"Logistics pool nominal.",
+	"Drop trajectory locked in.",
+]
+
+var _ticker_label: Label = null
+var _ticker_timer: Timer = null
+var _ticker_last_index: int = -1
+
 func _build_footer() -> void:
-	var footer := Label.new()
-	footer.text = "Year 12 Digital Technology — Assessment Build"
-	footer.add_theme_font_size_override("font_size", 11)
-	footer.add_theme_color_override("font_color", Color(0.42, 0.45, 0.5))
-	footer.anchor_left = 1.0
-	footer.anchor_top = 1.0
-	footer.anchor_right = 1.0
-	footer.anchor_bottom = 1.0
-	footer.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	footer.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	footer.offset_left = -420
-	footer.offset_top = -28
-	footer.offset_right = -16
-	footer.offset_bottom = -8
-	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(footer)
+	_ticker_label = Label.new()
+	_ticker_label.text = _next_ticker_line()
+	_ticker_label.add_theme_font_size_override("font_size", 12)
+	_ticker_label.add_theme_color_override("font_color", Color(0.45, 0.52, 0.58))
+	_ticker_label.anchor_left = 1.0
+	_ticker_label.anchor_top = 1.0
+	_ticker_label.anchor_right = 1.0
+	_ticker_label.anchor_bottom = 1.0
+	_ticker_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_ticker_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_ticker_label.offset_left = -420
+	_ticker_label.offset_top = -28
+	_ticker_label.offset_right = -16
+	_ticker_label.offset_bottom = -8
+	_ticker_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_ticker_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_ticker_label)
+
+	_ticker_timer = Timer.new()
+	_ticker_timer.wait_time = 7.0
+	_ticker_timer.autostart = true
+	_ticker_timer.timeout.connect(_on_ticker_timeout)
+	add_child(_ticker_timer)
+
+
+func _next_ticker_line() -> String:
+	if _TICKER_LINES.size() <= 1:
+		return _TICKER_LINES[0]
+	var idx := randi() % _TICKER_LINES.size()
+	while idx == _ticker_last_index:
+		idx = randi() % _TICKER_LINES.size()
+	_ticker_last_index = idx
+	return _TICKER_LINES[idx]
+
+
+func _on_ticker_timeout() -> void:
+	if not _ticker_label:
+		return
+	var tween := create_tween()
+	tween.tween_property(_ticker_label, "modulate:a", 0.0, 0.6)
+	tween.tween_callback(func(): _ticker_label.text = _next_ticker_line())
+	tween.tween_property(_ticker_label, "modulate:a", 1.0, 0.6)
