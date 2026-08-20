@@ -21,6 +21,12 @@ signal tutorial_finished
 
 
 func _ready() -> void:
+	# BackBtn/SkipBtn have no text set in the scene (only NextBtn's is set
+	# below, dynamically, since it switches to "Done" on the last step) —
+	# left them rendering as blank, near-invisible boxes next to Next.
+	back_btn.text = "Back"
+	skip_btn.text = "Skip"
+
 	back_btn.pressed.connect(_on_back_pressed)
 	next_btn.pressed.connect(_on_next_pressed)
 	skip_btn.pressed.connect(_on_skip_pressed)

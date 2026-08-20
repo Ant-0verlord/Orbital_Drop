@@ -1108,6 +1108,19 @@ func debug_jump_to_mission(index: int) -> void:
 	extraction_zone = ""
 	mission_type = "capture"
 
+	# has_data is a per-squad flag that's deliberately NOT cleared by a
+	# normal mission transition (see SquadManager.init_squads) — the whole
+	# point is that it carries the data forward from Mission 4 into
+	# Mission 5. But debug-jumping around out of order (e.g. testing
+	# Mission 5 — which stamps has_data onto its first squad below — then
+	# jumping back to Mission 4) left that flag stuck on whichever squad
+	# last got it, showing them as already carrying data (📦) before
+	# Vreth's even been touched, and quietly excluding them from ever
+	# being picked to hunt him (see SquadManager._assign_goals). Debug
+	# jumps need a clean slate every time, unlike a real campaign run.
+	for squad_name in SquadManager.squads:
+		SquadManager.squads[squad_name]["has_data"] = false
+
 	# Mission 5's extract objective needs a squad already carrying the
 	# intel — normally that's whoever eliminates Vreth mid-Mission-4, but
 	# debug-jumping straight to Mission 5 skips that entirely. Hand it to

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dksywdr8xyjsf"]
 
-[ext_resource type="ArrayMesh" uid="uid://dn541il6ad3tr" path="res://Models/Command Throne 2.0.obj" id="1_id48o"]
+[ext_resource type="PackedScene" uid="uid://clq8ucxwl7yy2" path="res://Models/Command Throne 3.0.glb" id="1_2gepd"]
 [ext_resource type="Script" uid="uid://caj7dobn8fawx" path="res://Scripts/Consoles/CommandThrone.gd" id="2_id48o"]
 [ext_resource type="Script" uid="uid://fkuvbocfiykr" path="res://Scripts/Popups/CommandThronePopup.gd" id="3_602gn"]
 [ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_602gn"]
@@ -13,7 +13,9 @@ size = Vector3(20.830643, 42.779057, 23.661272)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1662060828]
 transform = Transform3D(-1.4474964e-08, 0, 0.31591576, 0, 0.29869604, 0, -0.33114856, 0, -1.38091165e-08, 0, 0, 0)
-mesh = ExtResource("1_id48o")
+
+[node name="Command Throne 3_0" parent="MeshInstance3D" unique_id=1981386790 instance=ExtResource("1_2gepd")]
+transform = Transform3D(-0.013501094, 0, -2.290674, 0, 2.2907143, 0, 2.290674, 0, -0.013501094, 0, -0.65352166, 0)
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=43047206]
 transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.477, 0, 0, 0)
@@ -216,5 +218,5 @@ layout_mode = 2
 [node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=45888852 instance=ExtResource("4_602gn")]
 layout_mode = 1
 
-[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" instance=ExtResource("5_hlpndg")]
+[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=1823438517 instance=ExtResource("5_hlpndg")]
 layout_mode = 1
