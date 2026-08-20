@@ -6,8 +6,10 @@ shader_type canvas_item;
 // Animates the static UI/MainMenu/menu_bg.png without needing any
 // extra art: a per-pixel star twinkle (masked to only the bright
 // star pixels baked into the image), a pulsing glow on the drop-pod
-// at the end of its descent trail, and a slow energy wave sweeping
-// through the amber hex-grid band along the planet's horizon.
+// at the end of its descent trail, a pair of smaller pulsing glows
+// on the two extra background drop-pod trails, and a slow energy
+// wave sweeping through the amber hex-grid band along the planet's
+// horizon.
 // =============================================================
 
 uniform float twinkle_amount : hint_range(0.0, 1.0) = 0.45;
@@ -18,6 +20,16 @@ uniform vec2 pod_uv = vec2(0.58, 0.60);
 uniform vec3 pod_color : source_color = vec3(1.0, 0.85, 0.3);
 uniform float pod_pulse_speed : hint_range(0.2, 5.0) = 2.0;
 uniform float pod_glow_radius : hint_range(0.02, 0.3) = 0.11;
+
+// The two smaller, dimmer drop-pod trails added to the background art
+// (top-left, near the planet, and lower-right) — same idea as the main
+// pod's pulsing glow but smaller and phase-offset from each other and
+// from the main pod, so all three don't beat in lockstep.
+uniform vec2 extra_pod_uv_1 = vec2(0.19010, 0.27778);
+uniform vec2 extra_pod_uv_2 = vec2(0.90104, 0.59259);
+uniform vec3 extra_pod_color : source_color = vec3(1.0, 0.85, 0.3);
+uniform float extra_pod_pulse_speed : hint_range(0.2, 5.0) = 2.0;
+uniform float extra_pod_glow_radius : hint_range(0.02, 0.3) = 0.05;
 
 uniform float hex_band_top : hint_range(0.0, 1.0) = 0.70;
 uniform float hex_band_bottom : hint_range(0.0, 1.0) = 1.0;
@@ -53,6 +65,19 @@ void fragment() {
 	float pulse = 0.5 + 0.5 * sin(TIME * pod_pulse_speed);
 	float glow = smoothstep(pod_glow_radius, 0.0, pod_dist) * (0.35 + 0.65 * pulse);
 	col += pod_color * glow * 0.9;
+
+	// --- The two extra background drop-pods pulse too, each on its own
+	// phase offset (and one at a slightly different speed) so they read
+	// as independent landings rather than a synchronised trio.
+	float ep1_dist = distance(UV, extra_pod_uv_1);
+	float ep1_pulse = 0.5 + 0.5 * sin(TIME * extra_pod_pulse_speed + 2.1);
+	float ep1_glow = smoothstep(extra_pod_glow_radius, 0.0, ep1_dist) * (0.3 + 0.6 * ep1_pulse);
+	col += extra_pod_color * ep1_glow * 0.6;
+
+	float ep2_dist = distance(UV, extra_pod_uv_2);
+	float ep2_pulse = 0.5 + 0.5 * sin(TIME * extra_pod_pulse_speed * 0.8 + 4.7);
+	float ep2_glow = smoothstep(extra_pod_glow_radius, 0.0, ep2_dist) * (0.3 + 0.6 * ep2_pulse);
+	col += extra_pod_color * ep2_glow * 0.6;
 
 	// --- Hex-grid energy wave — a soft band that sweeps down through
 	// the horizon's hex lattice on a loop, brightening whatever hex

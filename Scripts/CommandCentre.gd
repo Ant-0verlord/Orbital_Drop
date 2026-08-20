@@ -21,8 +21,47 @@ func _ready() -> void:
 	if cam and guide_overlay:
 		guide_overlay.set_camera(cam)
 
+	_build_space_sky()
+
 	# Show mission briefing before starting
 	_show_briefing()
+
+
+# -------------------------------------------------------------------
+# Space sky — the command deck turned out to be an open platform (railings,
+# no walls) rather than a sealed room, so the right way to show "space
+# outside" is a real sky wrapped around the whole thing rather than a
+# single framed screen bolted to one side. Procedural (stars + nebula +
+# one big planet), so there's no giant panorama texture to import and it
+# looks correct from every angle as the player walks around the deck.
+#
+# ambient_light_source is left DISABLED on purpose — this only changes
+# what's visible in the empty space around the platform, not how any
+# existing surface is lit. Switch it to AMBIENT_SOURCE_SKY later if the
+# deck should pick up some ambient colour/light from the sky itself.
+# -------------------------------------------------------------------
+func _build_space_sky() -> void:
+	var shader = load("res://Shaders/SpaceSky.gdshader")
+	if shader == null:
+		return
+
+	var sky_mat := ShaderMaterial.new()
+	sky_mat.shader = shader
+
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+
+	var env := Environment.new()
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_DISABLED
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+
+	var world_env := WorldEnvironment.new()
+	world_env.name = "SpaceEnvironment"
+	world_env.environment = env
+	add_child(world_env)
+
 
 func _show_briefing() -> void:
 	if briefing_overlay == null:
