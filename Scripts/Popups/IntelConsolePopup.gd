@@ -18,6 +18,8 @@ var data_destroyed_sector: String = ""
 var data_destroyed_turn: int = -1
 
 @onready var help_btn: Button = $PanelContainer/VBoxContainer/ButtonRow/HelpBtn
+@onready var title_label: Label             = $PanelContainer/VBoxContainer/Title
+@onready var subtitle_label: Label          = $PanelContainer/VBoxContainer/Subtitle
 @onready var turn_label: Label              = $PanelContainer/VBoxContainer/TurnLabel
 @onready var report_container: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/ReportContainer
 @onready var close_btn: Button              = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
@@ -27,6 +29,12 @@ var data_destroyed_turn: int = -1
 
 
 func _ready() -> void:
+	_style_header("INTEL CONSOLE", "Squad status reports & event notices — read only")
+	# Inside a ScrollContainer, a child only stretches to the full
+	# available width if explicitly told to expand — otherwise it
+	# shrinks to its content's natural width, which made every card
+	# render far narrower than the console frame around it.
+	report_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	TurnManager.turn_started.connect(_on_turn_started)
 	TurnManager.enemy_reinforcements_incoming.connect(_on_reinforcements_incoming)
@@ -244,13 +252,16 @@ func _add_report_card(squad_name: String, report_text: String, squad_data: Dicti
 	vbox.add_theme_constant_override("separation", 4)
 	card.add_child(vbox)
 
+	# Row 1 — squad name (+ data tag) on the left, status pill pushed
+	# all the way to the right via an expanding spacer, matching the
+	# Field Manual mockup's card layout.
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 8)
 	vbox.add_child(header)
 
 	var name_lbl := Label.new()
 	name_lbl.text = squad_name
-	name_lbl.add_theme_font_size_override("font_size", 14)
+	name_lbl.add_theme_font_size_override("font_size", 16)
 	header.add_child(name_lbl)
 
 	# Persistent marker for whichever squad is carrying the recovered data
@@ -264,20 +275,22 @@ func _add_report_card(squad_name: String, report_text: String, squad_data: Dicti
 		data_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 		header.add_child(data_lbl)
 
-	if squad_data.has("status"):
-		var status_lbl := Label.new()
-		status_lbl.text = "[%s]" % SquadManager.STATUS_NAMES[squad_data.status]
-		status_lbl.add_theme_font_size_override("font_size", 12)
-		status_lbl.add_theme_color_override("font_color", _status_color(squad_data.status))
-		header.add_child(status_lbl)
+	var header_spacer := Control.new()
+	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(header_spacer)
 
+	if squad_data.has("status"):
+		header.add_child(_status_pill(squad_data.status))
+
+	# Row 2 — sector, on its own line beneath the name.
 	if squad_data.has("sector"):
 		var sector_lbl := Label.new()
 		sector_lbl.text = squad_data.sector
-		sector_lbl.add_theme_font_size_override("font_size", 11)
-		sector_lbl.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
-		header.add_child(sector_lbl)
+		sector_lbl.add_theme_font_size_override("font_size", 12)
+		sector_lbl.add_theme_color_override("font_color", Color(0.47, 0.59, 0.67))
+		vbox.add_child(sector_lbl)
 
+	# Row 3 — the report body text.
 	var report_lbl := Label.new()
 	report_lbl.text = report_text
 	report_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -326,15 +339,15 @@ func _get_goal_text(squad_name: String, squad_data: Dictionary) -> String:
 
 func _card_style(squad_data: Dictionary) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.set_content_margin_all(10)
-	style.corner_radius_top_left    = 4
-	style.corner_radius_top_right   = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	style.border_width_left   = 3
-	style.border_width_top    = 0
-	style.border_width_right  = 0
-	style.border_width_bottom = 0
+	style.set_content_margin_all(12)
+	style.corner_radius_top_left    = 10
+	style.corner_radius_top_right   = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
+	style.border_width_left   = 4
+	style.border_width_top    = 1
+	style.border_width_right  = 1
+	style.border_width_bottom = 1
 	if squad_data.has("status"):
 		match squad_data.status:
 			SquadManager.Status.ACTIVE:
@@ -361,6 +374,54 @@ func _status_color(status: int) -> Color:
 		SquadManager.Status.CRITICAL: return Color(0.9, 0.3, 0.3)
 		SquadManager.Status.LOST:     return Color(0.5, 0.5, 0.5)
 	return Color.WHITE
+
+# -------------------------------------------------------
+# Console header — big bold title + small grey subtitle,
+# matching the Field Manual mockup layouts.
+# -------------------------------------------------------
+func _style_header(title_text: String, subtitle_text: String) -> void:
+	if title_label:
+		title_label.text = title_text
+		title_label.add_theme_font_size_override("font_size", 24)
+		title_label.add_theme_color_override("font_color", Color(0.91, 0.91, 0.91))
+	if subtitle_label:
+		subtitle_label.text = subtitle_text
+		subtitle_label.add_theme_font_size_override("font_size", 13)
+		subtitle_label.add_theme_color_override("font_color", Color(0.65, 0.68, 0.73))
+		subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+
+
+# -------------------------------------------------------
+# Rounded status "chip" — replaces the old plain [Bracket]
+# text tag with a small pill badge, matching the Field
+# Manual mockup layouts.
+# -------------------------------------------------------
+func _status_pill(status: int) -> PanelContainer:
+	var color := _status_color(status)
+	var pill := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r * 0.22 + 0.03, color.g * 0.22 + 0.03, color.b * 0.22 + 0.03, 1.0)
+	style.border_color = color
+	style.border_width_left   = 2
+	style.border_width_top    = 2
+	style.border_width_right  = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left     = 9
+	style.corner_radius_top_right    = 9
+	style.corner_radius_bottom_left  = 9
+	style.corner_radius_bottom_right = 9
+	style.content_margin_left   = 10
+	style.content_margin_right  = 10
+	style.content_margin_top    = 2
+	style.content_margin_bottom = 2
+	pill.add_theme_stylebox_override("panel", style)
+
+	var lbl := Label.new()
+	lbl.text = SquadManager.STATUS_NAMES[status].to_upper()
+	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_color_override("font_color", color)
+	pill.add_child(lbl)
+	return pill
 
 func _on_reinforcements_incoming(turn: int, count: int) -> void:
 	reinforcement_warning_turn  = turn
@@ -436,17 +497,17 @@ func _add_reinforcements_landed_card(sectors: Array) -> void:
 
 func _alert_style(bg: Color, border: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.set_content_margin_all(10)
+	style.set_content_margin_all(12)
 	style.bg_color = bg
 	style.border_color = border
-	style.border_width_left   = 3
+	style.border_width_left   = 4
 	style.border_width_top    = 1
 	style.border_width_right  = 1
 	style.border_width_bottom = 1
-	style.corner_radius_top_left     = 3
-	style.corner_radius_top_right    = 3
-	style.corner_radius_bottom_left  = 3
-	style.corner_radius_bottom_right = 3
+	style.corner_radius_top_left     = 10
+	style.corner_radius_top_right    = 10
+	style.corner_radius_bottom_left  = 10
+	style.corner_radius_bottom_right = 10
 	return style
 
 func _on_close_pressed() -> void:

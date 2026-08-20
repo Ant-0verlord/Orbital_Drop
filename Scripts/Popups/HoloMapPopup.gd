@@ -17,6 +17,7 @@ const COLOR_LOST:      Color = Color(0.4,  0.4,  0.4,  0.7)
 const COLOR_ENEMY:     Color = Color(0.7,  0.1,  0.1,  0.85)
 const COLOR_NEUTRAL:   Color = Color(0.12, 0.18, 0.25, 0.7)
 
+@onready var title_label: Label         = $PanelContainer/VBoxContainer/Title
 @onready var turn_label: Label          = $PanelContainer/VBoxContainer/InfoRow/TurnLabel
 @onready var held_label: Label          = $PanelContainer/VBoxContainer/InfoRow/HeldLabel
 @onready var hex_canvas: Control        = $PanelContainer/VBoxContainer/HexCanvas
@@ -27,14 +28,15 @@ const COLOR_NEUTRAL:   Color = Color(0.12, 0.18, 0.25, 0.7)
 # Placement mode UI — add these nodes to the scene
 # under VBoxContainer, above ButtonRow
 @onready var placement_banner: PanelContainer = $PanelContainer/VBoxContainer/PlacementBanner
-@onready var placement_label: Label           = $PanelContainer/VBoxContainer/PlacementBanner/PlacementLabel
-@onready var placement_confirm_btn: Button    = $PanelContainer/VBoxContainer/PlacementBanner/HBoxContainer/PlacementConfirmBtn
-@onready var placement_cancel_btn: Button     = $PanelContainer/VBoxContainer/PlacementBanner/HBoxContainer/PlacementCancelBtn
+@onready var placement_label: Label           = $PanelContainer/VBoxContainer/PlacementBanner/PlacementVBox/PlacementLabel
+@onready var placement_confirm_btn: Button    = $PanelContainer/VBoxContainer/PlacementBanner/PlacementVBox/HBoxContainer/PlacementConfirmBtn
+@onready var placement_cancel_btn: Button     = $PanelContainer/VBoxContainer/PlacementBanner/PlacementVBox/HBoxContainer/PlacementCancelBtn
 @onready var tutorial_overlay: Control = $TutorialOverlay
 @onready var help_nudge: Control = $HelpNudge
 
 
 func _ready() -> void:
+	_style_header("HOLO-MAP", "Full battlefield view — sector control, squad & enemy positions, placement targeting")
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	EnemyManager.enemies_updated.connect(_on_enemies_updated)
 	TurnManager.allocations_locked.connect(_on_allocations_locked)
@@ -48,6 +50,12 @@ func _ready() -> void:
 	visibility_changed.connect(_on_visibility_changed)
 
 	placement_banner.visible = false
+	_style_primary_button(placement_confirm_btn)
+
+	# Inside a ScrollContainer, a child only stretches to the full
+	# available width if explicitly told to expand — otherwise it
+	# shrinks to its content's natural width.
+	sector_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 
 func _on_visibility_changed() -> void:
@@ -370,17 +378,15 @@ func _rebuild_sector_list() -> void:
 		var state       = data.get("state", "enemy")
 		var squad_names: Array = data.get("squad", [])
 		var enemy_count = data.get("enemy_count", 0)
+		var row_color   = COLOR_ENEMY if enemy_count > 0 else _state_color(state)
+
+		var strip := PanelContainer.new()
+		strip.add_theme_stylebox_override("panel", _sector_strip_style(row_color))
+		strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
-
-		var dot := Label.new()
-		dot.text = "●"
-		dot.add_theme_color_override("font_color",
-			COLOR_ENEMY if enemy_count > 0 else _state_color(state))
-		dot.add_theme_font_size_override("font_size", 11)
-		dot.custom_minimum_size.x = 16
-		row.add_child(dot)
+		strip.add_child(row)
 
 		var sec_lbl := Label.new()
 		sec_lbl.text = sector_name
@@ -388,14 +394,8 @@ func _rebuild_sector_list() -> void:
 		sec_lbl.add_theme_font_size_override("font_size", 11)
 		row.add_child(sec_lbl)
 
-		var state_text = "Enemy (%d)" % enemy_count if enemy_count > 0 else state.capitalize()
-		var state_lbl := Label.new()
-		state_lbl.text = state_text
-		state_lbl.custom_minimum_size.x = 90
-		state_lbl.add_theme_color_override("font_color",
-			COLOR_ENEMY if enemy_count > 0 else _state_color(state))
-		state_lbl.add_theme_font_size_override("font_size", 11)
-		row.add_child(state_lbl)
+		var state_text = "ENEMY (%d)" % enemy_count if enemy_count > 0 else state.to_upper()
+		row.add_child(_sector_pill(state_text, row_color))
 
 		var squad_text = ""
 		for i in range(squad_names.size()):
@@ -409,7 +409,7 @@ func _rebuild_sector_list() -> void:
 		squad_lbl.add_theme_font_size_override("font_size", 11)
 		row.add_child(squad_lbl)
 
-		sector_list.add_child(row)
+		sector_list.add_child(strip)
 
 		var special_type = _build_special_sectors().get(sector_name, "")
 		if special_type != "":
@@ -425,6 +425,10 @@ func _rebuild_sector_list() -> void:
 			tag_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 0.5))
 			row.add_child(tag_lbl)
 
+		var spacer := Control.new()
+		spacer.custom_minimum_size.y = 2
+		sector_list.add_child(spacer)
+
 
 func _state_color(state: String) -> Color:
 	match state:
@@ -434,6 +438,106 @@ func _state_color(state: String) -> Color:
 		"enemy":     return COLOR_ENEMY
 		"neutral":   return COLOR_NEUTRAL
 	return COLOR_NEUTRAL
+
+
+# -------------------------------------------------------
+# Compact rounded strip + status "chip" for the sector
+# list — a lighter-weight version of the card/pill style
+# used elsewhere, sized to stay dense across many sectors.
+# -------------------------------------------------------
+func _sector_strip_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r * 0.12 + 0.035, color.g * 0.12 + 0.035, color.b * 0.12 + 0.035, 1.0)
+	style.border_color = Color(color.r, color.g, color.b, 0.5)
+	style.border_width_left   = 3
+	style.border_width_top    = 1
+	style.border_width_right  = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left     = 7
+	style.corner_radius_top_right    = 7
+	style.corner_radius_bottom_left  = 7
+	style.corner_radius_bottom_right = 7
+	style.content_margin_left   = 8
+	style.content_margin_right  = 8
+	style.content_margin_top    = 4
+	style.content_margin_bottom = 4
+	return style
+
+
+func _sector_pill(label_text: String, color: Color) -> PanelContainer:
+	var pill := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r * 0.22 + 0.03, color.g * 0.22 + 0.03, color.b * 0.22 + 0.03, 1.0)
+	style.border_color = color
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(7)
+	style.content_margin_left   = 6
+	style.content_margin_right  = 6
+	style.content_margin_top    = 1
+	style.content_margin_bottom = 1
+	pill.add_theme_stylebox_override("panel", style)
+	pill.custom_minimum_size.x = 78
+
+	var lbl := Label.new()
+	lbl.text = label_text
+	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_color_override("font_color", color)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pill.add_child(lbl)
+	return pill
+
+
+# -------------------------------------------------------
+# Console header — big bold title + small grey subtitle,
+# matching the Field Manual mockup layouts. The scene has
+# no Subtitle node, so it's built here at runtime and
+# inserted right under Title.
+# -------------------------------------------------------
+func _style_header(title_text: String, subtitle_text: String) -> void:
+	if title_label:
+		title_label.text = title_text
+		title_label.add_theme_font_size_override("font_size", 24)
+		title_label.add_theme_color_override("font_color", Color(0.91, 0.91, 0.91))
+
+		var subtitle_label := Label.new()
+		subtitle_label.text = subtitle_text
+		subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		subtitle_label.add_theme_font_size_override("font_size", 13)
+		subtitle_label.add_theme_color_override("font_color", Color(0.65, 0.68, 0.73))
+		var parent := title_label.get_parent()
+		parent.add_child(subtitle_label)
+		parent.move_child(subtitle_label, title_label.get_index() + 1)
+
+
+# -------------------------------------------------------
+# Amber-filled "primary" CTA button style — matches the
+# other consoles' confirm/seal buttons and the Field
+# Manual mockup layouts.
+# -------------------------------------------------------
+func _style_primary_button(btn: Button) -> void:
+	if btn == null:
+		return
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.275, 0.216, 0.039, 1.0)
+	normal.border_color = Color(1.0, 0.851, 0.2, 1.0)
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(10)
+	normal.content_margin_left = 16
+	normal.content_margin_right = 16
+	normal.content_margin_top = 8
+	normal.content_margin_bottom = 8
+
+	var hover := normal.duplicate()
+	hover.bg_color = Color(0.35, 0.275, 0.05, 1.0)
+
+	var pressed := normal.duplicate()
+	pressed.bg_color = Color(0.22, 0.17, 0.03, 1.0)
+
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_color_override("font_color", Color(1.0, 0.851, 0.2))
+	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.9, 0.5))
 
 
 func _on_close_pressed() -> void:

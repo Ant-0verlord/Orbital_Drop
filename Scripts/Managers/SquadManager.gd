@@ -574,6 +574,23 @@ func apply_bombardment_casualty(squad_name: String) -> void:
 	if squad.status == Status.LOST:
 		emit_signal("squad_lost", squad_name)
 
+
+# Called by EnemyManager when an unarmed squad tries to flee an enemy
+# that's just landed on its tile but is genuinely boxed in with nowhere
+# clear to run to. Being caught in the open isn't instantly fatal — it
+# wears the squad down exactly like losing an unarmed fight does
+# elsewhere, so it only actually kills them (and, if they're carrying
+# the data, only then destroys it) once worn all the way down to Lost.
+func apply_overrun_casualty(squad_name: String) -> void:
+	if not squads.has(squad_name):
+		return
+	var squad = squads[squad_name]
+	if squad.status == Status.LOST:
+		return
+	_worsen_status(squad)
+	if squad.status == Status.LOST:
+		emit_signal("squad_lost", squad_name)
+
 func get_briefings() -> Dictionary:
 	var result: Dictionary = {}
 	for squad_name in squads:

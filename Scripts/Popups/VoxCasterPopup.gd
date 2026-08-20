@@ -42,6 +42,8 @@ const DELAYED_BURST = [
 	"ECHO SIGNAL — ORIGIN UNCERTAIN",
 ]
 
+@onready var title_label: Label                     = $PanelContainer/VBoxContainer/Title
+@onready var subtitle_label: Label                  = $PanelContainer/VBoxContainer/Subtitle
 @onready var turn_label: Label                     = $PanelContainer/VBoxContainer/TurnLabel
 @onready var transmission_container: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/TransmissionContainer
 @onready var close_btn: Button                     = $PanelContainer/VBoxContainer/ButtonRow/CloseBtn
@@ -51,6 +53,12 @@ const DELAYED_BURST = [
 
 
 func _ready() -> void:
+	_style_header("VOX-CASTER ARRAY", "Live squad transmissions — what each squad is requesting")
+	# Inside a ScrollContainer, a child only stretches to the full
+	# available width if explicitly told to expand — otherwise it
+	# shrinks to its content's natural width, which made every card
+	# render far narrower than the console frame around it.
+	transmission_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	TurnManager.turn_started.connect(_on_turn_started)
 	TurnManager.mission_complete.connect(_on_mission_complete)
@@ -231,17 +239,17 @@ func _add_distress_call(squad: Dictionary) -> void:
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var style := StyleBoxFlat.new()
-	style.set_content_margin_all(10)
+	style.set_content_margin_all(12)
 	style.bg_color = Color(0.25, 0.05, 0.05)
 	style.border_color = Color(1.0, 0.2, 0.2, 0.9)
 	style.border_width_left   = 3
 	style.border_width_top    = 1
 	style.border_width_right  = 1
 	style.border_width_bottom = 1
-	style.corner_radius_top_left     = 3
-	style.corner_radius_top_right    = 3
-	style.corner_radius_bottom_left  = 3
-	style.corner_radius_bottom_right = 3
+	style.corner_radius_top_left     = 10
+	style.corner_radius_top_right    = 10
+	style.corner_radius_bottom_left  = 10
+	style.corner_radius_bottom_right = 10
 	card.add_theme_stylebox_override("panel", style)
 
 	var vbox := VBoxContainer.new()
@@ -285,25 +293,38 @@ func _add_dead_channel(squad: Dictionary) -> void:
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var style := StyleBoxFlat.new()
-	style.set_content_margin_all(10)
+	style.set_content_margin_all(12)
 	style.bg_color = Color(0.06, 0.06, 0.08)
 	style.border_color = Color(0.25, 0.25, 0.3, 0.5)
-	style.border_width_left = 2
-	style.corner_radius_top_left     = 3
-	style.corner_radius_top_right    = 3
-	style.corner_radius_bottom_left  = 3
-	style.corner_radius_bottom_right = 3
+	style.border_width_left   = 3
+	style.border_width_top    = 1
+	style.border_width_right  = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left     = 10
+	style.corner_radius_top_right    = 10
+	style.corner_radius_bottom_left  = 10
+	style.corner_radius_bottom_right = 10
 	card.add_theme_stylebox_override("panel", style)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
 	card.add_child(vbox)
 
-	var header := Label.new()
-	header.text = ">>> %s  [%s]" % [squad.name, squad.sector]
-	header.add_theme_font_size_override("font_size", 13)
-	header.add_theme_color_override("font_color", Color(0.35, 0.35, 0.4))
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
 	vbox.add_child(header)
+
+	var header_lbl := Label.new()
+	header_lbl.text = ">>> %s  [%s]" % [squad.name, squad.sector]
+	header_lbl.add_theme_font_size_override("font_size", 13)
+	header_lbl.add_theme_color_override("font_color", Color(0.35, 0.35, 0.4))
+	header.add_child(header_lbl)
+
+	var dead_spacer := Control.new()
+	dead_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(dead_spacer)
+
+	header.add_child(_quality_pill("DEAD CHANNEL", Color(0.4, 0.4, 0.45)))
 
 	var status_lbl := Label.new()
 	status_lbl.text = cached_flavour.get(squad.name, DEAD_CHANNEL[0])
@@ -325,14 +346,17 @@ func _add_ghost_signal(squad: Dictionary) -> void:
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var style := StyleBoxFlat.new()
-	style.set_content_margin_all(10)
+	style.set_content_margin_all(12)
 	style.bg_color = Color(0.07, 0.05, 0.10)
 	style.border_color = Color(0.45, 0.2, 0.6, 0.6)
-	style.border_width_left = 2
-	style.corner_radius_top_left     = 3
-	style.corner_radius_top_right    = 3
-	style.corner_radius_bottom_left  = 3
-	style.corner_radius_bottom_right = 3
+	style.border_width_left   = 3
+	style.border_width_top    = 1
+	style.border_width_right  = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left     = 10
+	style.corner_radius_top_right    = 10
+	style.corner_radius_bottom_left  = 10
+	style.corner_radius_bottom_right = 10
 	card.add_theme_stylebox_override("panel", style)
 
 	var vbox := VBoxContainer.new()
@@ -349,11 +373,11 @@ func _add_ghost_signal(squad: Dictionary) -> void:
 	source_lbl.add_theme_color_override("font_color", Color(0.5, 0.3, 0.7))
 	header.add_child(source_lbl)
 
-	var quality_lbl := Label.new()
-	quality_lbl.text = cached_flavour.get(squad.name, GHOST_SIGNAL[0])
-	quality_lbl.add_theme_font_size_override("font_size", 10)
-	quality_lbl.add_theme_color_override("font_color", Color(0.6, 0.3, 0.8))
-	header.add_child(quality_lbl)
+	var ghost_spacer := Control.new()
+	ghost_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(ghost_spacer)
+
+	header.add_child(_quality_pill(cached_flavour.get(squad.name, GHOST_SIGNAL[0]), Color(0.6, 0.3, 0.8)))
 
 	var garbled_lbl := Label.new()
 	garbled_lbl.text = cached_need_text.get(squad.name, "")
@@ -370,14 +394,17 @@ func _add_delayed_burst(squad: Dictionary) -> void:
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var style := StyleBoxFlat.new()
-	style.set_content_margin_all(10)
+	style.set_content_margin_all(12)
 	style.bg_color = Color(0.07, 0.09, 0.13)
 	style.border_color = Color(0.5, 0.45, 0.2, 0.7)
-	style.border_width_left = 2
-	style.corner_radius_top_left     = 3
-	style.corner_radius_top_right    = 3
-	style.corner_radius_bottom_left  = 3
-	style.corner_radius_bottom_right = 3
+	style.border_width_left   = 3
+	style.border_width_top    = 1
+	style.border_width_right  = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left     = 10
+	style.corner_radius_top_right    = 10
+	style.corner_radius_bottom_left  = 10
+	style.corner_radius_bottom_right = 10
 	card.add_theme_stylebox_override("panel", style)
 
 	var vbox := VBoxContainer.new()
@@ -394,11 +421,11 @@ func _add_delayed_burst(squad: Dictionary) -> void:
 	source_lbl.add_theme_color_override("font_color", Color(0.65, 0.6, 0.3))
 	header.add_child(source_lbl)
 
-	var quality_lbl := Label.new()
-	quality_lbl.text = cached_flavour.get(squad.name, DELAYED_BURST[0])
-	quality_lbl.add_theme_font_size_override("font_size", 10)
-	quality_lbl.add_theme_color_override("font_color", Color(0.8, 0.65, 0.2))
-	header.add_child(quality_lbl)
+	var delayed_spacer := Control.new()
+	delayed_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(delayed_spacer)
+
+	header.add_child(_quality_pill(cached_flavour.get(squad.name, DELAYED_BURST[0]), Color(0.8, 0.65, 0.2)))
 
 	var need_lbl := Label.new()
 	need_lbl.text = cached_need_text.get(squad.name, "")
@@ -427,14 +454,17 @@ func _add_need_transmission(squad: Dictionary) -> void:
 
 	var interference = SquadManager.interference
 	var style := StyleBoxFlat.new()
-	style.set_content_margin_all(10)
+	style.set_content_margin_all(12)
 	style.bg_color = Color(0.05, 0.08, 0.12)
 	style.border_color = Color(0.3, 0.5, 0.7, 0.6)
-	style.border_width_left = 2
-	style.corner_radius_top_left     = 3
-	style.corner_radius_top_right    = 3
-	style.corner_radius_bottom_left  = 3
-	style.corner_radius_bottom_right = 3
+	style.border_width_left   = 3
+	style.border_width_top    = 1
+	style.border_width_right  = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left     = 10
+	style.corner_radius_top_right    = 10
+	style.corner_radius_bottom_left  = 10
+	style.corner_radius_bottom_right = 10
 	card.add_theme_stylebox_override("panel", style)
 
 	var vbox := VBoxContainer.new()
@@ -451,11 +481,11 @@ func _add_need_transmission(squad: Dictionary) -> void:
 	source_lbl.add_theme_color_override("font_color", Color(0.4, 0.85, 1.0))
 	header.add_child(source_lbl)
 
-	var quality_lbl := Label.new()
-	quality_lbl.text = _signal_quality_text(interference)
-	quality_lbl.add_theme_font_size_override("font_size", 10)
-	quality_lbl.add_theme_color_override("font_color", _signal_quality_color(interference))
-	header.add_child(quality_lbl)
+	var quality_spacer := Control.new()
+	quality_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(quality_spacer)
+
+	header.add_child(_quality_pill(_signal_quality_text(interference), _signal_quality_color(interference)))
 
 	var need_lbl := Label.new()
 	need_lbl.text = cached_need_text.get(squad.name, "")
@@ -547,6 +577,54 @@ func _signal_quality_color(interference: float) -> Color:
 	elif interference < 0.5: return Color(0.9, 0.7, 0.2)
 	elif interference < 0.8: return Color(0.9, 0.4, 0.1)
 	else:                    return Color(0.9, 0.2, 0.2)
+
+
+# -------------------------------------------------------
+# Console header — big bold title + small grey subtitle,
+# matching the Field Manual mockup layouts.
+# -------------------------------------------------------
+func _style_header(title_text: String, subtitle_text: String) -> void:
+	if title_label:
+		title_label.text = title_text
+		title_label.add_theme_font_size_override("font_size", 24)
+		title_label.add_theme_color_override("font_color", Color(0.91, 0.91, 0.91))
+	if subtitle_label:
+		subtitle_label.text = subtitle_text
+		subtitle_label.add_theme_font_size_override("font_size", 13)
+		subtitle_label.add_theme_color_override("font_color", Color(0.65, 0.68, 0.73))
+		subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+
+
+# -------------------------------------------------------
+# Rounded signal-quality "chip" — replaces the old plain
+# small text tag with a pill badge, matching the Field
+# Manual mockup layouts.
+# -------------------------------------------------------
+func _quality_pill(label_text: String, color: Color) -> PanelContainer:
+	var pill := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r * 0.22 + 0.03, color.g * 0.22 + 0.03, color.b * 0.22 + 0.03, 1.0)
+	style.border_color = color
+	style.border_width_left   = 2
+	style.border_width_top    = 2
+	style.border_width_right  = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left     = 9
+	style.corner_radius_top_right    = 9
+	style.corner_radius_bottom_left  = 9
+	style.corner_radius_bottom_right = 9
+	style.content_margin_left   = 10
+	style.content_margin_right  = 10
+	style.content_margin_top    = 2
+	style.content_margin_bottom = 2
+	pill.add_theme_stylebox_override("panel", style)
+
+	var lbl := Label.new()
+	lbl.text = label_text
+	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_color_override("font_color", color)
+	pill.add_child(lbl)
+	return pill
 
 
 func _on_close_pressed() -> void:

@@ -13,8 +13,11 @@ var squad_rows: Array = []
 var pending_reinforcement_name: String = ""
 var _help_attention: bool = false
 var _attention_pulse: float = 0.0
+var pool_bars: Dictionary = {}
+var pool_val_labels: Dictionary = {}
 
 
+@onready var title_label: Label             = $PanelContainer/VBoxContainer/Title
 @onready var turn_label: Label              = $PanelContainer/VBoxContainer/TurnLabel
 @onready var held_label: Label              = $PanelContainer/VBoxContainer/HeldLabel
 @onready var pool_label: Label              = $PanelContainer/VBoxContainer/PoolLabel
@@ -47,6 +50,7 @@ var _attention_pulse: float = 0.0
 
 
 func _ready() -> void:
+	_style_header("LOGISTICS TERMINAL", "Allocate supplies, call reinforcements, arm orbital strikes")
 	SquadManager.turn_resolved.connect(_on_turn_resolved)
 	TurnManager.turn_started.connect(_on_turn_started)
 	TurnManager.allocations_locked.connect(_on_allocations_locked)
@@ -60,6 +64,26 @@ func _ready() -> void:
 
 	end_overlay.visible = false
 	warning_label.text = ""
+
+	_style_primary_button(lock_btn)
+	_style_primary_button(call_reinforcement_btn)
+	_style_primary_button(arm_bombardment_btn)
+
+	# Inside a ScrollContainer, a child only stretches to the full
+	# available width if explicitly told to expand — otherwise it
+	# shrinks to its content's natural width, which made every squad
+	# card render far narrower than the console frame around it.
+	squad_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	_build_pool_section()
+	_build_squad_header_row()
+
+	# LegendPanel is an empty, unused leftover node — with the new global
+	# theme giving every PanelContainer a visible rounded card background,
+	# it would otherwise show up as an empty box. Hide it.
+	var legend_panel := get_node_or_null("PanelContainer/VBoxContainer/LegendPanel")
+	if legend_panel:
+		legend_panel.visible = false
 
 	_refresh_reinforcement_panel()
 	_refresh_bombardment_panel()
@@ -96,12 +120,8 @@ func _on_help_pressed() -> void:
 	GameManager.mark_attention_seen("logistics_bombardment")
 	var steps: Array[TutorialStep] = [
 		_step(
-			"SUPPLY POOL — This shows your total resources for this turn, shared across all squads. Once spent they are gone until next turn.",
-			^"PanelContainer/VBoxContainer/PoolLabel"
-		),
-		_step(
-			"BUDGET TRACKER — Shows what you have allocated this turn vs what remains. Turn red when you overspend a supply type.",
-			^"PanelContainer/VBoxContainer/BudgetLabel"
+			"POINTS POOL — One bar per supply type, shared across all squads for the whole mission. The bar fills with what you've allocated this turn against what's left in the pool, and turns red if you overspend. Unspent points carry over into the next mission.",
+			^"PanelContainer/VBoxContainer/PointsPoolCard"
 		),
 		_step(
 			"SQUAD ROWS — Each squad can receive up to 2 supply types per turn. Armaments guarantee a kill (25% casualty risk). Medi-Packs heal one level. Fuel Cells extend movement and power the tower. Unused supplies are banked for later.",
@@ -216,8 +236,13 @@ func _rebuild_squad_rows() -> void:
 
 
 func _build_squad_row(squad: Dictionary) -> Dictionary:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _card_style(squad.status))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
+	card.add_child(row)
 
 	var name_lbl := Label.new()
 	# Tag the data carrier here too — this row was previously identical
@@ -237,29 +262,27 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 
 		# Force M1 T1 allocations
 
+	# Per-squad checkboxes — cost and supply name are shown once in the
+	# column header row above the whole list now (see
+	# _build_squad_header_row()), so each cell here is just a big,
+	# centred toggle aligned under its header.
 	var checkboxes: Dictionary = {}
 	for supply in ["Armaments", "Medi-Packs", "Fuel Cells"]:
 		var col := VBoxContainer.new()
 		col.custom_minimum_size.x = 110
+		col.alignment = BoxContainer.ALIGNMENT_CENTER
 
 		var cb := CheckBox.new()
-		cb.text = supply
-		cb.add_theme_font_size_override("font_size", 13)
-		cb.add_theme_constant_override("icon_max_width", 26)
+		cb.text = ""
+		cb.add_theme_constant_override("icon_max_width", 32)
 		cb.disabled = TurnManager.mission_over
+		cb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 		var saved = allocations.get(squad.name, {}).get(supply, 0)
 		cb.button_pressed = saved > 0
 		_style_checkbox(cb)
 
 		col.add_child(cb)
-
-		var cost_lbl := Label.new()
-		cost_lbl.text = "(%d pts)" % SUPPLY_COST
-		cost_lbl.add_theme_font_size_override("font_size", 10)
-		cost_lbl.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
-		col.add_child(cost_lbl)
-
 		row.add_child(col)
 		checkboxes[supply] = cb
 
@@ -287,9 +310,10 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 			if supply != ticked_supply:
 				checkboxes[supply].disabled = true
 
-	squad_container.add_child(row)
-	var sep := HSeparator.new()
-	squad_container.add_child(sep)
+	squad_container.add_child(card)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 6
+	squad_container.add_child(spacer)
 
 	return { "squad": squad.name, "checkboxes": checkboxes }
 
@@ -426,6 +450,11 @@ func _on_call_reinforcement_pressed() -> void:
 
 func _refresh_pool() -> void:
 	if pool_label == null: return
+	# Pool numbers now live on the Points Pool bars built in
+	# _build_pool_section() (updated from _refresh_budget() below, since
+	# that function already computes both pool and pending together).
+	# The old text label is kept updated but hidden, so nothing else that
+	# reads pool_label.text elsewhere silently breaks.
 	var pool = GameManager.get_supply_pool()
 	pool_label.text = "Mission Pool — Armaments: %d  |  Medi-Packs: %d  |  Fuel Cells: %d" % [
 		pool.get("Armaments", 0),
@@ -456,6 +485,7 @@ func _refresh_budget() -> void:
 		parts.append("%s: %d/%d" % [s, pen, p])
 		if pen > p:
 			over = true
+		_update_pool_bar(s, pen, p)
 
 	budget_label.text = "This turn:  " + "   ".join(parts)
 
@@ -658,3 +688,226 @@ func _status_color(status: int) -> Color:
 		SquadManager.Status.WOUNDED:  return Color(0.9, 0.7, 0.2)
 		SquadManager.Status.CRITICAL: return Color(0.9, 0.3, 0.3)
 	return Color.WHITE
+
+
+# -------------------------------------------------------
+# Console header — big bold title + small grey subtitle,
+# matching the Field Manual mockup layouts. The scene has
+# no Subtitle node, so it's built here at runtime and
+# inserted right under Title.
+# -------------------------------------------------------
+func _style_header(title_text: String, subtitle_text: String) -> void:
+	if title_label:
+		title_label.text = title_text
+		title_label.add_theme_font_size_override("font_size", 24)
+		title_label.add_theme_color_override("font_color", Color(0.91, 0.91, 0.91))
+
+		var subtitle_label := Label.new()
+		subtitle_label.text = subtitle_text
+		subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		subtitle_label.add_theme_font_size_override("font_size", 13)
+		subtitle_label.add_theme_color_override("font_color", Color(0.65, 0.68, 0.73))
+		var parent := title_label.get_parent()
+		parent.add_child(subtitle_label)
+		parent.move_child(subtitle_label, title_label.get_index() + 1)
+
+
+# -------------------------------------------------------
+# "Points Pool" card — a rounded panel with one labelled
+# progress bar per supply type, replacing the old plain
+# text pool/budget lines with the visual bar shown in the
+# Field Manual's Logistics Terminal mockup. Built once and
+# kept in sync from _refresh_budget() via _update_pool_bar().
+# -------------------------------------------------------
+func _build_pool_section() -> void:
+	if pool_label == null:
+		return
+
+	var card := PanelContainer.new()
+	card.name = "PointsPoolCard"
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.106, 0.122, 0.153, 1.0)
+	style.border_color = Color(0.235, 0.259, 0.306, 1.0)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(10)
+	style.set_content_margin_all(10)
+	card.add_theme_stylebox_override("panel", style)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 6)
+	card.add_child(vb)
+
+	var header_lbl := Label.new()
+	header_lbl.text = "POINTS POOL"
+	header_lbl.add_theme_font_size_override("font_size", 12)
+	header_lbl.add_theme_color_override("font_color", Color(1.0, 0.851, 0.2))
+	vb.add_child(header_lbl)
+
+	for supply in ["Armaments", "Medi-Packs", "Fuel Cells"]:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+
+		var name_lbl := Label.new()
+		name_lbl.text = supply
+		name_lbl.custom_minimum_size.x = 90
+		name_lbl.add_theme_font_size_override("font_size", 11)
+		row.add_child(name_lbl)
+
+		var bar := ProgressBar.new()
+		bar.custom_minimum_size = Vector2(0, 14)
+		bar.show_percentage = false
+		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(bar)
+
+		var val_lbl := Label.new()
+		val_lbl.custom_minimum_size.x = 64
+		val_lbl.add_theme_font_size_override("font_size", 11)
+		val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		row.add_child(val_lbl)
+
+		vb.add_child(row)
+		pool_bars[supply] = bar
+		pool_val_labels[supply] = val_lbl
+
+	var parent := pool_label.get_parent()
+	parent.add_child(card)
+	parent.move_child(card, pool_label.get_index())
+
+	# The old plain-text pool/budget lines are superseded by the bars
+	# above — hidden rather than removed, so their existing refresh
+	# logic elsewhere keeps running harmlessly.
+	pool_label.visible = false
+	budget_label.visible = false
+
+
+func _update_pool_bar(supply: String, pending: int, pool: int) -> void:
+	if not pool_bars.has(supply):
+		return
+	var bar: ProgressBar = pool_bars[supply]
+	bar.max_value = max(pool, 1)
+	bar.value = pending
+
+	var over := pending > pool
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color(0.9, 0.2, 0.2) if over else Color(1.0, 0.851, 0.2)
+	fill.set_corner_radius_all(6)
+	bar.add_theme_stylebox_override("fill", fill)
+
+	var val_lbl: Label = pool_val_labels[supply]
+	val_lbl.text = "%d / %d" % [pending, pool]
+	val_lbl.add_theme_color_override("font_color", Color(1, 0.3, 0.3) if over else Color(0.85, 0.85, 0.85))
+
+
+# -------------------------------------------------------
+# Column header row above the squad list — "SQUAD",
+# "STATUS", and one header per supply type (with its point
+# cost), so each squad row below can drop its per-checkbox
+# label and just show a big centred toggle, matching the
+# Field Manual mockup's table layout.
+# -------------------------------------------------------
+func _build_squad_header_row() -> void:
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 12)
+
+	var name_h := Label.new()
+	name_h.text = "SQUAD"
+	name_h.custom_minimum_size.x = 120
+	name_h.add_theme_font_size_override("font_size", 12)
+	name_h.add_theme_color_override("font_color", Color(1.0, 0.851, 0.2))
+	header.add_child(name_h)
+
+	var status_h := Label.new()
+	status_h.text = "STATUS"
+	status_h.custom_minimum_size.x = 130
+	status_h.add_theme_font_size_override("font_size", 12)
+	status_h.add_theme_color_override("font_color", Color(1.0, 0.851, 0.2))
+	header.add_child(status_h)
+
+	for supply in ["Armaments", "Medi-Packs", "Fuel Cells"]:
+		var col_h := Label.new()
+		col_h.text = "%s (%d pts)" % [supply, SUPPLY_COST]
+		col_h.custom_minimum_size.x = 110
+		col_h.add_theme_font_size_override("font_size", 12)
+		col_h.add_theme_color_override("font_color", Color(1.0, 0.851, 0.2))
+		col_h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col_h.autowrap_mode = TextServer.AUTOWRAP_WORD
+		header.add_child(col_h)
+
+	var scroll := squad_container.get_parent()
+	var parent := scroll.get_parent()
+	parent.add_child(header)
+	parent.move_child(header, scroll.get_index())
+
+
+# -------------------------------------------------------
+# Rounded card background for each squad allocation row —
+# matches the card style used at the Intel Console,
+# Vox-Caster, Command Throne, and the Field Manual mockups.
+# -------------------------------------------------------
+func _card_style(status: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.set_content_margin_all(10)
+	style.corner_radius_top_left     = 10
+	style.corner_radius_top_right    = 10
+	style.corner_radius_bottom_left  = 10
+	style.corner_radius_bottom_right = 10
+	style.border_width_left   = 4
+	style.border_width_top    = 1
+	style.border_width_right  = 1
+	style.border_width_bottom = 1
+	match status:
+		SquadManager.Status.ACTIVE:
+			style.bg_color     = Color(0.13, 0.20, 0.13)
+			style.border_color = Color(0.3, 0.65, 0.3)
+		SquadManager.Status.WOUNDED:
+			style.bg_color     = Color(0.20, 0.17, 0.08)
+			style.border_color = Color(0.85, 0.6, 0.15)
+		SquadManager.Status.CRITICAL:
+			style.bg_color     = Color(0.22, 0.08, 0.08)
+			style.border_color = Color(0.9, 0.2, 0.2)
+		_:
+			style.bg_color     = Color(0.13, 0.13, 0.18)
+			style.border_color = Color(0.4, 0.4, 0.55)
+	return style
+
+
+# -------------------------------------------------------
+# Amber-filled "primary" CTA button style — mirrors
+# CommandThronePopup._style_primary_button() for the
+# reinforcement/orbital-strike action buttons.
+# -------------------------------------------------------
+func _style_primary_button(btn: Button) -> void:
+	if btn == null:
+		return
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.275, 0.216, 0.039, 1.0)
+	normal.border_color = Color(1.0, 0.851, 0.2, 1.0)
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(10)
+	normal.content_margin_left = 16
+	normal.content_margin_right = 16
+	normal.content_margin_top = 8
+	normal.content_margin_bottom = 8
+
+	var hover := normal.duplicate()
+	hover.bg_color = Color(0.35, 0.275, 0.05, 1.0)
+
+	var pressed := normal.duplicate()
+	pressed.bg_color = Color(0.22, 0.17, 0.03, 1.0)
+
+	var disabled := StyleBoxFlat.new()
+	disabled.bg_color = Color(0.055, 0.063, 0.078, 1.0)
+	disabled.border_color = Color(0.157, 0.173, 0.204, 1.0)
+	disabled.set_border_width_all(2)
+	disabled.set_corner_radius_all(10)
+	disabled.content_margin_left = 16
+	disabled.content_margin_right = 16
+	disabled.content_margin_top = 8
+	disabled.content_margin_bottom = 8
+
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_color", Color(1.0, 0.851, 0.2))
+	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.9, 0.5))

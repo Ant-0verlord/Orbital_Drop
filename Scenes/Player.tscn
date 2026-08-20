@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://cwcetb2j4yciv"]
 
 [ext_resource type="Script" uid="uid://b76rtokexc2mj" path="res://Scripts/PlayerController.gd" id="1_rpqav"]
+[ext_resource type="PackedScene" path="res://Scenes/InstructionsPopup.tscn" id="2_instr"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_kyqiw"]
 
@@ -87,6 +88,11 @@ text = "Resume"
 layout_mode = 2
 focus_mode = 0
 text = "Settings"
+
+[node name="InstructionsBtn" type="Button" parent="CharacterBody3D/CanvasLayer/PauseMenu/CenterPanel/VBoxContainer"]
+layout_mode = 2
+focus_mode = 0
+text = "Instructions"
 
 [node name="ExitBtn" type="Button" parent="CharacterBody3D/CanvasLayer/PauseMenu/CenterPanel/VBoxContainer" unique_id=700001008]
 layout_mode = 2
@@ -180,3 +186,6 @@ step = 0.01
 layout_mode = 2
 focus_mode = 0
 text = "Back"
+
+[node name="InstructionsOverlay" parent="CharacterBody3D/CanvasLayer/PauseMenu" instance=ExtResource("2_instr")]
+layout_mode = 1

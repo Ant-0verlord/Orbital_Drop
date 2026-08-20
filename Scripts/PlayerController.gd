@@ -34,6 +34,7 @@ extends CharacterBody3D
 @onready var pause_menu:               Control = $CanvasLayer/PauseMenu
 @onready var pause_resume_btn:         Button  = $CanvasLayer/PauseMenu/CenterPanel/VBoxContainer/ResumeBtn
 @onready var pause_settings_btn:       Button  = $CanvasLayer/PauseMenu/CenterPanel/VBoxContainer/SettingsBtn
+@onready var pause_instructions_btn:   Button  = $CanvasLayer/PauseMenu/CenterPanel/VBoxContainer/InstructionsBtn
 @onready var pause_exit_btn:           Button  = $CanvasLayer/PauseMenu/CenterPanel/VBoxContainer/ExitBtn
 @onready var pause_settings_overlay:   Control = $CanvasLayer/PauseMenu/SettingsOverlay
 @onready var pause_settings_close_btn: Button  = $CanvasLayer/PauseMenu/SettingsOverlay/SettingsPanel/VBoxContainer/SettingsCloseBtn
@@ -41,11 +42,16 @@ extends CharacterBody3D
 @onready var pause_music_slider:       HSlider = $CanvasLayer/PauseMenu/SettingsOverlay/SettingsPanel/VBoxContainer/MusicRow/MusicSlider
 @onready var pause_sfx_slider:         HSlider = $CanvasLayer/PauseMenu/SettingsOverlay/SettingsPanel/VBoxContainer/SFXRow/SFXSlider
 
+# Board-game-style field manual — reachable mid-mission via the pause
+# menu, alongside Settings. Same reusable popup the main menu shows too.
+@onready var pause_instructions: Control = $CanvasLayer/PauseMenu/InstructionsOverlay
+
 var popup_open: bool = false
 var current_console     = null  # The console node currently open
 
 var pause_menu_open: bool = false
 var pause_settings_open: bool = false  # settings sub-panel within the pause menu
+var pause_instructions_open: bool = false  # instructions sub-panel within the pause menu
 
 
 func _ready() -> void:
@@ -58,6 +64,8 @@ func _ready() -> void:
 	pause_resume_btn.pressed.connect(_close_pause_menu)
 	pause_settings_btn.pressed.connect(_open_pause_settings)
 	pause_settings_close_btn.pressed.connect(_close_pause_settings)
+	pause_instructions_btn.pressed.connect(_open_pause_instructions)
+	pause_instructions.closed.connect(_on_pause_instructions_closed)
 	pause_exit_btn.pressed.connect(_on_pause_exit_pressed)
 
 	pause_master_slider.value_changed.connect(SettingsManager.set_master_volume)
@@ -89,6 +97,8 @@ func _input(event: InputEvent) -> void:
 		# console popup > pause-menu settings > pause menu > (open pause menu).
 		if popup_open:
 			_close_popup()
+		elif pause_instructions_open:
+			_close_pause_instructions()
 		elif pause_settings_open:
 			_close_pause_settings()
 		elif pause_menu_open:
@@ -191,8 +201,10 @@ func _close_pause_menu() -> void:
 	AudioManager.play_button_bottom()
 	pause_menu_open = false
 	pause_settings_open = false
+	pause_instructions_open = false
 	pause_menu.visible = false
 	pause_settings_overlay.visible = false
+	pause_instructions.visible = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	GuideManager.set_popup_open(false)
 
@@ -207,6 +219,23 @@ func _close_pause_settings() -> void:
 	AudioManager.play_button_bottom()
 	pause_settings_open = false
 	pause_settings_overlay.visible = false
+
+
+func _open_pause_instructions() -> void:
+	AudioManager.play_button_bottom()
+	pause_instructions_open = true
+	pause_instructions.open()
+
+
+func _close_pause_instructions() -> void:
+	pause_instructions_open = false
+	pause_instructions.close()  # no-op if already closed, e.g. via its own Back button
+
+
+# Fired by the popup's own Back button — keeps our bookkeeping in sync
+# even when it closes itself rather than being closed via Tab.
+func _on_pause_instructions_closed() -> void:
+	pause_instructions_open = false
 
 
 func _on_pause_exit_pressed() -> void:

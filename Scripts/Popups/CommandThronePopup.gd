@@ -6,6 +6,7 @@ extends Control
 
 var player: Node = null
 
+@onready var title_label: Label           = $PanelContainer/VBoxContainer/Title
 @onready var turn_label: Label            = $PanelContainer/VBoxContainer/InfoRow/TurnLabel
 @onready var held_label: Label            = $PanelContainer/VBoxContainer/InfoRow/HeldLabel
 @onready var progress_bar: ProgressBar    = $PanelContainer/VBoxContainer/ProgressBar
@@ -34,6 +35,7 @@ var player: Node = null
 
 
 func _ready() -> void:
+	_style_header("COMMAND THRONE", "Mission briefing & turn-ending station")
 	TurnManager.turn_started.connect(_on_turn_started)
 	TurnManager.turn_ended.connect(_on_turn_ended)
 	TurnManager.allocations_locked.connect(_on_allocations_locked)
@@ -51,6 +53,15 @@ func _ready() -> void:
 
 	report_panel.visible = false
 	next_mission_btn.visible = false
+
+	_style_primary_button(end_turn_btn)
+	_style_primary_button(next_mission_btn)
+
+	# Inside a ScrollContainer, a child only stretches to the full
+	# available width if explicitly told to expand — otherwise it
+	# shrinks to its content's natural width, which made every squad
+	# card render far narrower than the console frame around it.
+	squad_summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 
 func _on_visibility_changed() -> void:
@@ -211,19 +222,33 @@ func _update_squad_summary() -> void:
 		child.queue_free()
 	var active = 0; var wounded = 0; var critical = 0; var lost = 0
 	for squad in SquadManager.get_squads_for_ui():
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel", _card_style(squad.status))
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
+		card.add_child(row)
+
 		var nl := Label.new()
 		nl.text = squad.name
 		nl.custom_minimum_size.x = 120
 		nl.add_theme_font_size_override("font_size", 13)
 		row.add_child(nl)
-		var sl := Label.new()
-		sl.text = "%s — %s" % [SquadManager.STATUS_NAMES[squad.status], squad.sector]
-		sl.add_theme_font_size_override("font_size", 13)
-		sl.add_theme_color_override("font_color", _status_color(squad.status))
-		row.add_child(sl)
-		squad_summary.add_child(row)
+
+		var sector_lbl := Label.new()
+		sector_lbl.text = squad.sector
+		sector_lbl.add_theme_font_size_override("font_size", 12)
+		sector_lbl.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
+		sector_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(sector_lbl)
+
+		row.add_child(_status_pill(squad.status))
+
+		squad_summary.add_child(card)
+		var spacer := Control.new()
+		spacer.custom_minimum_size.y = 4
+		squad_summary.add_child(spacer)
 		match squad.status:
 			SquadManager.Status.ACTIVE:   active += 1
 			SquadManager.Status.WOUNDED:  wounded += 1
@@ -464,3 +489,131 @@ func _status_color(status: int) -> Color:
 		SquadManager.Status.CRITICAL: return Color(0.9, 0.3, 0.3)
 		SquadManager.Status.LOST:     return Color(0.5, 0.5, 0.5)
 	return Color.WHITE
+
+
+# -------------------------------------------------------
+# Rounded card + status "chip" — matches the card/pill
+# style used at the Intel Console, Vox-Caster, and the
+# Field Manual mockup layouts.
+# -------------------------------------------------------
+func _card_style(status: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.set_content_margin_all(10)
+	style.corner_radius_top_left     = 10
+	style.corner_radius_top_right    = 10
+	style.corner_radius_bottom_left  = 10
+	style.corner_radius_bottom_right = 10
+	style.border_width_left   = 4
+	style.border_width_top    = 1
+	style.border_width_right  = 1
+	style.border_width_bottom = 1
+	match status:
+		SquadManager.Status.ACTIVE:
+			style.bg_color     = Color(0.13, 0.20, 0.13)
+			style.border_color = Color(0.3, 0.65, 0.3)
+		SquadManager.Status.WOUNDED:
+			style.bg_color     = Color(0.20, 0.17, 0.08)
+			style.border_color = Color(0.85, 0.6, 0.15)
+		SquadManager.Status.CRITICAL:
+			style.bg_color     = Color(0.22, 0.08, 0.08)
+			style.border_color = Color(0.9, 0.2, 0.2)
+		SquadManager.Status.LOST:
+			style.bg_color     = Color(0.10, 0.10, 0.10)
+			style.border_color = Color(0.35, 0.35, 0.35)
+		_:
+			style.bg_color     = Color(0.13, 0.13, 0.18)
+			style.border_color = Color(0.4, 0.4, 0.55)
+	return style
+
+
+# -------------------------------------------------------
+# Console header — big bold title + small grey subtitle,
+# matching the Field Manual mockup layouts. The scene has
+# no Subtitle node (unlike Intel/Vox-Caster), so it's
+# built here at runtime and inserted right under Title.
+# -------------------------------------------------------
+func _style_header(title_text: String, subtitle_text: String) -> void:
+	if title_label:
+		title_label.text = title_text
+		title_label.add_theme_font_size_override("font_size", 24)
+		title_label.add_theme_color_override("font_color", Color(0.91, 0.91, 0.91))
+
+		var subtitle_label := Label.new()
+		subtitle_label.text = subtitle_text
+		subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		subtitle_label.add_theme_font_size_override("font_size", 13)
+		subtitle_label.add_theme_color_override("font_color", Color(0.65, 0.68, 0.73))
+		var parent := title_label.get_parent()
+		parent.add_child(subtitle_label)
+		parent.move_child(subtitle_label, title_label.get_index() + 1)
+
+
+# -------------------------------------------------------
+# Amber-filled "primary" CTA button style — used for the
+# turn-ending / mission-advancing buttons, matching the
+# filled ENGAGE TURN SEAL button in the Field Manual mockup.
+# -------------------------------------------------------
+func _style_primary_button(btn: Button) -> void:
+	if btn == null:
+		return
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.275, 0.216, 0.039, 1.0)
+	normal.border_color = Color(1.0, 0.851, 0.2, 1.0)
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(10)
+	normal.content_margin_left = 20
+	normal.content_margin_right = 20
+	normal.content_margin_top = 10
+	normal.content_margin_bottom = 10
+
+	var hover := normal.duplicate()
+	hover.bg_color = Color(0.35, 0.275, 0.05, 1.0)
+
+	var pressed := normal.duplicate()
+	pressed.bg_color = Color(0.22, 0.17, 0.03, 1.0)
+
+	var disabled := StyleBoxFlat.new()
+	disabled.bg_color = Color(0.055, 0.063, 0.078, 1.0)
+	disabled.border_color = Color(0.157, 0.173, 0.204, 1.0)
+	disabled.set_border_width_all(2)
+	disabled.set_corner_radius_all(10)
+	disabled.content_margin_left = 20
+	disabled.content_margin_right = 20
+	disabled.content_margin_top = 10
+	disabled.content_margin_bottom = 10
+
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_color", Color(1.0, 0.851, 0.2))
+	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.9, 0.5))
+	btn.add_theme_font_size_override("font_size", 16)
+
+
+func _status_pill(status: int) -> PanelContainer:
+	var color := _status_color(status)
+	var pill := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r * 0.22 + 0.03, color.g * 0.22 + 0.03, color.b * 0.22 + 0.03, 1.0)
+	style.border_color = color
+	style.border_width_left   = 2
+	style.border_width_top    = 2
+	style.border_width_right  = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left     = 9
+	style.corner_radius_top_right    = 9
+	style.corner_radius_bottom_left  = 9
+	style.corner_radius_bottom_right = 9
+	style.content_margin_left   = 10
+	style.content_margin_right  = 10
+	style.content_margin_top    = 2
+	style.content_margin_bottom = 2
+	pill.add_theme_stylebox_override("panel", style)
+
+	var lbl := Label.new()
+	lbl.text = SquadManager.STATUS_NAMES[status].to_upper()
+	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_color_override("font_color", color)
+	pill.add_child(lbl)
+	return pill

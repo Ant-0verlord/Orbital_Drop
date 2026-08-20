@@ -268,7 +268,17 @@ func advance_enemies(allocations: Dictionary) -> void:
 
 		unit.sector = best
 
-	# Post-movement: enemy on armed squad tile or surprise bonus tile
+	# Post-movement: an enemy has just landed on a tile a squad is
+	# standing on. An armed squad (or one with a surprise-bonus edge)
+	# fights back and wins outright — enemy destroyed, tile held, same
+	# as before. An unarmed squad can't win that fight, so instead of
+	# just standing there while the enemy sits on top of them, it tries
+	# to flee to a nearby tile clear of enemies. Only a squad that's
+	# genuinely boxed in with nowhere to run takes a casualty — merely
+	# sharing a tile with an enemy isn't itself fatal, being worn all the
+	# way down to "Lost" is (see SquadManager.apply_overrun_casualty /
+	# TurnManager's carrier check, which now keys off actually being
+	# killed rather than an enemy simply reaching the tile).
 	for unit in enemy_units.duplicate():
 		var landed_on = unit.sector
 		if landed_on in squad_map:
@@ -280,6 +290,18 @@ func advance_enemies(allocations: Dictionary) -> void:
 			if has_arms or has_surprise:
 				enemy_units.erase(unit)
 				hex_control[landed_on] = "held"
+			else:
+				var escape = get_best_move_target(landed_on)
+				if escape != "" and not _has_enemy_unit(escape):
+					squad_data.sector = escape
+					squad_map.erase(landed_on)
+					squad_map[escape] = squad_name
+					squad_sectors.erase(landed_on)
+					if escape not in squad_sectors:
+						squad_sectors.append(escape)
+				else:
+					# Cornered — no clear tile to run to.
+					SquadManager.apply_overrun_casualty(squad_name)
 
 	# Process pending player reinforcement drop
 	if GameManager.has_pending_reinforcement():

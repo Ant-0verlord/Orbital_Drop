@@ -174,10 +174,18 @@ func end_turn() -> void:
 		return
 
 	current_turn += 1
-	
+
+	# Snapshot who's carrying the data before combat resolves this turn.
+	# _check_carrier_overrun below needs to know whether THIS turn's
+	# combat actually killed them — but a kill clears
+	# GameManager.data_carrier_squad as part of resolving the casualty
+	# (see SquadManager._worsen_status), so by the time combat is done
+	# the name would already be gone if we read it fresh.
+	var carrier_before = GameManager.data_carrier_squad
+
 	# Squads act
 	SquadManager.resolve_turn(pending_allocations)
-	
+
 	# Spawn enemy reinforcements for this turn if scheduled
 	var spawned_sectors = _process_reinforcement_schedule()
 
@@ -189,14 +197,18 @@ func end_turn() -> void:
 	# checking who actually controls the tile afterward.
 	GameManager.check_tower_still_held()
 
-	# If the enemy has fought through to the data carrier's own tile, the
-	# package doesn't survive contact — this is an immediate, hard mission
-	# failure rather than the tile just quietly flipping to enemy control
-	# like any other sector. Squads have to actually keep the enemy off
-	# the carrier; winning the fight after the fact isn't good enough.
-	_check_carrier_overrun()
+	# If the data carrier was actually killed this turn, the package
+	# doesn't survive contact — this is an immediate, hard mission failure
+	# rather than the tile just quietly flipping to enemy control like any
+	# other sector. This used to fire the moment an enemy merely reached
+	# the carrier's tile, even if the carrier was armed and won the fight
+	# (or unarmed and fled) — now it only fires on an actual kill, same as
+	# any other squad: armed squads fight back, unarmed squads run, and
+	# only being worn all the way down to "Lost" counts.
+	_check_carrier_overrun(carrier_before)
 	if mission_over:
 		return
+
 
 	# Mid-turn win check for eliminate-type missions
 	var mission_type = GameManager.mission_type
@@ -353,23 +365,27 @@ func _check_eliminate_priority_win() -> void:
 			"%s was eliminated, but the data carrier never broke contact with enemy forces. Extraction compromised." % GameManager.priority_target_name)
 
 
-# Instant fail: an enemy has reached the exact tile the data carrier is
-# standing on. This only applies to missions where a data carrier can
-# exist at all (eliminate_priority, extract) — everything else no-ops.
-func _check_carrier_overrun() -> void:
+# Instant fail: the data carrier was actually killed this turn — not
+# merely standing on a tile an enemy reached. Squads take real hits
+# before going down (see SquadManager._worsen_status), and an unarmed
+# squad now tries to flee rather than just standing there when an enemy
+# lands on its tile (see EnemyManager.advance_enemies), so this only
+# fires on a genuine kill. `carrier_name` is who was carrying the data
+# BEFORE this turn's combat ran (see end_turn) — a kill clears
+# GameManager.data_carrier_squad, so checking the live value here would
+# always read back empty and this would never fire. This only applies to
+# missions where a data carrier can exist at all (eliminate_priority,
+# extract) — everything else no-ops.
+func _check_carrier_overrun(carrier_name: String) -> void:
 	if GameManager.mission_type not in ["eliminate_priority", "extract"]:
 		return
-	var carrier_name = GameManager.data_carrier_squad
 	if carrier_name == "" or not SquadManager.squads.has(carrier_name):
 		return
 	var carrier = SquadManager.squads[carrier_name]
-	if carrier.status == SquadManager.Status.LOST:
+	if carrier.status != SquadManager.Status.LOST:
 		return
-	if EnemyManager.get_enemy_count_at(carrier.sector) > 0:
-		GameManager.data_destroyed = true
-		GameManager.data_carrier_squad = ""
-		_end_mission(false,
-			"%s was overrun at %s — enemy forces reached the data carrier. The intel did not survive contact." % [carrier_name, carrier.sector])
+	_end_mission(false,
+		"%s was overrun at %s — enemy forces were too much and the carrier was lost. The intel did not survive contact." % [carrier_name, carrier.sector])
 
 
 # Carrier needs to be alive, on the board, and at least

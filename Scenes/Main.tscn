@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bcs0wk4jue5bi"]
 
 [ext_resource type="Script" uid="uid://bsi60820lcavj" path="res://Scripts/MainMenu.gd" id="1_r150o"]
+[ext_resource type="PackedScene" path="res://Scenes/InstructionsPopup.tscn" id="2_instr"]
 
 [node name="MainMenu" type="Control" unique_id=856513521]
 layout_mode = 3
@@ -44,6 +45,10 @@ text = "Play"
 [node name="SettingsBtn" type="Button" parent="VBoxContainer" unique_id=1248729275]
 layout_mode = 2
 text = "Settings"
+
+[node name="InstructionsBtn" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Instructions"
 
 [node name="ExitBtn" type="Button" parent="VBoxContainer" unique_id=1202836156]
 layout_mode = 2
@@ -123,3 +128,6 @@ step = 0.01
 [node name="SettingsCloseBtn" type="Button" parent="SettingsOverlay/SettingsPanel/VBoxContainer" unique_id=502961250]
 layout_mode = 2
 text = "Back"
+
+[node name="InstructionsOverlay" parent="." instance=ExtResource("2_instr")]
+layout_mode = 1
