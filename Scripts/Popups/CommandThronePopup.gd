@@ -29,6 +29,12 @@ var player: Node = null
 
 # Add this button to ReportVBox in the scene, below ReportClose
 @onready var next_mission_btn: Button     = $ReportPanel/ReportVBox/NextMissionBtn
+# Two more buttons on the same report screen, same place — below
+# NextMissionBtn in ReportVBox. Only one of the three ever shows at once:
+# NextMissionBtn on an ordinary mission win, RetryCampaignBtn on a mission
+# failure, ReturnMenuBtn once Mission 5 itself has been won.
+@onready var retry_campaign_btn: Button   = $ReportPanel/ReportVBox/RetryCampaignBtn
+@onready var return_menu_btn: Button      = $ReportPanel/ReportVBox/ReturnMenuBtn
 @onready var help_btn: Button = $PanelContainer/VBoxContainer/ButtonRow/HelpBtn
 @onready var tutorial_overlay: Control = $TutorialOverlay  # add TutorialOverlay.tscn as a child
 @onready var help_nudge: Control = $HelpNudge
@@ -48,14 +54,20 @@ func _ready() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 	report_close.pressed.connect(_on_close_pressed)
 	next_mission_btn.pressed.connect(_on_next_mission_pressed)
+	retry_campaign_btn.pressed.connect(_on_retry_campaign_pressed)
+	return_menu_btn.pressed.connect(_on_return_menu_pressed)
 	help_btn.pressed.connect(_on_help_pressed)
 	visibility_changed.connect(_on_visibility_changed)
 
 	report_panel.visible = false
 	next_mission_btn.visible = false
+	retry_campaign_btn.visible = false
+	return_menu_btn.visible = false
 
 	_style_primary_button(end_turn_btn)
 	_style_primary_button(next_mission_btn)
+	_style_primary_button(retry_campaign_btn)
+	_style_primary_button(return_menu_btn)
 
 	# Inside a ScrollContainer, a child only stretches to the full
 	# available width if explicitly told to expand — otherwise it
@@ -392,6 +404,16 @@ func _show_report(report: Dictionary) -> void:
 	next_mission_btn.visible = won and more_missions
 	next_mission_btn.text = "Advance to %s  ->" % _next_mission_title()
 
+	# Retry button — only on a failed mission, so the player has a way
+	# forward instead of being stuck looking at a failure screen forever.
+	retry_campaign_btn.visible = not won
+	retry_campaign_btn.text = "Retry Campaign"
+
+	# Shown only once Mission 5 itself has been won (a win with no
+	# missions left to advance to) — the campaign is actually finished.
+	return_menu_btn.visible = won and not more_missions
+	return_menu_btn.text = "Return to Main Menu"
+
 
 func _next_mission_title() -> String:
 	var next_idx = GameManager.current_mission + 1
@@ -415,6 +437,52 @@ func _on_next_mission_pressed() -> void:
 
 	# Advance campaign
 	GameManager.advance_to_next_mission()
+
+
+func _on_retry_campaign_pressed() -> void:
+	AudioManager.play_button_other()
+	# Hide report, reset popup state
+	report_panel.visible = false
+	retry_campaign_btn.visible = false
+	var main_panel = get_node_or_null("PanelContainer")
+	if main_panel: main_panel.visible = true
+
+	# Close popup first so player returns to the room
+	visible = false
+	if player and player.has_method("on_popup_closed"):
+		player.on_popup_closed()
+
+	# A full campaign retry needs more than GameManager.start_campaign()
+	# alone. That resets the mission index/supply pools/turn counters, but
+	# deliberately leaves a few things untouched because they're meant to
+	# carry forward between missions WITHIN one campaign run — a squad
+	# that went Lost, or one carrying Mission 4's data package, stays that
+	# way on a normal mission-to-mission advance. None of that should
+	# survive into a brand new attempt, so clear it explicitly here.
+	SquadManager.squads.clear()
+	SquadManager.current_turn = 0
+	SquadManager.interference = 0.0
+	GameManager.data_carrier_squad = ""
+	GameManager.extraction_zone = ""
+	GameManager.start_campaign()
+
+	# Reload Command Centre fresh — same scene-transition GameManager's
+	# "New Game" flow from the main menu already uses, so this ends up in
+	# exactly the same known-good state (rebuilt sky/camera, Mission 1
+	# briefing shown) rather than trying to patch the current scene up.
+	get_tree().change_scene_to_file("res://Scenes/Command_Centre.tscn")
+
+
+func _on_return_menu_pressed() -> void:
+	AudioManager.play_button_other()
+	report_panel.visible = false
+	return_menu_btn.visible = false
+
+	visible = false
+	if player and player.has_method("on_popup_closed"):
+		player.on_popup_closed()
+
+	get_tree().change_scene_to_file("res://Scenes/Main.tscn")
 
 
 func _rating_color(rating: String) -> Color:
