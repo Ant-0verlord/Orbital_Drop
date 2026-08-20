@@ -275,42 +275,61 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 		var at_tower = (GameManager.tower_sector != "" and squad.sector == GameManager.tower_sector)
 		var anchored_at_tower = false
 
-		if at_tower and not GameManager.tower_powered and squad.goal == Goal.POWER_TOWER:
+		# Once the tower is powered, the squad holding it needs to actually
+		# stay there. Nothing previously anchored a HOLD_TOWER squad in
+		# place — the goal-directed movement override further below only
+		# redirects a squad TOWARD the tower when it isn't already standing
+		# on it, so a squad already there fell through to the default
+		# attack/advance targeting and would happily wander off to fight or
+		# capture some other sector, abandoning the tower it was meant to
+		# be holding. That surfaced at mission end as a false "tower lost —
+		# enemy forces recaptured" failure even though the enemy never
+		# actually retook it. POWER_TOWER and HOLD_TOWER are merged into
+		# one anchored block below (previously two separate if/elif arms)
+		# so both can share the same "defend this exact hex first" check.
+		if at_tower and (squad.goal == Goal.POWER_TOWER or squad.goal == Goal.HOLD_TOWER):
 			anchored_at_tower = true
-			if effective_fuel:
-				squad.tower_fuel_turns += 1
-				squad.tower_fuel_turns_waited = 0
-				squad.turns_unsupplied = 0
-				if squad.tower_fuel_turns >= 2:
-					GameManager.activate_tower()
-					squad.goal = Goal.HOLD_TOWER
-					action = "powered_tower"
+
+			# Defend the hex itself before anything else. An anchored tower
+			# squad used to just sit "powering"/"holding" and ignore an
+			# enemy that had moved onto the same tile — EnemyManager's
+			# overrun check only resolves combat the turn contact is FIRST
+			# made; after that the tile just sat contested indefinitely
+			# with this squad never actually fighting back, taking a fresh
+			# overrun casualty every following turn until it (and the
+			# tower with it) was worn down for good. This is also the
+			# fight Squad Davan needed but never got — reinforced right
+			# onto the tower, then ground down turn after turn by an enemy
+			# standing on the same hex it was never allowed to shoot at.
+			if effective_arms and EnemyManager.get_enemy_count_at(squad.sector) > 0:
+				EnemyManager.fight_at(squad.sector, squad_name)
+				if randf() < ARM_CASUALTY_CHANCE:
+					casualty_from_kill = true
+
+			if squad.goal == Goal.POWER_TOWER:
+				if effective_fuel:
+					squad.tower_fuel_turns += 1
+					squad.tower_fuel_turns_waited = 0
+					squad.turns_unsupplied = 0
+					if squad.tower_fuel_turns >= 2:
+						GameManager.activate_tower()
+						squad.goal = Goal.HOLD_TOWER
+						action = "powered_tower"
+					else:
+						action = "powering_tower"
 				else:
-					action = "powering_tower"
+					squad.tower_fuel_turns_waited += 1
+					squad.tower_fuel_turns = 0  # fuel supply interrupted — reset progress
+					if squad.tower_fuel_turns_waited >= 2:
+						squad.goal = Goal.FALLBACK
+						action = "abandoned_tower"
+					else:
+						action = "waiting_at_tower"
 			else:
-				squad.tower_fuel_turns_waited += 1
-				squad.tower_fuel_turns = 0  # fuel supply interrupted — reset progress
-				if squad.tower_fuel_turns_waited >= 2:
-					squad.goal = Goal.FALLBACK
-					action = "abandoned_tower"
-				else:
-					action = "waiting_at_tower"
+				action = "holding_tower"
 			# Either way, this squad stays put — the movement block below
 			# is skipped entirely (anchored_at_tower gates it off).
 			# Jump straight to medi-pack and banking sections below
-		elif at_tower and squad.goal == Goal.HOLD_TOWER:
-			# Once the tower is powered, the squad holding it needs to
-			# actually stay there. Nothing previously anchored a HOLD_TOWER
-			# squad in place — the goal-directed movement override further
-			# below only redirects a squad TOWARD the tower when it isn't
-			# already standing on it, so a squad already there fell through
-			# to the default attack/advance targeting and would happily
-			# wander off to fight or capture some other sector, abandoning
-			# the tower it was meant to be holding. That surfaced at
-			# mission end as a false "tower lost — enemy forces recaptured"
-			# failure even though the enemy never actually retook it.
-			anchored_at_tower = true
-			action = "holding_tower"
 
 		# -------------------------------------------------------
 		# Obstacle check — only risk this when relying on the
@@ -371,8 +390,14 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 					# targeting above), let it stand — that's exactly the
 					# "fight enemies that come to attack it" behaviour.
 					# Otherwise, only redirect back if we've drifted outside
-					# the defence radius; inside it, default targeting is
-					# free to mop up/capture nearby tiles.
+					# the defence radius; inside it, only move for a genuine
+					# reason (real, unclaimed enemy territory next door) —
+					# get_best_move_target() (used by the plain default
+					# targeting above) always hands back SOME neighbour even
+					# when there's nothing actually worth taking, which made
+					# a perimeter squad restlessly hop between already-
+					# secured tiles right next to the tower instead of
+					# holding the line, and read as "won't stay put."
 					var tower_d = GameManager.tower_sector
 					if tower_d != "" and not engaging_enemy:
 						var dist_to_tower = EnemyManager.get_distance_between(current_sector, tower_d)
@@ -385,12 +410,17 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 							# distance 0, so without this a squad that somehow
 							# still ends up here would wander off the exact
 							# hex it's meant to be defending.
-							step_target = current_sector
+							break
 						elif dist_to_tower > DEFEND_TOWER_RADIUS:
 							if tower_d in EnemyManager.adjacency.get(current_sector, []):
 								step_target = tower_d
 							else:
 								step_target = _path_toward(current_sector, tower_d)
+						elif not EnemyManager.has_fresh_capture_target(current_sector):
+							# Nothing real to move for — hold the perimeter
+							# instead of shuffling sideways. Falls through to
+							# the stationary "held" / combat handling below.
+							break
 
 				elif squad.goal == Goal.SECURE_ZONE:
 					# Push toward the extraction zone ahead of the shuttle
@@ -889,6 +919,14 @@ func _assign_goals() -> void:
 			for squad_name in squads:
 				var s = squads[squad_name]
 				if s.status == Status.LOST or s.get("has_data", false):
+					continue
+				# A squad already garrisoning the tower (standing right on
+				# it) never gets pulled off to go hunt the priority target
+				# instead — that was another way a squad reinforced onto
+				# the tower could end up yanked away from it, on top of the
+				# tower_candidates cap fixed above. It's already doing the
+				# one job that matters most; someone else can hunt.
+				if tower_sector != "" and s.sector == tower_sector:
 					continue
 				var d = EnemyManager.get_distance_between(s.sector, pt_sector)
 				if d < best_dist:

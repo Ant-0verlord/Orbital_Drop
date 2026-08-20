@@ -198,6 +198,18 @@ func get_best_move_target(from_sector: String, avoid_sectors: Array = []) -> Str
 	return neighbors[0]
 
 
+# Tier-1 check from get_best_move_target() above, exposed on its own for
+# DEFEND_TOWER squads: is there actual unclaimed enemy territory next
+# door, i.e. a real reason to move at all? Used to stop a tower-perimeter
+# squad shuffling sideways onto an already-secured neighbouring tile just
+# because get_best_move_target() always hands back *some* hex.
+func has_fresh_capture_target(from_sector: String) -> bool:
+	for n in adjacency.get(from_sector, []):
+		if not _has_enemy_unit(n) and hex_control_turn_start.get(n, "") == "enemy":
+			return true
+	return false
+
+
 func get_best_attack_target(from_sector: String) -> String:
 	var neighbors = adjacency.get(from_sector, [])
 	for n in neighbors:
@@ -287,9 +299,25 @@ func advance_enemies(allocations: Dictionary) -> void:
 			var alloc      = allocations.get(squad_name, {})
 			var has_arms   = alloc.get("Armaments", 0) > 0
 			var has_surprise = squad_data.get("surprise_bonus", false)
+			var anchored_tower_duty = squad_data.get("goal", -1) in [SquadManager.Goal.POWER_TOWER, SquadManager.Goal.HOLD_TOWER]
 			if has_arms or has_surprise:
 				enemy_units.erase(unit)
 				hex_control[landed_on] = "held"
+			elif anchored_tower_duty:
+				# A squad anchored on POWER_TOWER/HOLD_TOWER duty is
+				# standing on the tower hex itself specifically to hold it —
+				# fleeing (the general case below) would hand the enemy the
+				# tower for free the instant it reached the tile, which is
+				# exactly how a reinforced-onto-the-tower squad ended up
+				# wandering off and away from the objective it was just
+				# dropped onto. Take the hit and stay dug in instead;
+				# GameManager.check_tower_still_held() (called right after
+				# advance_enemies()) is what actually decides whether the
+				# tower's power survives this contact — a "contested" hex
+				# (squad AND enemy both here) doesn't cost it immediately,
+				# only losing the squad outright — or fully losing the hex
+				# — does.
+				SquadManager.apply_overrun_casualty(squad_name)
 			else:
 				var escape = get_best_move_target(landed_on)
 				if escape != "" and not _has_enemy_unit(escape):
