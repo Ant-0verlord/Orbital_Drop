@@ -161,6 +161,12 @@ func _rebuild_transmissions() -> void:
 var _help_attention: bool = false
 var _attention_pulse: float = 0.0
 
+# Lets VoxCaster.gd (the 3D console object this popup lives under) know
+# whenever there's something new to check, so it can show a floating "!"
+# marker above the console out in the world — not just the in-popup Help
+# button pulse below, which nobody sees until they've already opened it.
+signal attention_changed(on: bool)
+
 func _process(delta: float) -> void:
 	if not _help_attention or help_btn == null:
 		return
@@ -173,6 +179,7 @@ func set_help_attention(on: bool) -> void:
 	_attention_pulse = 0.0
 	if not on and help_btn != null:
 		help_btn.modulate = Color.WHITE
+	attention_changed.emit(on)
 
 func _on_help_pressed() -> void:
 	AudioManager.play_button_bottom()

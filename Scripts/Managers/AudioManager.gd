@@ -94,8 +94,15 @@ func play_button_other() -> void:
 	_play_sfx(BUTTON_CLICK_OTHER)
 
 
+# The source file plays quite loud/harsh at its native level next to
+# everything else routed through this manager — knocked it down a fair
+# bit by default so it reads as an alert chime instead of a jump-scare.
+# Bump ALARM_VOLUME_DB back toward 0 (or positive) if it ends up too
+# quiet once actually heard in-game.
+const ALARM_VOLUME_DB: float = -10.0
+
 func play_alarm() -> void:
-	_play_sfx(ALARM)
+	_play_sfx(ALARM, ALARM_VOLUME_DB)
 
 
 func play_cannon_fire() -> void:

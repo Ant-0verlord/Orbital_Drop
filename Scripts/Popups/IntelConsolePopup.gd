@@ -64,7 +64,13 @@ func _on_visibility_changed() -> void:
 
 var _help_attention: bool = false
 var _attention_pulse: float = 0.0
-var data_passed_info: Dictionary = {}	
+var data_passed_info: Dictionary = {}
+
+# Lets IntelConsole.gd (the 3D console object this popup lives under) know
+# whenever there's something new to check, so it can show a floating "!"
+# marker above the console out in the world — not just the in-popup Help
+# button pulse below, which nobody sees until they've already opened it.
+signal attention_changed(on: bool)
 
 func _on_data_passed(from_squad: String, to_squad: String) -> void:
 	data_passed_info = {
@@ -86,7 +92,8 @@ func set_help_attention(on: bool) -> void:
 	_help_attention = on
 	_attention_pulse = 0.0
 	if not on and help_btn != null:
-		help_btn.modulate = Color.WHITE	
+		help_btn.modulate = Color.WHITE
+	attention_changed.emit(on)
 
 func _on_turn_started(_turn: int) -> void:
 	if visible:
