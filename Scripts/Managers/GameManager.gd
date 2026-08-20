@@ -760,7 +760,7 @@ var missions: Array = [
 		# the pool needs enough headroom to actually fight through them
 		# (each armed engagement costs 2 points) rather than only
 		# covering a couple of turns.
-		"supply_pool":        { "Armaments": 8, "Medi-Packs": 4, "Fuel Cells": 4 },
+		"supply_pool":        { "Armaments": 12, "Medi-Packs": 8, "Fuel Cells": 8 },
 		"reinforcement_pool": 0,
 		"orbital_strikes": 0,
 		"sectors":    M1_SECTORS,
@@ -794,7 +794,7 @@ var missions: Array = [
 		# from the turn 5/6 reinforcement wave (7 total) actually need to
 		# die to win, not just be pushed off sectors. Armaments bumped a
 		# few points so that's realistically affordable.
-		"supply_pool":        { "Armaments": 10, "Medi-Packs": 4, "Fuel Cells": 6 },
+		"supply_pool":        { "Armaments": 14, "Medi-Packs": 8, "Fuel Cells": 10 },
 		"reinforcement_pool": 1,
 		"sectors":    M2_SECTORS,
 		"adjacency":  M2_ADJACENCY,
@@ -835,7 +835,7 @@ var missions: Array = [
 	# everyone through Alpha-7B first keeps the whole squad funnelling
 	# down the same corridor instead of scattering across the map.
 	"route_waypoint":    "Alpha-7B",
-	"supply_pool":       { "Armaments": 6, "Medi-Packs": 4, "Fuel Cells": 6 },
+	"supply_pool":       { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
 	"reinforcement_pool": 1,
 	"orbital_strikes":   1,
 	"sectors":    M3_SECTORS,
@@ -902,7 +902,7 @@ var missions: Array = [
 		# splits at least one squad off to hunt the priority target
 		# separately from whoever's on tower duty, so demand on the pool
 		# is genuinely higher than the other missions.
-		"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
+		"supply_pool":        { "Armaments": 14, "Medi-Packs": 12, "Fuel Cells": 14 },
 		"reinforcement_pool": 1,
 		"orbital_strikes":    2,
 		"sectors":    M4_SECTORS,
@@ -949,7 +949,7 @@ var missions: Array = [
 	# Bumped up a bit like M4 — final mission, enemies rushing the
 	# extraction zone from multiple vectors, worth having some buffer
 	# left to fight through rather than running dry right before the end.
-	"supply_pool":        { "Armaments": 10, "Medi-Packs": 8, "Fuel Cells": 10 },
+	"supply_pool":        { "Armaments": 14, "Medi-Packs": 12, "Fuel Cells": 14 },
 	"reinforcement_pool": 1,
 	"orbital_strikes":    1,
 	"sectors":    M5_SECTORS,
