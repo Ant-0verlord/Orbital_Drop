@@ -252,6 +252,14 @@ func _draw() -> void:
 				fill = COLOR_PLACEMENT_HOVER
 			else:
 				fill = _state_color(state).lerp(COLOR_PLACEMENT, 0.35)
+				# An occupied hex should still read as dangerous even mid-
+				# placement — hot-dropping onto an enemy is a deliberate,
+				# valid move, and an orbital strike needs to be aimed
+				# knowing exactly which hexes it'll actually hit. Tinted
+				# rather than fully overridden so it doesn't fight with
+				# the placement-mode colour language.
+				if enemy_count > 0:
+					fill = fill.lerp(COLOR_ENEMY, 0.45)
 		else:
 			fill = _state_color(state)
 			if enemy_count > 0:
@@ -298,6 +306,8 @@ func _draw() -> void:
 				border = COLOR_PLACED
 			elif sector == hovered_sector:
 				border = COLOR_PLACEMENT_HOVER
+			elif enemy_count > 0:
+				border = COLOR_ENEMY_BORDER
 			else:
 				border = COLOR_PLACEMENT * Color(1, 1, 1, 0.5)
 		elif enemy_count > 0 and enemy_glitching:
@@ -354,15 +364,32 @@ func _draw() -> void:
 					center + Vector2(-len(marker) * 3.5, below_names_y),
 					marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.95))
 		else:
-			# Placement mode — show drop indicator on hovered/placed hex
+			# Placement mode — show the drop indicator on the hovered/
+			# placed hex, but never let it hide whether an enemy is
+			# actually standing there. A plain, non-pulsing marker (the
+			# glitch/static variant is skipped here) keeps it readable
+			# while you're aiming.
+			var enemy_marker = ("✕" if enemy_count == 1 else "✕×%d" % enemy_count) if enemy_count > 0 else ""
 			if sector == placed_sector:
 				draw_string(ThemeDB.fallback_font,
 					center + Vector2(-8, below_names_y),
 					"▼ DROP", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, COLOR_PLACED)
+				if enemy_marker != "":
+					draw_string(ThemeDB.fallback_font,
+						center + Vector2(-len(enemy_marker) * 3.5, below_names_y + 13),
+						enemy_marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.95))
 			elif sector == hovered_sector:
 				draw_string(ThemeDB.fallback_font,
 					center + Vector2(-8, below_names_y),
 					"▼", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, COLOR_PLACEMENT_HOVER)
+				if enemy_marker != "":
+					draw_string(ThemeDB.fallback_font,
+						center + Vector2(-len(enemy_marker) * 3.5, below_names_y + 13),
+						enemy_marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.95))
+			elif enemy_marker != "":
+				draw_string(ThemeDB.fallback_font,
+					center + Vector2(-len(enemy_marker) * 3.5, below_names_y),
+					enemy_marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.4, 0.4, 0.85))
 		
 		# Special sector symbols
 		if not placement_mode and special_type != "":

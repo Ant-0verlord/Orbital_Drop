@@ -216,15 +216,67 @@ func _get_objective_text(data: Dictionary) -> String:
 			return "Hold the theatre around the extraction zone (%s) — engage freely. Once the shuttle is inbound (%d turns before mission end), break off and converge to board. Data carrier must extract." % [ez, TurnManager.SHUTTLE_ARRIVAL_WINDOW]
 	return data.get("objective", "")
 
+# "Held: X / Y required" only makes sense for capture-type missions
+# (M1). Every other mission type shows its own progress/objective
+# readout instead — mirrors CommandThronePopup's _update_held_label().
+func _update_held_label() -> void:
+	if not held_label:
+		return
+	var mission_type = GameManager.mission_type
+	match mission_type:
+		"capture":
+			var held = EnemyManager.get_held_count()
+			var req  = TurnManager.win_condition_hexes
+			held_label.text = "Held: %d / %d required" % [held, req]
+			held_label.add_theme_color_override("font_color",
+				Color(0.4, 0.9, 0.4) if held >= req else Color(0.9, 0.6, 0.2))
+		"eliminate":
+			var remaining = EnemyManager.get_total_enemy_count()
+			held_label.text = "Enemies: %d remaining" % remaining
+			held_label.add_theme_color_override("font_color",
+				Color(0.4, 0.9, 0.4) if remaining == 0 else Color(0.9, 0.6, 0.2))
+		"hold_tower":
+			var powered = GameManager.tower_powered
+			held_label.text = "Tower: %s" % ("ACTIVE ⚡" if powered else "UNPOWERED")
+			held_label.add_theme_color_override("font_color",
+				Color(0.4, 0.9, 0.4) if powered else Color(0.9, 0.6, 0.2))
+		"eliminate_priority":
+			var alive = GameManager.priority_target_alive
+			if alive:
+				held_label.text = "Target: AT LARGE ✦"
+				held_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+			else:
+				var carrier_name = GameManager.data_carrier_squad
+				var carrier_ok = carrier_name != "" and SquadManager.squads.has(carrier_name) \
+					and SquadManager.squads[carrier_name].status != SquadManager.Status.LOST
+				if not carrier_ok:
+					held_label.text = "Data carrier lost ✗"
+					held_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+				else:
+					var dist = EnemyManager.get_distance_to_nearest_enemy(SquadManager.squads[carrier_name].sector)
+					var safe = dist >= TurnManager.DATA_CARRIER_SAFE_DISTANCE
+					held_label.text = "Carrier clear: %d / %d tiles" % [min(dist, TurnManager.DATA_CARRIER_SAFE_DISTANCE), TurnManager.DATA_CARRIER_SAFE_DISTANCE]
+					held_label.add_theme_color_override("font_color",
+						Color(0.4, 0.9, 0.4) if safe else Color(0.9, 0.6, 0.2))
+		"extract":
+			var ez = GameManager.extraction_zone
+			var at_ez = 0
+			for squad in SquadManager.get_squads_for_ui():
+				if squad.sector == ez and squad.status != SquadManager.Status.LOST:
+					at_ez += 1
+			var turns_left = TurnManager.max_turns - TurnManager.current_turn
+			if turns_left > TurnManager.SHUTTLE_ARRIVAL_WINDOW:
+				held_label.text = "Holding theatre — shuttle in %d turns" % (turns_left - TurnManager.SHUTTLE_ARRIVAL_WINDOW)
+				held_label.add_theme_color_override("font_color", Color(0.6, 0.75, 0.95))
+			else:
+				held_label.text = "SHUTTLE INBOUND — At extraction: %d squad(s)" % at_ez
+				held_label.add_theme_color_override("font_color",
+					Color(0.4, 0.9, 0.4) if at_ez > 0 else Color(0.9, 0.6, 0.2))
+
 func _rebuild_squad_rows() -> void:
 	if turn_label:
 		turn_label.text = "Turn %d / %d" % [TurnManager.current_turn, TurnManager.max_turns]
-	if held_label:
-		var held = EnemyManager.get_held_count()
-		var req  = TurnManager.win_condition_hexes
-		held_label.text = "Held: %d / %d required" % [held, req]
-		held_label.add_theme_color_override("font_color",
-			Color(0.4, 0.9, 0.4) if held >= req else Color(0.9, 0.6, 0.2))
+	_update_held_label()
 
 	squad_rows.clear()
 	for child in squad_container.get_children():
