@@ -137,30 +137,50 @@ void sky() {
 		float ndotl = offset.x * ld.x + offset.y * ld.y + nz * 0.4;
 		ndotl = clamp((ndotl + 0.2) / 1.2, 0.0, 1.0);
 
-		// --- Terrain: three fbm passes at different scales — big
-		// continent/lowland shapes, a mid pass to break up their edges,
-		// and a fine high-frequency pass weighted more heavily toward
-		// the limb (edge_weight, using the same nz falloff as the rim
-		// light below) so the coastline/terminator near the disc's edge
-		// reads as finely detailed rather than smooth/soft like the
-		// centre of the disc.
-		vec2 surf = offset.xy * 3.6;
+		// --- Terrain: the planet fills a huge chunk of the screen at this
+		// angular size, so the old settings (low frequency + a wide 0.38-0.62
+		// smoothstep blend between lowland/highland) put maybe 3-4 soft
+		// blobs across the whole visible disc with fuzzy, wide-blended
+		// edges — technically not "blocky" any more, but it read as an
+		// out-of-focus smear rather than a textured surface. Fixed by (1)
+		// roughly doubling every sampling frequency so there's actually
+		// enough spatial detail at this size, (2) a ridge-noise pass
+		// (fold the noise around its midpoint) for sharp mountain-range/
+		// crater-rim lines instead of only smooth rolling blobs, and (3)
+		// a much narrower smoothstep band so lowland/highland meet at a
+		// crisp coastline instead of a soft gradient.
+		vec2 surf = offset.xy * 7.0;
 		float continents = fbm(surf);
-		float detail = fbm(surf * 3.3 + 11.0);
-		float fine_edge = fbm(surf * 9.0 + 47.0);
+		float detail = fbm(surf * 2.6 + 11.0);
+		float fine_edge = fbm(surf * 6.5 + 47.0);
+		float ridge_n = noise2(surf * 4.1 + 91.0);
+		float ridge = 1.0 - abs(ridge_n * 2.0 - 1.0);
+		ridge = ridge * ridge;
 		float edge_weight = clamp(1.0 - nz, 0.0, 1.0);
-		float terrain = clamp(continents * 0.6 + detail * 0.25 + fine_edge * 0.15 * (0.4 + 0.6 * edge_weight), 0.0, 1.0);
-		vec3 surface = mix(planet_lowland_color, planet_color, smoothstep(0.38, 0.62, terrain));
+		float terrain = clamp(
+			continents * 0.50
+			+ detail * 0.20
+			+ fine_edge * 0.12 * (0.4 + 0.6 * edge_weight)
+			+ ridge * 0.16,
+			0.0, 1.0);
+		vec3 surface = mix(planet_lowland_color, planet_color, smoothstep(0.44, 0.56, terrain));
 
 		// --- Drifting cloud layer, sampled with a slow time-based offset
 		// so the planet visibly turns/breathes rather than sitting static.
-		vec2 cloud_uv = offset.xy * 2.1 + vec2(TIME * planet_cloud_speed, TIME * planet_cloud_speed * 0.3);
+		// Frequency bumped and the mask band narrowed to match the sharper
+		// terrain instead of sitting as a second layer of soft haze on top
+		// of it.
+		vec2 cloud_uv = offset.xy * 3.4 + vec2(TIME * planet_cloud_speed, TIME * planet_cloud_speed * 0.3);
 		float clouds = fbm(cloud_uv);
-		float cloud_mask = smoothstep(0.55, 0.78, clouds) * 0.7;
+		float cloud_mask = smoothstep(0.62, 0.72, clouds) * 0.7;
 		surface = mix(surface, planet_cloud_color, cloud_mask);
 
-		// --- Day/night shading over the textured surface.
-		vec3 shaded = mix(planet_shadow_color, surface, ndotl);
+		// --- Day/night shading over the textured surface. The ridge
+		// pattern doubles as a cheap fake-relief term here (small light/dark
+		// push based on "elevation") so lit terrain shows texture instead
+		// of one flat-lit tone across the whole surface.
+		float relief = (ridge - 0.5) * 0.10;
+		vec3 shaded = mix(planet_shadow_color, surface, clamp(ndotl + relief * ndotl, 0.0, 1.0));
 
 		// --- Scattered city lights on the dark side — a small dot placed
 		// at a pseudo-random point within each triggered grid cell, not
