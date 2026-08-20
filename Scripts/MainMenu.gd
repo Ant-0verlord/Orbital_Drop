@@ -273,8 +273,8 @@ func _on_ticker_timeout() -> void:
 # "notice me" nudge instead of a metronome. Reuses the same
 # create_tween()-driven approach as the footer ticker fade above.
 # -------------------------------------------------------
-const _INSTRUCTIONS_FLASH_MIN_WAIT: float = 13.0
-const _INSTRUCTIONS_FLASH_MAX_WAIT: float = 22.0
+const _INSTRUCTIONS_FLASH_MIN_WAIT: float = 4.0
+const _INSTRUCTIONS_FLASH_MAX_WAIT: float = 7.0
 
 var _instructions_flash_timer: Timer = null
 var _instructions_flash_tween: Tween = null

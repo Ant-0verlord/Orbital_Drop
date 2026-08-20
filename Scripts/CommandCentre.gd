@@ -62,7 +62,18 @@ func _build_space_sky() -> void:
 	# it's shown — the default is low enough that our procedural planet
 	# terrain (fine noise detail) came out as visibly blocky squares
 	# instead of smooth continents. Bumping this fixed that.
-	sky.radiance_size = Sky.RADIANCE_SIZE_1024
+	#
+	# Bumped again from 1024 -> 2048 (the largest standard tier below
+	# Godot's RADIANCE_SIZE_MAX) after the latest planet rework added a
+	# lot more fine detail (coastlines, clouds, city lights) — at 1024 the
+	# now much-larger, much-closer-looking disc was visibly soft/blurry
+	# in-game even though it wasn't a rendering bug. This quadruples the
+	# texel count (2048² vs 1024², × 6 cube faces), which does cost more
+	# to re-bake — the sky re-renders in realtime every frame because the
+	# shader uses TIME (cloud drift, aurora). If this turns out to be too
+	# heavy on lower-end hardware, dropping back to RADIANCE_SIZE_1024
+	# here is the one line to revert.
+	sky.radiance_size = Sky.RADIANCE_SIZE_2048
 
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY

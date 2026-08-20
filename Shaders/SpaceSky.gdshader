@@ -88,6 +88,12 @@ uniform vec3 planet_city_light_warm : source_color = vec3(1.0, 0.82, 0.5);
 uniform vec3 planet_city_light_cool : source_color = vec3(0.55, 0.75, 1.0); // rarer blue-white clusters
 uniform float planet_aurora_amount : hint_range(0.0, 1.0) = 0.4; // faint polar aurora on the night side
 
+// --- Occasional small explosions — rare bright flashes scattered across
+// the land surface, hinting at combat happening somewhere on the world
+// below rather than a dead, static disc.
+uniform vec3 planet_explosion_color : source_color = vec3(1.0, 0.65, 0.2);
+uniform float planet_explosion_amount : hint_range(0.0, 2.0) = 1.0; // overall flash brightness
+
 // Sine-based hashes (fract(sin(dot(...)) * big_const)) are the textbook
 // example everywhere online, but on real GPU sin() implementations they
 // lose precision hard once the dot() input gets into the hundreds/thousands
@@ -182,18 +188,51 @@ void sky() {
 	// the disc edge/glow stay proportionate now that it's much bigger.
 	vec3 pd = normalize(planet_dir);
 	float d = distance(dir, pd);
-	float edge_margin = planet_angular_radius * 0.10;
+	// Narrowed from 0.10 -> 0.045 so the disc itself reads as a clean,
+	// definitive edge instead of a soft feathered boundary — the outer
+	// glow_margin below (unchanged) still gives it a faint atmospheric
+	// halo just past that crisp cutoff, so it doesn't look hard-edged
+	// like a cardboard cutout, just well-defined.
+	float edge_margin = planet_angular_radius * 0.045;
 	float glow_margin = planet_angular_radius * 0.14;
 	if (d < planet_angular_radius + glow_margin) {
-		vec3 offset = (dir - pd) / max(planet_angular_radius, 0.001);
+		// A proper local tangent-plane basis (right/up) perpendicular to
+		// pd, so the "flat disc" is a genuine projection centred on the
+		// planet's actual sky direction. The previous version used the
+		// raw world-space (dir - pd).xy difference directly as the 2D
+		// surface coordinate, silently discarding world Z entirely —
+		// harmless when pd points mostly along world Z, but pd here sits
+		// almost exactly in the world X/Y plane (planet_dir's Z is only
+		// 0.04), so the disc's wide visible cone wraps around BOTH sides
+		// of world Z = 0. Two genuinely different sky directions — one
+		// slightly "above" pd's plane, one slightly "below" — could then
+		// land on the exact same (x, y) pair and render identical
+		// terrain, which is exactly what showed up in-game as a mirrored
+		// double-planet even though it never appeared in the offline
+		// preview (that preview only ever sampled one clean 2D grid, so
+		// it had no way to reproduce a collision that only exists in the
+		// real 3D-to-2D mapping).
+		vec3 world_up = (abs(pd.y) < 0.99) ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+		vec3 tangent_right = normalize(cross(world_up, pd));
+		vec3 tangent_up = cross(pd, tangent_right);
+
+		vec3 delta = dir - pd;
+		vec2 offset = vec2(dot(delta, tangent_right), dot(delta, tangent_up)) / max(planet_angular_radius, 0.001);
 		float nz = sqrt(max(0.0, 1.0 - dot(offset, offset)));
 		vec3 ld = normalize(planet_light_dir);
+
+		// ld projected into the same tangent-plane basis as `offset` —
+		// needed now that offset is a local (right/up) coordinate rather
+		// than raw world X/Y, so the "sun" direction has to be measured
+		// against those same two axes to mean anything.
+		float ld_right = dot(ld, tangent_right);
+		float ld_up = dot(ld, tangent_up);
 
 		// Raw (unclamped) light term drives the sharp terminator line;
 		// the clamped/remapped version drives the broad day/night mix so
 		// the lit hemisphere doesn't go fully flat white at the sub-solar
 		// point.
-		float raw_ndotl = offset.x * ld.x + offset.y * ld.y + nz * 0.4;
+		float raw_ndotl = offset.x * ld_right + offset.y * ld_up + nz * 0.4;
 		float ndotl = clamp((raw_ndotl + 0.2) / 1.2, 0.0, 1.0);
 
 		// ---------------------------------------------------------------
@@ -294,6 +333,31 @@ void sky() {
 		// light after the ground below has gone dark.
 		float cloud_lit = clamp(ndotl * 0.6 + 0.4, 0.0, 1.0);
 		shaded = mix(shaded, planet_cloud_color * cloud_lit, cloud_mask);
+
+		// ---------------------------------------------------------------
+		// OCCASIONAL EXPLOSIONS — rare, brief, small bright flashes on land,
+		// visible day or night (unlike the city lights below, which only
+		// show up on the dark side). Each grid cell gets its own fixed
+		// cadence from a per-cell hash (a period + phase), so flashes fire
+		// at unpredictable, spread-out moments instead of in lockstep, and
+		// only a small fraction of cells ever flash at all — most of the
+		// disc stays quiet most of the time, with the odd small burst
+		// popping up somewhere every several seconds.
+		// ---------------------------------------------------------------
+		vec2 exp_uv = offset.xy * 5.0;
+		vec2 exp_cell = floor(exp_uv);
+		vec2 exp_local = fract(exp_uv);
+		float exp_active_cell = step(hash12(exp_cell + 99.0), 0.15);
+		float exp_period = mix(14.0, 30.0, hash12(exp_cell + 41.0));
+		float exp_phase = hash12(exp_cell + 5.0) * exp_period;
+		float exp_t = mod(TIME + exp_phase, exp_period);
+		float exp_duration = 0.5;
+		float exp_curve = smoothstep(0.0, 0.05, exp_t) * (1.0 - smoothstep(0.05, exp_duration, exp_t));
+		vec2 exp_pos = vec2(hash12(exp_cell + 3.3), hash12(exp_cell + 8.8));
+		float exp_radius = 0.10 + hash12(exp_cell + 12.0) * 0.05;
+		float exp_mask = smoothstep(exp_radius, 0.0, distance(exp_local, exp_pos));
+		float explosion = exp_active_cell * exp_curve * exp_mask * land_mask * planet_explosion_amount;
+		shaded += planet_explosion_color * explosion;
 
 		// ---------------------------------------------------------------
 		// NIGHT SIDE — scattered settlement lights, clustered rather than
