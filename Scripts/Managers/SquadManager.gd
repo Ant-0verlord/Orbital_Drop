@@ -181,7 +181,17 @@ func reset_tower_progress() -> void:
 		squad.tower_fuel_turns = 0
 		squad.tower_fuel_turns_waited = 0
 		if squad.goal == Goal.HOLD_TOWER:
-			squad.goal = Goal.ADVANCE
+			if squad.sector == GameManager.tower_sector:
+				# Still physically standing on the tower right now — send it
+				# straight to POWER_TOWER instead of releasing it all the way
+				# to a bare ADVANCE. The next _assign_goals() pass would
+				# reassign it back to tower duty anyway (see the fix there),
+				# but this avoids even a one-turn window where the squad's
+				# stored goal says "Advancing" while it's still standing
+				# right on the objective.
+				squad.goal = Goal.POWER_TOWER
+			else:
+				squad.goal = Goal.ADVANCE
 
 func _on_priority_target_eliminated(squad_name: String, sector: String) -> void:
 	# Fires for every way the priority target can go down — normal combat,
@@ -366,7 +376,17 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 					var tower_d = GameManager.tower_sector
 					if tower_d != "" and not engaging_enemy:
 						var dist_to_tower = EnemyManager.get_distance_between(current_sector, tower_d)
-						if dist_to_tower > DEFEND_TOWER_RADIUS:
+						if dist_to_tower == 0:
+							# Standing exactly on the tower — _assign_goals()
+							# should never actually send a squad here with
+							# DEFEND_TOWER any more (see the tower_candidates
+							# fix above), but hold this as a safety net too:
+							# "free to mop up nearby tiles" trivially includes
+							# distance 0, so without this a squad that somehow
+							# still ends up here would wander off the exact
+							# hex it's meant to be defending.
+							step_target = current_sector
+						elif dist_to_tower > DEFEND_TOWER_RADIUS:
 							if tower_d in EnemyManager.adjacency.get(current_sector, []):
 								step_target = tower_d
 							else:
@@ -916,16 +936,35 @@ func _assign_goals() -> void:
 
 	tower_candidates.sort_custom(func(a, b): return a.dist < b.dist)
 
-	var tower_slots = 2  # up to 2 squads actively push for / hold the tower
-	for i in range(tower_candidates.size()):
-		var entry = tower_candidates[i]
+	# Any squad already standing exactly on the tower holds/powers it,
+	# uncapped — that used to be folded into the tower_slots == 2 cap
+	# below along with everyone still marching toward it, which was the
+	# actual bug behind a squad reinforced (or already stationed) directly
+	# onto the tower drifting back off it: with 3+ tower candidates and 2+
+	# of them already sitting AT the tower (e.g. a reinforcement dropped
+	# right on it while another squad was already holding), whichever one
+	# lost the top-2 cut fell to DEFEND_TOWER instead — a goal that's
+	# allowed to freely roam within DEFEND_TOWER_RADIUS, which trivially
+	# includes distance 0, so it would "roam" straight off the exact hex
+	# it was standing on. The slot cap only makes sense for how many
+	# squads get pulled off other duty to converge on the tower from a
+	# distance — a squad that's already there has already achieved the
+	# objective and should never lose it to a headcount limit.
+	var en_route: Array = []
+	for entry in tower_candidates:
+		var squad = squads[entry.name]
+		if squad.sector == tower_sector:
+			squad.goal = Goal.HOLD_TOWER if tower_powered else Goal.POWER_TOWER
+		else:
+			en_route.append(entry)
+
+	var tower_slots = 2  # up to 2 additional squads actively march to reinforce the tower
+	for i in range(en_route.size()):
+		var entry = en_route[i]
 		var squad = squads[entry.name]
 
 		if i < tower_slots:
-			if squad.sector == tower_sector:
-				squad.goal = Goal.HOLD_TOWER if tower_powered else Goal.POWER_TOWER
-			else:
-				squad.goal = Goal.POWER_TOWER
+			squad.goal = Goal.POWER_TOWER
 		elif entry.dist <= DEFEND_TOWER_RADIUS:
 			# Close enough to the tower to matter, but not needed to
 			# power/hold it — dig in and fight off anything that

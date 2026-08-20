@@ -95,6 +95,26 @@ func _ready() -> void:
 func _on_visibility_changed() -> void:
 	if not visible:
 		return
+
+	# First time this popup is ever opened during the forced Turn 1
+	# allocations (see is_forced_turn / _apply_forced_allocation() below) —
+	# the squad checkboxes show up already ticked and greyed out, which
+	# reads as broken unless the player knows that's intentional. One-time
+	# explanation, shown INSTEAD OF the ordinary Help-button nudge below
+	# (not in addition to it) so the two don't stack into a dimmed screen
+	# with an arrow pointing through it.
+	var is_forced_turn = (GameManager.current_mission == 0 and SquadManager.current_turn == 0 and not GuideManager.turn_1_done)
+	if is_forced_turn and not GameManager.has_seen_attention("logistics_forced_turn_notice"):
+		GameManager.mark_attention_seen("logistics_forced_turn_notice")
+		var steps: Array[TutorialStep] = [
+			_step(
+				"TURN 1 ALLOCATIONS — For this first turn only, supply allocations are set for you automatically based on each squad's most urgent need. Review them below, then Lock Allocations to continue.",
+				^""
+			),
+		]
+		tutorial_overlay.start(steps, self)
+		return
+
 	if GameManager.has_seen_attention("help_nudge_seen_logistics"):
 		return
 	GameManager.mark_attention_seen("help_nudge_seen_logistics")
