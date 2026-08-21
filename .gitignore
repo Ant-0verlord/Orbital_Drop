@@ -1,3 +1,35 @@
-# Godot 4+ specific ignores
+# =============================================================
+# Godot-generated / local-only — regenerated automatically, so
+# there's nothing worth tracking history for and they just bloat
+# the repo with noise.
+# =============================================================
+
+# Godot 4's local editor cache (thumbnails, shader cache, etc.)
 .godot/
-/android/
+
+# Per-file import metadata + the imported/converted copies Godot
+# generates next to source assets (textures, audio, models...).
+# These get rebuilt automatically the moment the editor reopens the
+# project, so committing them just creates merge-conflict noise.
+*.import
+.import/
+
+# Editor/OS junk
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Exported game builds — these are build OUTPUT, not source. They're
+# often large (tens/hundreds of MB) and get regenerated from an
+# Export Preset any time you need them, so they don't belong in
+# version history. Comment out (put a # in front) if you specifically
+# want a build itself backed up.
+# (export_presets.cfg itself is small config, not a build — kept tracked.)
+BUILDS/
+Exports/
+
+# Mono/C# build artifacts (harmless to ignore even if this project
+# is pure GDScript with no C#).
+.mono/
+data_*/
+mono_crash.*.json

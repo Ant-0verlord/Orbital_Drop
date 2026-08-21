@@ -1,0 +1,274 @@
+# Orbital Drop — Development History
+
+A day-by-day recap of the project's git history (180 commits, `30/03/2026` → `21/08/2026`), reconstructed from commit metadata and the actual files each commit touched — since a lot of the original commit messages ("HUH", "sad", "um", "???") don't say much on their own. Where a message was clear, it's used as-is; where it wasn't, the recap below reflects what the changed files show actually happened.
+
+*(Note on renaming the old messages themselves: it's technically possible via `git rebase` / `filter-repo`, but it rewrites every commit hash from that point forward, which means a force-push and would break any other clone of this repo — e.g. your partner's, if they have one. Not something to do casually. This document is the safer way to get a readable history without touching the real one.)*
+
+---
+
+### 30/03/2026 — Project kickoff
+Repo initialized and the base Godot project scaffolded (`project.godot`, `.gitignore`, icon). A first test 3D node added to confirm everything worked.
+
+### 20/04/2026 — Learning the tools
+Mostly trial-and-error commits against a single test scene while getting comfortable with git/Godot together (several "test"/"another test" commits in a row). One real bit of cleanup: an unused `.editorconfig` removed.
+
+### 22/04/2026 — The actual game begins
+`Main.tscn` and a `GameManager` created, the first room model imported, `command_centre.tscn` created, and basic player movement scripted for the first time.
+
+### 23/04/2026 — Player controller takes shape
+Player script and walking refined; `command_centre.gd`, `button.gd`, and `main.gd` added to start tying the scene together.
+
+### 24/04/2026 — Room import bug
+A room-model fetch error broke things, got reverted, then properly fixed the same day.
+
+### 28/04/2026 — First console models
+Unused test script deleted. Holomap and Logistics Terminal 3D models (v1.1) brought in, and room hitboxes started.
+
+### 29/04/2026 — Command Throne & Vox-Caster
+Command Throne and Vox-Caster Array models modeled and wired into scenes alongside the command centre.
+
+### 30/04/2026 — Intel Desk added
+Intel Desk model and scene added; continued scripting on the player and command centre.
+
+**Screenshots (11):** `Screenshot 2026-04-30 115251.png`, `Screenshot 2026-04-30 115434.png`, `Screenshot 2026-04-30 115717.png`, `Screenshot 2026-04-30 120040.png`, `Screenshot 2026-04-30 120311.png`, `Screenshot 2026-04-30 120341.png`, `Screenshot 2026-04-30 120657.png`, `Screenshot 2026-04-30 121615.png`, `Screenshot 2026-04-30 121716.png`, `Screenshot 2026-04-30 122305.png`, `Screenshot 2026-04-30 122359.png`
+
+### 01/05/2026 — First interactive consoles
+Intel Desk and Logistics Terminal made interactive for the first time. Spent a chunk of the day fighting an Intel Desk model import bug (create → revert → create → revert) before it landed.
+
+**Screenshots (16):** `Screenshot 2026-05-01 123429.png`, `Screenshot 2026-05-01 123559.png`, `Screenshot 2026-05-01 123808.png`, `Screenshot 2026-05-01 130531.png`, `Screenshot 2026-05-01 130556.png`, `Screenshot 2026-05-01 130700.png`, `Screenshot 2026-05-01 131817.png`, `Screenshot 2026-05-01 174854.png`, `Screenshot 2026-05-01 175017.png`, `Screenshot 2026-05-01 175043.png`, `Screenshot 2026-05-01 190450.png`, `Screenshot 2026-05-01 190923.png`, `Screenshot 2026-05-01 191005.png`, `Screenshot 2026-05-01 191224.png`, `Screenshot 2026-05-01 191419.png`, `Screenshot 2026-05-01 193554.png`
+
+### 02/05/2026 — The real architecture arrives
+Big one: every console and manager rewritten as a proper dedicated script — `CommandCentre`, `CommandThrone`, `GameManager`, `HoloMap`, `IntelConsole`, `LogisticsTerminal`, `PlayerController`, `SquadManager`, `TurnManager`, `VoxCaster` — plus matching popups. This is essentially the day the codebase's real structure was born.
+
+**Screenshots (13):** `Screenshot 2026-05-02 103005.png`, `Screenshot 2026-05-02 110604.png`, `Screenshot 2026-05-02 152305.png`, `Screenshot 2026-05-02 152805.png`, `Screenshot 2026-05-02 153050.png`, `Screenshot 2026-05-02 153114.png`, `Screenshot 2026-05-02 153157.png`, `Screenshot 2026-05-02 153208.png`, `Screenshot 2026-05-02 153217.png`, `Screenshot 2026-05-02 153225.png`, `Screenshot 2026-05-02 153232.png`, `Screenshot 2026-05-02 185551.png`, `Screenshot 2026-05-02 185732.png`
+
+### 03/05/2026 — Wiring continues
+Holomap, Main, and Command Centre scenes connected up further.
+
+### 04/05/2026 — Stabilizing + first audio
+Bug fixes across Command Centre/HoloMap/Intel/Logistics popups. First sound effects added (laser cannon, space ambience).
+
+**Screenshots (16):** `Screenshot 2026-05-04 082750.png`, `Screenshot 2026-05-04 083401.png`, `Screenshot 2026-05-04 141254.png`, `Screenshot 2026-05-04 141548.png`, `Screenshot 2026-05-04 141826.png`, `Screenshot 2026-05-04 141912.png`, `Screenshot 2026-05-04 143040.png`, `Screenshot 2026-05-04 143225.png`, `Screenshot 2026-05-04 143237.png`, `Screenshot 2026-05-04 143244.png`, `Screenshot 2026-05-04 143252.png`, `Screenshot 2026-05-04 143301.png`, `Screenshot 2026-05-04 143501.png`, `Screenshot 2026-05-04 143603.png`, `Screenshot 2026-05-04 144012.png`, `Screenshot 2026-05-04 144853.png`
+
+### 07/05/2026 — Console fixes
+Command Centre, Game Manager, Intel Console, Logistics, and Vox-Caster scripts patched up.
+
+**Screenshots (15):** `Screenshot 2026-05-07 100940.png`, `Screenshot 2026-05-07 101206.png`, `Screenshot 2026-05-07 101425.png`, `Screenshot 2026-05-07 101442.png`, `Screenshot 2026-05-07 101446.png`, `Screenshot 2026-05-07 101453.png`, `Screenshot 2026-05-07 101457.png`, `Screenshot 2026-05-07 101503.png`, `Screenshot 2026-05-07 101550.png`, `Screenshot 2026-05-07 102231.png`, `Screenshot 2026-05-07 102911.png`, `Screenshot 2026-05-07 102916.png`, `Screenshot 2026-05-07 102921.png`, `Screenshot 2026-05-07 102926.png`, `Screenshot 2026-05-07 102945.png`
+
+### 08/05/2026 — General stabilization
+A broad pass touching nearly every manager, console, and popup script at once.
+
+### 11/05/2026 — More audio + Enemy Manager
+Alarm/klaxon and button-toggle sound effects added. `EnemyManager` created and the other managers reworked to use it.
+
+### 12/05/2026 — The folder reorg
+Managers reworked again, and scripts split into the `Scripts/Consoles/`, `Scripts/Managers/`, `Scripts/Popups/` structure that's still in use today.
+
+### 13/05/2026 — Post-reorg fixes
+Follow-up fixes to Enemy/Squad managers and two popups after yesterday's restructure.
+
+### 15/05/2026 — Room touch-ups
+Minor tweaks to the test room model.
+
+### 19/05/2026 — Holomap 2.0 begins
+First pass at a new Holomap model.
+
+### 22/05/2026 — Scripting + Holomap 2.0 progress
+Manager/popup scripting pass alongside continued work on the Holomap 2.0 model.
+
+**Screenshots (6):** `Screenshot 2026-05-22 092435.png`, `Screenshot 2026-05-22 092448.png`, `Screenshot 2026-05-22 092456.png`, `Screenshot 2026-05-22 092501.png`, `Screenshot 2026-05-22 092521.png`, `Screenshot 2026-05-22 095232.png`
+
+### 25/05/2026 — Command Throne 2.0
+A new Command Throne model started alongside the ongoing Holomap 2.0 import work.
+
+**Screenshots (12):** `Screenshot 2026-05-25 095108.png`, `Screenshot 2026-05-25 095643.png`, `Screenshot 2026-05-25 095738.png`, `Screenshot 2026-05-25 095819.png`, `Screenshot 2026-05-25 100203.png`, `Screenshot 2026-05-25 100419.png`, `Screenshot 2026-05-25 100742.png`, `Screenshot 2026-05-25 100811.png`, `Screenshot 2026-05-25 100818.png`, `Screenshot 2026-05-25 100822.png`, `Screenshot 2026-05-25 100827.png`, `Screenshot 2026-05-25 100832.png`
+
+### 26/05/2026 — Rollback day
+The Command Throne/Holomap 2.0 experiments caused problems, so both got reverted back to the known-working versions.
+
+### 27/05/2026 — Asset pipeline cleanup
+Batch re-import of the v1.1 generation of models (Command Throne, Holomap, Intel Desk, Logistics, Vox-Caster, Room) plus the 2.0 models — getting the import settings consistent.
+
+**Screenshots (6):** `Screenshot 2026-05-27 124223.png`, `Screenshot 2026-05-27 125316.png`, `Screenshot 2026-05-27 125321.png`, `Screenshot 2026-05-27 125327.png`, `Screenshot 2026-05-27 125332.png`, `Screenshot 2026-05-27 125340.png`
+
+### 28/05/2026 — Safety net
+A "Backup room" model added (insurance against another import mishap) plus a Holomap popup fix.
+
+**Screenshots (1):** `Screenshot 2026-05-28 140526.png`
+
+### 02/06/2026 — Logistics 2.0 + plain Intel Desk
+Holomap popup fixed; Logistics Terminal 2.0 and a simpler Intel Desk model added.
+
+### 03/06/2026 — GUI fixes
+Command Throne and Logistics Terminal scene UI adjusted.
+
+### 04/06/2026 — Import finished
+Logistics Terminal 2.0 model import completed.
+
+### 05/06/2026 — Small fixes
+Backup room + a Command Throne scene tweak.
+
+### 08/06/2026 — Vox-Caster refresh
+Logistics Terminal 2.0 re-added, Command Throne tweaked, and the Vox-Caster Array model refreshed.
+
+### 10/06/2026 — Import finished
+Vox-Caster Array model import completed.
+
+### 11/06/2026 — Manager + UI pass
+Enemy/Game/Squad/Turn managers and two popups reworked; UI pass across all five console scenes.
+
+**Screenshots (23):** `Screenshot 2026-06-11 101824.png`, `Screenshot 2026-06-11 101829.png`, `Screenshot 2026-06-11 101903.png`, `Screenshot 2026-06-11 101907.png`, `Screenshot 2026-06-11 101914.png`, `Screenshot 2026-06-11 101921.png`, `Screenshot 2026-06-11 102447.png`, `Screenshot 2026-06-11 102503.png`, `Screenshot 2026-06-11 103107.png`, `Screenshot 2026-06-11 103207.png`, `Screenshot 2026-06-11 103226.png`, `Screenshot 2026-06-11 103347.png`, `Screenshot 2026-06-11 103536.png`, `Screenshot 2026-06-11 103540.png`, `Screenshot 2026-06-11 104351.png`, `Screenshot 2026-06-11 104616.png`, `Screenshot 2026-06-11 104647.png`, `Screenshot 2026-06-11 104658.png`, `Screenshot 2026-06-11 104915.png`, `Screenshot 2026-06-11 104920.png`, `Screenshot 2026-06-11 104936.png`, `Screenshot 2026-06-11 105127.png`, `Screenshot 2026-06-11 105821.png`
+
+### 12/06/2026 — More GUI work
+Continued GUI updates to Command Throne and Vox-Caster, plus manager/popup tweaks.
+
+**Screenshots (8):** `Screenshot 2026-06-12 114935.png`, `Screenshot 2026-06-12 115017.png`, `Screenshot 2026-06-12 115218.png`, `Screenshot 2026-06-12 115227.png`, `Screenshot 2026-06-12 115233.png`, `Screenshot 2026-06-12 115315.png`, `Screenshot 2026-06-12 115403.png`, `Screenshot 2026-06-12 120244.png`
+
+### 16/06/2026 — The game becomes playable
+The big one: `HexCanvas.gd` created (the hex-grid map renderer), with Holomap/Intel Desk scenes and three managers updated together. Commit message says it best: *"made game possible."* Vox-Caster hitbox fix too.
+
+### 17/06/2026 — Mission 2 work begins
+Holomap/Logistics scenes and four manager/popup scripts updated to support a second mission.
+
+**Screenshots (6):** `Screenshot 2026-06-17 084240.png`, `Screenshot 2026-06-17 084808.png`, `Screenshot 2026-06-17 132124.png`, `Screenshot 2026-06-17 132136.png`, `Screenshot 2026-06-17 132405.png`, `Screenshot 2026-06-17 144749.png`
+
+### 18/06/2026 — Mission 2 continues
+Small Command Throne/Holomap tweak, plus more Mission 2 work on Enemy/Game/Turn managers.
+
+**Screenshots (1):** `Screenshot 2026-06-18 095323.png`
+
+### 22/06/2026 — Gameplay tuning
+HoloMap bugfix, a new map, Logistics budget increased to 2, and a reinforcement alert added at the Intel console.
+
+**Screenshots (17):** `Screenshot 2026-06-22 082923.png`, `Screenshot 2026-06-22 082952.png`, `Screenshot 2026-06-22 083001.png`, `Screenshot 2026-06-22 083033.png`, `Screenshot 2026-06-22 083307.png`, `Screenshot 2026-06-22 112756.png`, `Screenshot 2026-06-22 113636.png`, `Screenshot 2026-06-22 120727.png`, `Screenshot 2026-06-22 120733.png`, `Screenshot 2026-06-22 120915.png`, `Screenshot 2026-06-22 121015.png`, `Screenshot 2026-06-22 121209.png`, `Screenshot 2026-06-22 121333.png`, `Screenshot 2026-06-22 121353.png`, `Screenshot 2026-06-22 121415.png`, `Screenshot 2026-06-22 121615.png`, `Screenshot 2026-06-22 121935.png`
+
+### 23/06/2026 — Bug fixes + features
+Search bug fixed at Logistics/Intel, a scroll view added to Command Throne, max-reinforce logic added, Command Throne GUI fixed.
+
+### 24/06/2026 — Debug tools + bug hunting
+A debug mission-select added, with bug-fixing attempts across Enemy/Game/Squad managers and PlayerController; a couple of follow-up HexCanvas tweaks.
+
+**Screenshots (11):** `Screenshot 2026-06-24 081801.png`, `Screenshot 2026-06-24 081954.png`, `Screenshot 2026-06-24 082120.png`, `Screenshot 2026-06-24 082226.png`, `Screenshot 2026-06-24 082448.png`, `Screenshot 2026-06-24 084828.png`, `Screenshot 2026-06-24 085103.png`, `Screenshot 2026-06-24 140841.png`, `Screenshot 2026-06-24 141908.png`, `Screenshot 2026-06-24 142456.png`, `Screenshot 2026-06-24 142506.png`
+
+### 25/06/2026 — Orbital drop mechanic
+Got the orbital-drop ("boom") effect working, added a delay to it, and added Intel Desk info displays.
+
+**Screenshots (8):** `Screenshot 2026-06-25 140709.png`, `Screenshot 2026-06-25 140920.png`, `Screenshot 2026-06-25 141059.png`, `Screenshot 2026-06-25 141305.png`, `Screenshot 2026-06-25 141315.png`, `Screenshot 2026-06-25 141327.png`, `Screenshot 2026-06-25 141806.png`, `Screenshot 2026-06-25 142534.png`
+
+### 26/06/2026 — Main menu begins
+`SettingsManager` created, and the first version of the main menu (`MainMenu.gd` + scene) built.
+
+**Screenshots (7):** `Screenshot 2026-06-26 091013.png`, `Screenshot 2026-06-26 142113.png`, `Screenshot 2026-06-26 142200.png`, `Screenshot 2026-06-26 142225.png`, `Screenshot 2026-06-26 142231.png`, `Screenshot 2026-06-26 142242.png`, `Screenshot 2026-06-26 143506.png`
+
+### 29/06/2026 — First playable build
+First web export (`BUILDS/BUILD1`) — this is when the game first became something playable outside the editor. Bug/signal fixes to HexCanvas and Vox-Caster popup alongside it.
+
+**Screenshots (6):** `Screenshot 2026-06-29 093300.png`, `Screenshot 2026-06-29 093558.png`, `Screenshot 2026-06-29 093624.png`, `Screenshot 2026-06-29 093633.png`, `Screenshot 2026-06-29 093648.png`, `Screenshot 2026-06-29 093659.png`
+
+### 30/06/2026 — Tutorial system begins
+`TutorialOverlay`, `Arrow`, and `TutorialStep` scripts created and wired into the Logistics console as a beta tutorial.
+
+**Screenshots (17):** `Screenshot 2026-06-30 094539.png`, `Screenshot 2026-06-30 094727.png`, `Screenshot 2026-06-30 094913.png`, `Screenshot 2026-06-30 094923.png`, `Screenshot 2026-06-30 094929.png`, `Screenshot 2026-06-30 094949.png`, `Screenshot 2026-06-30 095115.png`, `Screenshot 2026-06-30 095519.png`, `Screenshot 2026-06-30 113644.png`, `Screenshot 2026-06-30 113647.png`, `Screenshot 2026-06-30 113650.png`, `Screenshot 2026-06-30 113654.png`, `Screenshot 2026-06-30 113700.png`, `Screenshot 2026-06-30 113703.png`, `Screenshot 2026-06-30 113711.png`, `Screenshot 2026-06-30 114615.png`, `Screenshot 2026-06-30 114731.png`
+
+### 01/07/2026 — itch.io export + new room
+The itch.io web export redone, and a new room model brought in.
+
+### 02/07/2026 — Reorg + Mission 4 begins
+Tutorial scripts moved into their own `Scripts/Tutorial/` folder; Mission 4's map work started in `GameManager`.
+
+### 03/07/2026 — New objective system
+A beta mission-objective system built across HexCanvas, Enemy/Game/Squad managers, and the Holomap popup.
+
+**Screenshots (2):** `Screenshot 2026-07-03 115637.png`, `Screenshot 2026-07-03 140153.png`
+
+### 20/07/2026 — (no commits — screenshots only)
+**Screenshots (6):** `Screenshot 2026-07-20 085130.png`, `Screenshot 2026-07-20 085933.png`, `Screenshot 2026-07-20 091341.png`, `Screenshot 2026-07-20 092018.png`, `Screenshot 2026-07-20 092024.png`, `Screenshot 2026-07-20 092051.png`
+
+### 21/07/2026 — (no commits — screenshots only)
+**Screenshots (1):** `Screenshot 2026-07-21 103623.png`
+
+### 22/07/2026 — Mission updates (after a 3-week gap)
+Broad mission-related updates across every manager and popup, plus a room model refresh and a same-day follow-up fix.
+
+**Screenshots (4):** `Screenshot 2026-07-22 113156.png`, `Screenshot 2026-07-22 113215.png`, `Screenshot 2026-07-22 113223.png`, `Screenshot 2026-07-22 113230.png`
+
+### 23/07/2026 — More mission work
+Further updates to Enemy/Game managers and the Intel popup; a Vox-Caster Array exported to glTF.
+
+**Screenshots (1):** `Screenshot 2026-07-23 132400.png`
+
+### 24/07/2026 — Vox-Caster remodeled
+Vox-Caster Array rebuilt as a "2.0" model; a small Player scene tweak (hand positioning).
+
+### 29/07/2026 — (no commits — screenshots only)
+**Screenshots (15):** `Screenshot 2026-07-29 083010.png`, `Screenshot 2026-07-29 083059.png`, `Screenshot 2026-07-29 102708.png`, `Screenshot 2026-07-29 102715.png`, `Screenshot 2026-07-29 102722.png`, `Screenshot 2026-07-29 102727.png`, `Screenshot 2026-07-29 102733.png`, `Screenshot 2026-07-29 103209.png`, `Screenshot 2026-07-29 103228.png`, `Screenshot 2026-07-29 103557.png`, `Screenshot 2026-07-29 103926.png`, `Screenshot 2026-07-29 105326.png`, `Screenshot 2026-07-29 105602.png`, `Screenshot 2026-07-29 105916.png`, `Screenshot 2026-07-29 105922.png`
+
+### 30/07/2026 — Tutorial rolled out everywhere
+The tutorial system extended across nearly every console, manager, and popup, plus a new build export.
+
+**Screenshots (8):** `Screenshot 2026-07-30 081749.png`, `Screenshot 2026-07-30 081802.png`, `Screenshot 2026-07-30 111113.png`, `Screenshot 2026-07-30 112131.png`, `Screenshot 2026-07-30 113305.png`, `Screenshot 2026-07-30 114228.png`, `Screenshot 2026-07-30 115338.png`, `Screenshot 2026-07-30 115357.png`
+
+### 31/07/2026 — The Guide system is built
+A full in-game help/briefing system created in one pass: `GuideOverlay`, `MissionBriefingOverlay`, `GuideManager`, `Arrow_Canvas`, `BriefingHexPreview`, and `Objective_Text` all added together.
+
+**Screenshots (11):** `Screenshot 2026-07-31 103957.png`, `Screenshot 2026-07-31 104005.png`, `Screenshot 2026-07-31 104012.png`, `Screenshot 2026-07-31 111041.png`, `Screenshot 2026-07-31 111053.png`, `Screenshot 2026-07-31 121836.png`, `Screenshot 2026-07-31 131423.png`, `Screenshot 2026-07-31 162426.png`, `Screenshot 2026-07-31 170749.png`, `Screenshot 2026-07-31 170949.png`, `Screenshot 2026-07-31 171037.png`
+
+### 01/08/2026 — (no commits — screenshots only)
+**Screenshots (1):** `Screenshot 2026-08-01 125359.png`
+
+### 03/08/2026 — Bug fixes + a git mixup
+Game/Squad manager fixes; a "final" Holomap model attempt; a merge got reverted and then reapplied the next day (a git hiccup, not lost work).
+
+**Screenshots (5):** `Screenshot 2026-08-03 143429.png`, `Screenshot 2026-08-03 144131.png`, `Screenshot 2026-08-03 144253.png`, `Screenshot 2026-08-03 144330.png`, `Screenshot 2026-08-03 144406.png`
+
+### 04/08/2026 — (no commits — screenshots only)
+**Screenshots (8):** `Screenshot 2026-08-04 080615.png`, `Screenshot 2026-08-04 183946.png`, `Screenshot 2026-08-04 184221.png`, `Screenshot 2026-08-04 184352.png`, `Screenshot 2026-08-04 184641.png`, `Screenshot 2026-08-04 184733.png`, `Screenshot 2026-08-04 185118.png`, `Screenshot 2026-08-04 185232.png`
+
+### 05/08/2026 — Guide system finished
+Yesterday's revert reapplied properly, the Holomap 3.0 experiment rolled back, and a big pass finishing the Guide/Briefing system plus a new Command Centre room model. (A few stray Godot autosave `.tmp` files snuck into this commit — harmless, but worth deleting from the repo next time you're in there.)
+
+**Screenshots (26):** `c67143c0-c57d-462e-8302-f01aa585fea1.png`, `Screenshot 2026-08-05 090302.png`, `Screenshot 2026-08-05 090420.png`, `Screenshot 2026-08-05 090521.png`, `Screenshot 2026-08-05 090819.png`, `Screenshot 2026-08-05 090839.png`, `Screenshot 2026-08-05 091004.png`, `Screenshot 2026-08-05 091104.png`, `Screenshot 2026-08-05 091134.png`, `Screenshot 2026-08-05 091526.png`, `Screenshot 2026-08-05 091724.png`, `Screenshot 2026-08-05 091732.png`, `Screenshot 2026-08-05 091808.png`, `Screenshot 2026-08-05 091816.png`, `Screenshot 2026-08-05 091828.png`, `Screenshot 2026-08-05 102754.png`, `Screenshot 2026-08-05 141135.png`, `Screenshot 2026-08-05 141324.png`, `Screenshot 2026-08-05 141725.png`, `Screenshot 2026-08-05 142711.png`, `Screenshot 2026-08-05 142732.png`, `Screenshot 2026-08-05 145145.png`, `Screenshot 2026-08-05 145150.png`, `Screenshot 2026-08-05 145327.png`, `Screenshot 2026-08-05 145331.png`, `Screenshot 2026-08-05 145358.png`
+
+### 06/08/2026 — Reinforcement logic
+Reinforcement rules updated across Game/Squad/Turn managers and the Holomap popup.
+
+**Screenshots (3):** `Screenshot 2026-08-06 160830.png`, `Screenshot 2026-08-06 160901.png`, `Screenshot 2026-08-06 162551.png`
+
+### 10/08/2026 — (no commits — screenshots only)
+**Screenshots (2):** `Screenshot 2026-08-10 153909.png`, `Screenshot 2026-08-10 161724.png`
+
+### 12/08/2026 — Squad navigation fix
+A squad-pathing bug fixed across Holomap, BriefingHexPreview, HexCanvas, and the Enemy/Game/Squad managers.
+
+**Screenshots (1):** `Screenshot 2026-08-12 140836.png`
+
+### 13/08/2026 — Finalizing pass
+A broad "finalizing" pass across Command Centre/Game/Guide/Squad/Turn managers, two build exports, supply tuning, and Mission 5 bug fixes.
+
+**Screenshots (7):** `Screenshot 2026-08-13 084122.png`, `Screenshot 2026-08-13 084138.png`, `Screenshot 2026-08-13 084755.png`, `Screenshot 2026-08-13 090519.png`, `Screenshot 2026-08-13 091558.png`, `Screenshot 2026-08-13 094610.png`, `Screenshot 2026-08-13 095729.png`
+
+### 14/08/2026 — Mission 4 reworked, Mission 5 redone
+A large pass touching Command Centre, Guide, HexCanvas, all four managers, PlayerController, and three popups to rebuild Missions 4 and 5.
+
+**Screenshots (12):** `Screenshot 2026-08-14 100835.png`, `Screenshot 2026-08-14 100909.png`, `Screenshot 2026-08-14 101720.png`, `Screenshot 2026-08-14 102126.png`, `Screenshot 2026-08-14 102258.png`, `Screenshot 2026-08-14 102829.png`, `Screenshot 2026-08-14 103007.png`, `Screenshot 2026-08-14 103022.png`, `Screenshot 2026-08-14 103033.png`, `Screenshot 2026-08-14 103215.png`, `Screenshot 2026-08-14 103617.png`, `Screenshot 2026-08-14 103805.png`
+
+### 17/08/2026 — (no commits — screenshots only)
+**Screenshots (2):** `Screenshot 2026-08-17 120010.png`, `Screenshot 2026-08-17 121722.png`
+
+### 18/08/2026 — Ambient audio + Command Centre refresh
+`AudioManager` created for ambient sound, a new Command Centre room model, a Hologram Panel shader started, and a recolored Holomap 3.0 model.
+
+### 19/08/2026 — Guide improvements + new Command Throne
+A "Help Nudge" added to the guide system; a bevel pass on Holomap 3.0; a new Command Throne 3.0 model ("Chair").
+
+**Screenshots (14):** `Screenshot 2026-08-19 083324.png`, `Screenshot 2026-08-19 140454.png`, `Screenshot 2026-08-19 140505.png`, `Screenshot 2026-08-19 140513.png`, `Screenshot 2026-08-19 140529.png`, `Screenshot 2026-08-19 142120.png`, `Screenshot 2026-08-19 142129.png`, `Screenshot 2026-08-19 142136.png`, `Screenshot 2026-08-19 142150.png`, `Screenshot 2026-08-19 142157.png`, `Screenshot 2026-08-19 144406.png`, `Screenshot 2026-08-19 145010.png`, `Screenshot 2026-08-19 145349.png`, `Screenshot 2026-08-19 145357.png`
+
+### 20/08/2026 — Big UI day
+Manual reference images added (combat odds, console guides, hex legend, status ladder, turn cycle), the main menu fully built out (background art, shader, instructions popup), a full icon set added (play/settings/exit/instructions + map markers) — and this is the day the space sky shader and viewscreen backdrop were built, right before this session started.
+
+**Screenshots (22):** `Screenshot 2026-08-20 084000.png`, `Screenshot 2026-08-20 084349.png`, `Screenshot 2026-08-20 084720.png`, `Screenshot 2026-08-20 110450.png`, `Screenshot 2026-08-20 110502.png`, `Screenshot 2026-08-20 123548.png`, `Screenshot 2026-08-20 123608.png`, `Screenshot 2026-08-20 123850.png`, `Screenshot 2026-08-20 125657.png`, `Screenshot 2026-08-20 130346.png`, `Screenshot 2026-08-20 131117.png`, `Screenshot 2026-08-20 150958.png`, `Screenshot 2026-08-20 162011.png`, `Screenshot 2026-08-20 162103.png`, `Screenshot 2026-08-20 162132.png`, `Screenshot 2026-08-20 180313.png`, `Screenshot 2026-08-20 180330.png`, `Screenshot 2026-08-20 180904.png`, `Screenshot 2026-08-20 193349.png`, `Screenshot 2026-08-20 194727.png`, `Screenshot 2026-08-20 195216.png`, `Screenshot 2026-08-20 195225.png`
+
+### 21/08/2026 — Epilogue built out (working with Claude)
+Planet edge/explosion polish and Retry Campaign / Return-to-Menu buttons landed on the mission report screen first, then the day's real focus: the Epilogue sequence. Crawl text, camera choreography, and a dive-into-cloud transition were built, leading into an ending that started as a 3D terrain/flag/helmet/memorial scene before being rebuilt as a flat, layered 2D finale instead — flag on its pole, rising into place over a backdrop, with the battlefield dressing and a credits roll both cut once they didn't earn their place. The flag banner needed the most iteration: its source texture turned out to have no real transparency at all (a fully opaque logo card), so getting a proper rippling cloth silhouette out of it took two shader rewrites — a chroma-key pass that stripped too much (reverted after review), then a wavy alpha-cutout silhouette that keeps the flag's solid black fill intact — followed by a final pass adding a procedural gold border that tracks the moving cutout edge instead of relying on the texture's static baked-in one. Still in progress as of this entry.
+
+**Screenshots (22):** `Screenshot 2026-08-21 081332.png`, `Screenshot 2026-08-21 082059.png`, `Screenshot 2026-08-21 084323.png`, `Screenshot 2026-08-21 085001.png`, `Screenshot 2026-08-21 085018.png`, `Screenshot 2026-08-21 094337.png`, `Screenshot 2026-08-21 094344.png`, `Screenshot 2026-08-21 095430.png`, `Screenshot 2026-08-21 095613.png`, `Screenshot 2026-08-21 095618.png`, `Screenshot 2026-08-21 095621.png`, `Screenshot 2026-08-21 103728.png`, `Screenshot 2026-08-21 112638.png`, `Screenshot 2026-08-21 114947.png`, `Screenshot 2026-08-21 142738.png`, `Screenshot 2026-08-21 165418.png`, `Screenshot 2026-08-21 170135.png`, `Screenshot 2026-08-21 173109.png`, `Screenshot 2026-08-21 173850.png`, `Screenshot 2026-08-21 202723.png`, `Screenshot 2026-08-21 203630.png`, `Screenshot 2026-08-21 204244.png`

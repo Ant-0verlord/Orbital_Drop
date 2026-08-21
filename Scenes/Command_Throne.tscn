@@ -1,26 +1,28 @@
 [gd_scene format=3 uid="uid://dksywdr8xyjsf"]
 
-[ext_resource type="ArrayMesh" uid="uid://dn541il6ad3tr" path="res://Models/Command Throne 2.0.obj" id="1_id48o"]
+[ext_resource type="PackedScene" uid="uid://clq8ucxwl7yy2" path="res://Models/Command Throne 3.0.glb" id="1_2gepd"]
 [ext_resource type="Script" uid="uid://caj7dobn8fawx" path="res://Scripts/Consoles/CommandThrone.gd" id="2_id48o"]
 [ext_resource type="Script" uid="uid://fkuvbocfiykr" path="res://Scripts/Popups/CommandThronePopup.gd" id="3_602gn"]
 [ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_602gn"]
 [ext_resource type="PackedScene" path="res://Scenes/HelpNudge.tscn" id="5_hlpndg"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_oohax"]
-size = Vector3(20.830643, 42.779057, 23.661272)
+size = Vector3(20.830643, 68.08301, 28.906319)
 
 [node name="Node3D" type="Node3D" unique_id=112694284]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1662060828]
-transform = Transform3D(-1.4474964e-08, 0, 0.31591576, 0, 0.29869604, 0, -0.33114856, 0, -1.38091165e-08, 0, 0, 0)
-mesh = ExtResource("1_id48o")
+transform = Transform3D(0.3311486, 0, 8.881784e-16, 0, 0.29869607, 0, -8.881784e-16, 0, 0.31591576, 0, 0, 0)
+
+[node name="Command Throne 3_0" parent="MeshInstance3D" unique_id=1981386790 instance=ExtResource("1_2gepd")]
+transform = Transform3D(2.4628847, 0, -8.4703295e-22, 0, 2.462885, 0, 4.2351647e-22, 0, 2.462885, -0.0013090938, 0, -3.68045e-18)
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=43047206]
 transform = Transform3D(0.5, 0, 0, 0, 0.451, 0, 0, 0, 0.477, 0, 0, 0)
 script = ExtResource("2_id48o")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=935619825]
-transform = Transform3D(0.5, 0, -8.4909857e-13, 0, 0.45100012, 0, 0, 0, 0.47700024, -0.03657903, 7.6552157, -0.042026415)
+transform = Transform3D(0.26667315, 0, -4.528636e-13, 0, 0.24053918, 0, -1.0058516e-21, 0, 0.2544063, -0.03657903, 8.679765, 0.62516016)
 shape = SubResource("BoxShape3D_oohax")
 
 [node name="CommandThronePopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=778375555]
@@ -228,5 +230,5 @@ layout_mode = 2
 [node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=45888852 instance=ExtResource("4_602gn")]
 layout_mode = 1
 
-[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" instance=ExtResource("5_hlpndg")]
+[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=680653978 instance=ExtResource("5_hlpndg")]
 layout_mode = 1

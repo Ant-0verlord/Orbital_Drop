@@ -6,11 +6,14 @@ extends Node3D
 # from the Command Throne's report screen — "View Epilogue" only shows
 # there once Mission 5 itself is beaten). A Star-Wars-crawl-style text
 # scroll in front of the same SpaceSky backdrop used aboard the Command
-# Centre, ending on a "sneaky cut" to a waving Orbital Drop banner
-# instead of trying to actually render a believable dive through cloud
-# cover. Every scene node here is built in code rather than hand-placed
-# in a .tscn (same pattern CommandCentre.gd uses for its own sky), so
-# there's nothing for the editor to lose track of.
+# Centre, ending on a "sneaky cut" — dive into an actual cloud placed out
+# along the planet direction, cut to white mid-cloud, and land on a
+# simple flat 2D scene: just the Orbital Drop banner on its pole,
+# centred on screen, rising up into place — instead of trying to render
+# a believable continuous descent all the way to the surface (or any
+# kind of full ground set). Every scene node here is built in code
+# rather than hand-placed in a .tscn (same pattern CommandCentre.gd uses
+# for its own sky), so there's nothing for the editor to lose track of.
 #
 # Runs as a state machine (see Phase / _phase) because the shot changes
 # character several times rather than drifting continuously:
@@ -19,22 +22,31 @@ extends Node3D
 #                pure starfield, no planet anywhere in frame) while the
 #                first, lore-only half of the crawl scrolls past.
 #   SNAPPING   — a quick whip-pan (not a slow drift) to a second "still
-#                pure space" framing — the cut from lore into credits.
+#                pure space" framing — the cut into the crawl's second
+#                half.
 #   READING_B  — camera fixed again at the new framing while the second
-#                half (a little more lore, then the credits) scrolls.
+#                half (a little more lore, then "THE END") scrolls.
 #   REVEALING  — once that text has scrolled fully away, the camera
-#                slowly pans across to finally look at the planet.
-#                Explosions on its surface start ramping up as it comes
-#                into view.
-#   ESCALATING — camera holds on the planet while the explosions keep
-#                climbing toward their peak.
-#   DIVING     — FOV rushes inward and the screen washes to white, as if
-#                closing in on the cloud layer.
-#   FLAG_HOLD  — the "sneaky cut": at full white, the starfield is swapped
-#                for a plain sky and a waving Orbital Drop banner takes
-#                its place, then the white fades away to reveal it. Much
-#                simpler and more reliable than trying to actually render
-#                a seamless descent through atmosphere.
+#                slowly pans across to finally look at the planet (and
+#                the dive cloud sitting in front of it). Explosions on
+#                the planet's surface start ramping up as it comes into
+#                view.
+#   DIVING     — no separate held "explosions build up" beat anymore —
+#                as soon as the pan finishes, FOV rushes inward AND the
+#                camera eases forward toward the dive cloud (together
+#                reading as flying straight at it) while the explosions
+#                keep climbing to their peak and the screen washes to
+#                white as it's entered.
+#   FLAG_HOLD  — the "sneaky cut": at full white, the whole 3D space
+#                scene is swapped for a plain flat-colour 2D backdrop
+#                (built by _build_finale_2d() under a CanvasLayer, not a
+#                walkable 3D space) with just the Orbital Drop banner on
+#                its pole, centred on screen. The pole is planted and
+#                static; the flag itself rises up the pole into place
+#                (see FLAG_RAISE_DURATION) rather than just appearing
+#                already flying at full mast. Much simpler and more
+#                reliable than actually rendering a seamless descent
+#                through atmosphere onto the surface.
 #   (fade to black, back to the main menu)
 #
 # The "camera looks directly away from the planet" trick is what
@@ -49,17 +61,25 @@ extends Node3D
 # which way PLANET_DIR itself happens to point.
 #
 # Tunable knobs, if the pacing feels off once you've actually watched it:
-#   SCROLL_SPEED         — how fast the text rises (world units/sec)
+#   SCROLL_SPEED         — how fast the space crawl text rises (world
+#                           units/sec)
 #   AUTO_RETURN_DIST      — how far each half's text has to recede before
 #                           moving on to the next stage
 #   EXPLOSION_FREQ_MID/PEAK, EXPLOSION_AMOUNT_MID/PEAK — how far the
-#                           finale's explosions escalate
-#   FLAG_HOLD_DURATION    — how long the banner shot holds before fading out
+#                           finale's explosions escalate (MID by the end
+#                           of the REVEALING pan, PEAK by the end of the
+#                           DIVING cut)
+#   CLOUD_DISTANCE/RADIUS — where the dive cloud sits and how big it is
+#   FLAG_HOLD_DURATION    — how long the 2D finale holds before fading out
+#   FLAG_TEX_WIDTH_PX/HEIGHT_PX — how big the flag is drawn
+#   POLE_WIDTH_PX/TOP_MARGIN_PX — how thick the pole is and how far it
+#                           pokes up above the raised flag
+#   FLAG_RAISE_DURATION   — how long the rise up the pole takes
 # Pressing any key/mouse button skips straight to the main menu at any
 # point, so a duration guess that runs long never actually traps anyone.
 # =============================================================
 
-enum Phase { READING_A, SNAPPING, READING_B, REVEALING, ESCALATING, DIVING, FLAG_HOLD }
+enum Phase { READING_A, SNAPPING, READING_B, REVEALING, DIVING, FLAG_HOLD }
 
 var camera: Camera3D
 var crawl_rig_a: Node3D
@@ -68,7 +88,12 @@ var crawl_rig_b: Node3D
 var crawl_label_b: Label3D
 var fade_rect: ColorRect
 var sky_material: ShaderMaterial
-var flag_mesh_instance: MeshInstance3D
+var _dive_cloud: Node3D
+
+# --- 2D finale ---
+var flag_sprite: TextureRect
+var _flag_base_y: float
+var _flag_top_y: float
 
 const SCROLL_SPEED: float = 0.6
 const CAMERA_FOV: float = 62.0
@@ -89,17 +114,64 @@ const DOWN_OFFSET: float = 7.5
 const SNAP_DURATION: float = 0.9
 const SNAP_YAW: float = deg_to_rad(35.0)
 
-const AUTO_RETURN_DIST: float = 16.0
-const REVEAL_PAN_DURATION: float = 6.0
-const ESCALATION_DURATION: float = 10.0
+# How far each half's text has to recede (past FORWARD_DIST) before the
+# next beat kicks in. Trimmed down from an earlier pass — at the old
+# value the gap between "text finishes scrolling" and "something new
+# happens" read as a dead pause rather than a breath.
+const AUTO_RETURN_DIST: float = 8.0
+const REVEAL_PAN_DURATION: float = 4.0
 
 const DIVE_DURATION: float = 1.4
 const DIVE_END_FOV: float = 16.0
+# The camera eases forward into the dive cloud on top of the FOV zoom
+# itself, so it reads as flying at it rather than just a lens effect.
+const DIVE_FORWARD_DIST: float = 6.0
 const FLAG_REVEAL_FADE_DURATION: float = 1.0
-const FLAG_CAMERA_FOV: float = 50.0
-const FLAG_DISTANCE: float = 3.4
-const FLAG_DRIFT_SPEED: float = 0.05
-const FLAG_HOLD_DURATION: float = 7.0
+# Bumped up from the original 5.0 so there's a proper beat to actually
+# watch the flag rise up the pole and settle before it fades out.
+const FLAG_HOLD_DURATION: float = 9.0
+
+# --- Dive cloud --- the thing actually being "flown into" for the cut,
+# planted out along PLANET_DIR so it's already sitting there once the
+# camera turns to face the planet, and grows to fill frame as the FOV
+# narrows and the camera eases toward it.
+const CLOUD_DISTANCE: float = 22.0
+const CLOUD_RADIUS: float = 7.0
+
+# =============================================================
+# 2D finale scene — a plain flat-colour CanvasLayer scene (Control/
+# ColorRect/TextureRect) instead of an actual walkable 3D space. It's
+# swapped in at full white by _do_cut_swap() the same way the old 3D
+# ground scene was, then drawn on top of whatever's left of the 3D world
+# (which no longer matters — it's fully covered). The flag's position is
+# screen-fraction based (times get_viewport().get_visible_rect().size),
+# not fixed pixel coordinates, so it stays centred at whatever resolution
+# the game actually runs at.
+# =============================================================
+const SKY_COLOR := Color(0.72, 0.68, 0.6)
+
+# Sized up from the old 150x96 banner-in-a-scene version — this is the
+# only thing on screen now, so it reads as a hero shot rather than a
+# small prop. Keeps the same ~1.56:1 aspect ratio as the source texture.
+const FLAG_TEX_WIDTH_PX: float = 320.0
+const FLAG_TEX_HEIGHT_PX: float = 205.0
+# How long the rise up the pole takes (see Phase.FLAG_HOLD in _process()).
+const FLAG_RAISE_DURATION: float = 3.0
+
+# --- Flagpole --- static (doesn't rise, unlike the flag itself). Its own
+# width plus the flag's width are centred as one combined block so the
+# whole pole+flag assembly sits in the middle of the screen, not just
+# the flag texture on its own.
+const POLE_WIDTH_PX: float = 10.0
+# How far the pole pokes up above the flag's fully-raised top edge —
+# just enough to read as a proper pole cap, not a bare stick the flag is
+# taped to.
+const POLE_TOP_MARGIN_PX: float = 24.0
+# How far the pole's bottom extends past the bottom of the screen —
+# reads as "planted, continuing off-frame" rather than a pole that just
+# stops in mid-air.
+const POLE_BOTTOM_OVERHANG_PX: float = 80.0
+const POLE_COLOR := Color(0.24, 0.24, 0.26)
 
 const FADE_DURATION: float = 1.6
 
@@ -160,27 +232,7 @@ The platform lifts off. Behind it, a world starts, for once,
 to go quiet on its own terms.
 
 
-THE END
-
-
-
-ORBITAL DROP
-
-
-Created by
-
-BEN
-[PARTNER NAME]
-
-
-A Year 12 Digital Technology assessment project
-
-
-Built with Godot Engine
-
-
-
-Thank you for playing."""
+THE END"""
 
 
 func _ready() -> void:
@@ -232,9 +284,11 @@ func _build_space_sky() -> void:
 func _build_scene() -> void:
 	# --- Camera --- anchored at the origin for the reading/reveal/dive
 	# stages; only its orientation and FOV ever change there (it holds
-	# dead still during READING_A/READING_B/ESCALATING so nothing
-	# distracts from the text or the planet). It gets fully repositioned
-	# once for the flag shot at the end (see _do_cut_swap()).
+	# dead still during READING_A/READING_B so nothing distracts from
+	# the text). It's left wherever DIVING
+	# ends once the 2D finale takes over (see _do_cut_swap()) — the 2D
+	# CanvasLayer fully covers it from that point on, so it no longer
+	# matters where the 3D camera is actually pointed.
 	camera = Camera3D.new()
 	camera.name = "Camera3D"
 	camera.fov = CAMERA_FOV
@@ -246,6 +300,14 @@ func _build_scene() -> void:
 	crawl_rig_b = _build_crawl_rig("CrawlRigB", _snap_to_basis, PART2_TEXT)
 	crawl_label_a = crawl_rig_a.get_child(0)
 	crawl_label_b = crawl_rig_b.get_child(0)
+	# Explicitly hidden until READING_B actually starts — rig_b sits only
+	# ~35 degrees off rig_a's view direction (SNAP_YAW), which isn't a lot
+	# of clearance against a 62-degree FOV, so without this it could peek
+	# into frame at the edge WHILE rig_a is still reading, reading as two
+	# blocks of text sitting beside each other rather than one at a time.
+	crawl_rig_b.visible = false
+
+	_dive_cloud = _build_dive_cloud()
 
 	# --- Skip hint --- a fixed 2D overlay, not part of the 3D crawl.
 	var skip_layer := CanvasLayer.new()
@@ -264,7 +326,9 @@ func _build_scene() -> void:
 
 	# --- Fade layer --- transparent until a fade is actively happening;
 	# reused for both the white "cut" wash and the final fade to black
-	# (only the colour differs — see _do_cut_swap() / _finish()).
+	# (only the colour differs — see _do_cut_swap() / _finish()). Layer
+	# 10 keeps it above the 2D finale (layer 5, see _build_finale_2d())
+	# as well as the 3D world.
 	var fade_layer := CanvasLayer.new()
 	fade_layer.name = "FadeLayer"
 	fade_layer.layer = 10
@@ -329,6 +393,11 @@ func _process(delta: float) -> void:
 		Phase.READING_A:
 			crawl_label_a.position.y += SCROLL_SPEED * delta
 			if _receded_enough(crawl_label_a, _away_dir):
+				# Hide A the instant B is due to take over — guarantees
+				# the two crawls are never both on screen together during
+				# the whip-pan, however far A has actually scrolled.
+				crawl_rig_a.visible = false
+				crawl_rig_b.visible = true
 				_phase = Phase.SNAPPING
 				_phase_time = 0.0
 
@@ -361,17 +430,6 @@ func _process(delta: float) -> void:
 				_set_camera_basis(_reveal_to_basis)
 				crawl_rig_a.visible = false
 				crawl_rig_b.visible = false
-				_phase = Phase.ESCALATING
-				_phase_time = 0.0
-
-		Phase.ESCALATING:
-			var t = clamp(_phase_time / ESCALATION_DURATION, 0.0, 1.0)
-			var eased = t * t   # accelerating — explosions ramp faster as it goes
-			_set_explosion_level(
-				lerp(EXPLOSION_FREQ_MID, EXPLOSION_FREQ_PEAK, eased),
-				lerp(EXPLOSION_AMOUNT_MID, EXPLOSION_AMOUNT_PEAK, eased)
-			)
-			if t >= 1.0:
 				_phase = Phase.DIVING
 				_phase_time = 0.0
 
@@ -379,6 +437,18 @@ func _process(delta: float) -> void:
 			var t = clamp(_phase_time / DIVE_DURATION, 0.0, 1.0)
 			var eased = t * t
 			camera.fov = lerp(CAMERA_FOV, DIVE_END_FOV, eased)
+			# Ease forward toward the cloud on top of the FOV narrowing —
+			# together they read as accelerating straight into it, not
+			# just a lens effect sitting still in space.
+			var dive_forward := -_reveal_to_basis.z
+			camera.global_transform = Transform3D(_reveal_to_basis, dive_forward * DIVE_FORWARD_DIST * eased)
+			# No separate held "explosions build up" beat anymore — they
+			# climb the rest of the way to PEAK during this same dive
+			# instead of camera holding still to watch them do it first.
+			_set_explosion_level(
+				lerp(EXPLOSION_FREQ_MID, EXPLOSION_FREQ_PEAK, eased),
+				lerp(EXPLOSION_AMOUNT_MID, EXPLOSION_AMOUNT_PEAK, eased)
+			)
 			fade_rect.color = Color(1.0, 1.0, 1.0, eased)
 			if t >= 1.0:
 				_do_cut_swap()
@@ -386,11 +456,14 @@ func _process(delta: float) -> void:
 				_phase_time = 0.0
 
 		Phase.FLAG_HOLD:
-			# A slow, gentle drift around the banner rather than a
-			# static shot — contrast with the earlier "camera holds
-			# still" reading phases is deliberate, this is a different
-			# kind of beat.
-			camera.rotate_y(FLAG_DRIFT_SPEED * delta)
+			# The flag rises up the pole into its resting position over
+			# FLAG_RAISE_DURATION, then just sits there for the rest of
+			# the hold — eased so the rise itself isn't a linear crawl.
+			if flag_sprite:
+				var raise_t: float = clamp(_phase_time / FLAG_RAISE_DURATION, 0.0, 1.0)
+				var eased_raise: float = raise_t * raise_t * (3.0 - 2.0 * raise_t)
+				flag_sprite.position.y = lerp(_flag_base_y, _flag_top_y, eased_raise)
+
 			if _phase_time >= FLAG_HOLD_DURATION:
 				_finish()
 
@@ -410,31 +483,20 @@ func _set_explosion_level(freq: float, amount: float) -> void:
 	sky_material.set_shader_parameter("planet_explosion_amount", amount)
 
 
-# The "sneaky cut" — swapped in at full white, so none of this is ever
-# actually seen happening. Much simpler and more reliable than trying to
-# render a real, continuous descent through cloud cover.
+# The "sneaky cut" — swapped in at full white (mid-dive-cloud), so none
+# of this is ever actually seen happening. The old 3D ground scene (sun,
+# terrain, mound) is gone entirely now — the 2D finale (see
+# _build_finale_2d()) fully covers the screen, so there's nothing left
+# for the 3D camera/lighting to do.
 func _do_cut_swap() -> void:
 	var old_env := get_node_or_null("SpaceEnvironment")
 	if old_env:
 		old_env.queue_free()
+	if _dive_cloud:
+		_dive_cloud.queue_free()
+		_dive_cloud = null
 
-	var flat_env := Environment.new()
-	flat_env.background_mode = Environment.BG_COLOR
-	flat_env.background_color = Color(0.75, 0.79, 0.85)
-	flat_env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	flat_env.ambient_light_color = Color(1.0, 1.0, 1.0)
-	flat_env.ambient_light_energy = 1.0
-	flat_env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-
-	var flat_world_env := WorldEnvironment.new()
-	flat_world_env.name = "FlagEnvironment"
-	flat_world_env.environment = flat_env
-	add_child(flat_world_env)
-
-	camera.fov = FLAG_CAMERA_FOV
-	camera.global_transform = Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, FLAG_DISTANCE))
-
-	_build_flag()
+	_build_finale_2d()
 
 	fade_rect.color = Color(1.0, 1.0, 1.0, 1.0)
 	var tw := create_tween()
@@ -442,33 +504,139 @@ func _do_cut_swap() -> void:
 	tw.tween_callback(func() -> void: fade_rect.color = Color(0.0, 0.0, 0.0, 0.0))
 
 
-func _build_flag() -> void:
-	var flag_shader = load("res://Shaders/Flag.gdshader")
+# A soft, roughly-spherical cluster of overlapping fresnel-faded puffs,
+# planted out along PLANET_DIR so it's already sitting there once the
+# camera turns to look at the planet during REVEALING — the FOV
+# narrowing and forward ease during DIVING then close the distance and
+# fill the frame with it, instead of the "zoom into cloud" being nothing
+# but a flat colour wash.
+func _build_dive_cloud() -> Node3D:
+	var shader = load("res://Shaders/Cloud.gdshader")
+	if shader == null:
+		return null
+
+	var rig := Node3D.new()
+	rig.name = "DiveCloud"
+	rig.position = PLANET_DIR.normalized() * CLOUD_DISTANCE
+	add_child(rig)
+
+	# offset, radius pairs — uneven and overlapping so the cluster reads
+	# as one puffy mass rather than one obviously-a-sphere shape.
+	var puffs := [
+		Vector3(0.0, 0.0, 0.0), CLOUD_RADIUS,
+		Vector3(CLOUD_RADIUS * 0.55, CLOUD_RADIUS * 0.2, -CLOUD_RADIUS * 0.3), CLOUD_RADIUS * 0.7,
+		Vector3(-CLOUD_RADIUS * 0.6, -CLOUD_RADIUS * 0.15, CLOUD_RADIUS * 0.2), CLOUD_RADIUS * 0.65,
+		Vector3(CLOUD_RADIUS * 0.1, CLOUD_RADIUS * 0.5, CLOUD_RADIUS * 0.35), CLOUD_RADIUS * 0.55,
+	]
+
+	var i := 0
+	while i < puffs.size():
+		var offset: Vector3 = puffs[i]
+		var radius: float = puffs[i + 1]
+		i += 2
+
+		var puff := MeshInstance3D.new()
+		var mesh := SphereMesh.new()
+		mesh.radius = radius
+		mesh.height = radius * 2.0
+		mesh.radial_segments = 16
+		mesh.rings = 10
+		puff.mesh = mesh
+		puff.position = offset
+
+		var mat := ShaderMaterial.new()
+		mat.shader = shader
+		puff.material_override = mat
+
+		rig.add_child(puff)
+
+	return rig
+
+
+# =============================================================
+# 2D finale scene builders
+# =============================================================
+# Builds the whole "sneaky cut" payload: a flat CanvasLayer scene
+# instead of a walkable 3D space — just a flat backdrop colour with the
+# flag on its pole, centred on screen, rising into place.
+func _build_finale_2d() -> void:
+	# get_viewport_rect() is a CanvasItem convenience method (Control /
+	# Node2D) — this script extends Node3D, so it has to go through
+	# get_viewport() (a plain Node method available everywhere) instead.
+	var screen_size: Vector2 = get_viewport().get_visible_rect().size
+
+	var layer := CanvasLayer.new()
+	layer.name = "Finale2D"
+	layer.layer = 5
+	add_child(layer)
+
+	var root := Control.new()
+	root.name = "FinaleRoot"
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(root)
+
+	var backdrop := ColorRect.new()
+	backdrop.name = "Backdrop"
+	backdrop.color = SKY_COLOR
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(backdrop)
+
+	_build_flag_2d(root, screen_size)
+
+
+# The flag on its pole, the whole assembly centred on screen — the pole
+# is planted and static; only the flag cloth itself rises.
+func _build_flag_2d(root: Control, screen_size: Vector2) -> void:
+	# Centre the POLE + FLAG combined width as one block, rather than
+	# just the flag texture on its own, so the pole doesn't end up
+	# off-centre once the flag is hanging off it.
+	var total_width: float = POLE_WIDTH_PX + FLAG_TEX_WIDTH_PX
+	var pole_x: float = (screen_size.x - total_width) * 0.5
+	var flag_x: float = pole_x + POLE_WIDTH_PX
+
+	# _flag_top_y (the flag's fully-raised resting position) has to be
+	# known before the pole is sized, since the pole's top sits just
+	# above it.
+	_flag_base_y = screen_size.y
+	_flag_top_y = (screen_size.y - FLAG_TEX_HEIGHT_PX) * 0.5
+
+	var pole := ColorRect.new()
+	pole.name = "FlagPole2D"
+	pole.color = POLE_COLOR
+	var pole_top_y: float = _flag_top_y - POLE_TOP_MARGIN_PX
+	var pole_bottom_y: float = screen_size.y + POLE_BOTTOM_OVERHANG_PX
+	pole.position = Vector2(pole_x, pole_top_y)
+	pole.size = Vector2(POLE_WIDTH_PX, pole_bottom_y - pole_top_y)
+	root.add_child(pole)
+
+	var flag_shader = load("res://Shaders/Flag2D.gdshader")
 	var flag_tex = load("res://UI/Epilogue/orbital_drop_flag.png")
 	if flag_shader == null or flag_tex == null:
 		return
 
 	var mat := ShaderMaterial.new()
 	mat.shader = flag_shader
-	mat.set_shader_parameter("logo_texture", flag_tex)
 
-	var mesh := PlaneMesh.new()
-	mesh.size = Vector2(3.2, 2.0)
-	mesh.subdivide_width = 24
-	mesh.subdivide_depth = 1
+	flag_sprite = TextureRect.new()
+	flag_sprite.name = "Flag2D"
+	flag_sprite.texture = flag_tex
+	flag_sprite.material = mat
+	flag_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	flag_sprite.stretch_mode = TextureRect.STRETCH_SCALE
+	flag_sprite.size = Vector2(FLAG_TEX_WIDTH_PX, FLAG_TEX_HEIGHT_PX)
+	# Pinned edge (UV.x = 0 in Flag2D.gdshader, the "pole" side) sits
+	# right against the pole rather than overlapping or gapped from it.
+	flag_sprite.position.x = flag_x
+	root.add_child(flag_sprite)
 
-	flag_mesh_instance = MeshInstance3D.new()
-	flag_mesh_instance.name = "FlagMesh"
-	flag_mesh_instance.mesh = mesh
-	flag_mesh_instance.material_override = mat
-	# PlaneMesh lies flat by default (normal facing +Y) — rotate +90
-	# degrees around X so it stands upright facing +Z, toward the
-	# camera positioned at (0, 0, FLAG_DISTANCE) looking back at the
-	# origin. If it ever appears facing away/mirrored instead, flip the
-	# sign here (untested outside this session — no live Godot to
-	# confirm the rotation direction against).
-	flag_mesh_instance.rotation.x = PI / 2.0
-	add_child(flag_mesh_instance)
+	# Drives the rise tween in _process()'s Phase.FLAG_HOLD case — the
+	# flag starts below the bottom of the screen and rises up the pole
+	# into its resting position over FLAG_RAISE_DURATION, i.e. it's
+	# "drawn up into the screen" rather than simply appearing already at
+	# full mast.
+	flag_sprite.position.y = _flag_base_y
 
 
 func _unhandled_input(event: InputEvent) -> void:
