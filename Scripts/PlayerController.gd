@@ -142,6 +142,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode >= KEY_1 and event.keycode <= KEY_5:
 			var mission_index = event.keycode - KEY_1
 			GameManager.debug_jump_to_mission(mission_index)
+		elif event.keycode == KEY_6:
+			# Skips straight to the "beat Mission 5" win report on the
+			# Command Throne, so the Retry/Return-to-Menu/View-Epilogue
+			# buttons can be tested without actually playing through the
+			# whole campaign. Mirrors what open_popup() on a real console
+			# does (lock movement, show the mouse, flag the popup open).
+			var throne_popup = get_tree().get_first_node_in_group("command_throne_popup")
+			if throne_popup and throne_popup.has_method("debug_show_m5_win_report"):
+				AudioManager.play_button_bottom()
+				popup_open = true
+				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+				GuideManager.set_popup_open(true)
+				interact_label.visible = false
+				throne_popup.debug_show_m5_win_report()
 
 
 func _physics_process(delta: float) -> void:

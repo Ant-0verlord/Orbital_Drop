@@ -29,18 +29,25 @@ var player: Node = null
 
 # Add this button to ReportVBox in the scene, below ReportClose
 @onready var next_mission_btn: Button     = $ReportPanel/ReportVBox/NextMissionBtn
-# Two more buttons on the same report screen, same place — below
-# NextMissionBtn in ReportVBox. Only one of the three ever shows at once:
-# NextMissionBtn on an ordinary mission win, RetryCampaignBtn on a mission
-# failure, ReturnMenuBtn once Mission 5 itself has been won.
+# More buttons on the same report screen, same place — below
+# NextMissionBtn in ReportVBox. NextMissionBtn shows on an ordinary
+# mission win, RetryCampaignBtn on a mission failure; ReturnMenuBtn and
+# EpilogueBtn show TOGETHER once Mission 5 itself has been won (the
+# player picks one or the other, not forced into either).
 @onready var retry_campaign_btn: Button   = $ReportPanel/ReportVBox/RetryCampaignBtn
 @onready var return_menu_btn: Button      = $ReportPanel/ReportVBox/ReturnMenuBtn
+@onready var epilogue_btn: Button         = $ReportPanel/ReportVBox/EpilogueBtn
 @onready var help_btn: Button = $PanelContainer/VBoxContainer/ButtonRow/HelpBtn
 @onready var tutorial_overlay: Control = $TutorialOverlay  # add TutorialOverlay.tscn as a child
 @onready var help_nudge: Control = $HelpNudge
 
 
 func _ready() -> void:
+	# So PlayerController's debug key handler can find this popup without
+	# a scene-tree path (there's only ever one, but a group lookup is
+	# more robust than hardcoding "Command Throne/CommandThronePopup").
+	add_to_group("command_throne_popup")
+
 	_style_header("COMMAND THRONE", "Mission briefing & turn-ending station")
 	TurnManager.turn_started.connect(_on_turn_started)
 	TurnManager.turn_ended.connect(_on_turn_ended)
@@ -56,6 +63,7 @@ func _ready() -> void:
 	next_mission_btn.pressed.connect(_on_next_mission_pressed)
 	retry_campaign_btn.pressed.connect(_on_retry_campaign_pressed)
 	return_menu_btn.pressed.connect(_on_return_menu_pressed)
+	epilogue_btn.pressed.connect(_on_epilogue_pressed)
 	help_btn.pressed.connect(_on_help_pressed)
 	visibility_changed.connect(_on_visibility_changed)
 
@@ -63,11 +71,13 @@ func _ready() -> void:
 	next_mission_btn.visible = false
 	retry_campaign_btn.visible = false
 	return_menu_btn.visible = false
+	epilogue_btn.visible = false
 
 	_style_primary_button(end_turn_btn)
 	_style_primary_button(next_mission_btn)
 	_style_primary_button(retry_campaign_btn)
 	_style_primary_button(return_menu_btn)
+	_style_primary_button(epilogue_btn)
 
 	# Inside a ScrollContainer, a child only stretches to the full
 	# available width if explicitly told to expand — otherwise it
@@ -411,8 +421,13 @@ func _show_report(report: Dictionary) -> void:
 
 	# Shown only once Mission 5 itself has been won (a win with no
 	# missions left to advance to) — the campaign is actually finished.
+	# Both options appear together; which one to press is the player's
+	# call, not something this screen decides for them.
 	return_menu_btn.visible = won and not more_missions
 	return_menu_btn.text = "Return to Main Menu"
+
+	epilogue_btn.visible = won and not more_missions
+	epilogue_btn.text = "View Epilogue"
 
 
 func _next_mission_title() -> String:
@@ -483,6 +498,45 @@ func _on_return_menu_pressed() -> void:
 		player.on_popup_closed()
 
 	get_tree().change_scene_to_file("res://Scenes/Main.tscn")
+
+
+# TEMPORARY DEBUG — jump straight to the "beat Mission 5" win report,
+# without actually needing to play the mission (companion to
+# PlayerController's 1-5 mission-jump keys; remove before release along
+# with those). Sets current_mission to the last mission first so
+# _show_report()'s "more_missions" check correctly comes out false,
+# which is what makes ReturnMenuBtn/EpilogueBtn show instead of
+# NextMissionBtn.
+func debug_show_m5_win_report() -> void:
+	GameManager.current_mission = GameManager.missions.size() - 1
+	visible = true
+	_show_report({
+		"won":            true,
+		"held_hexes":     0,
+		"required_hexes": 0,
+		"squads_alive":   2,
+		"squads_lost":    0,
+		"turns":          GameManager.get_current_mission_data().get("turns", 0),
+		"rating":         "S",
+		"score":          900,
+		"tile_score":     300,
+		"turn_bonus":     300,
+		"supply_bonus":   300,
+		"data_status":    "secured",
+		"data_carrier":   "Squad Varro",
+	})
+
+
+func _on_epilogue_pressed() -> void:
+	AudioManager.play_button_other()
+	report_panel.visible = false
+	epilogue_btn.visible = false
+
+	visible = false
+	if player and player.has_method("on_popup_closed"):
+		player.on_popup_closed()
+
+	get_tree().change_scene_to_file("res://Scenes/Epilogue.tscn")
 
 
 func _rating_color(rating: String) -> Color:

@@ -37,6 +37,14 @@ uniform float star_density : hint_range(0.0, 1.0) = 0.35;   // higher = more sta
 uniform float twinkle_amount : hint_range(0.0, 1.0) = 0.55;
 uniform float twinkle_speed : hint_range(0.1, 5.0) = 1.6;
 
+// Opt-in slow drift for the starfield — defaults to 0.0 (fully static,
+// matching every existing use of this shader, e.g. the Command Centre
+// sky) so this is silent everywhere unless a material explicitly sets it
+// above zero. Added for the campaign-end epilogue crawl, which wanted a
+// "stars gently drifting past" flourish that the in-game sky never asked
+// for and shouldn't gain unexpectedly.
+uniform float star_drift_speed : hint_range(0.0, 0.5) = 0.0;
+
 // Computed from the actual .tscn transforms instead of a guess: Logistics
 // Terminal sits at root-space (4.351, 0.496, 0.473), Player spawns at
 // (-2.268, 2.567, 0.218). Player -> Logistics gives roughly (1.0, -0.31,
@@ -92,7 +100,13 @@ uniform float planet_aurora_amount : hint_range(0.0, 1.0) = 0.4; // faint polar 
 // the land surface, hinting at combat happening somewhere on the world
 // below rather than a dead, static disc.
 uniform vec3 planet_explosion_color : source_color = vec3(1.0, 0.65, 0.2);
-uniform float planet_explosion_amount : hint_range(0.0, 2.0) = 1.0; // overall flash brightness
+uniform float planet_explosion_amount : hint_range(0.0, 3.0) = 1.0; // overall flash brightness
+// How often flashes fire, on top of their normal rare/occasional cadence
+// below — 1.0 leaves that cadence untouched (every other use of this
+// shader never sets this, so it stays at the default everywhere except
+// wherever a material explicitly cranks it up, e.g. the epilogue's
+// escalating finale).
+uniform float planet_explosion_frequency : hint_range(0.1, 8.0) = 1.0;
 
 // Sine-based hashes (fract(sin(dot(...)) * big_const)) are the textbook
 // example everywhere online, but on real GPU sin() implementations they
@@ -171,8 +185,20 @@ void sky() {
 
 	// --- Starfield — stable per-cell hash so each star has a fixed
 	// position and its own twinkle phase, sparse enough to read as
-	// individual points rather than noise.
-	vec3 cell = floor(dir * 260.0);
+	// individual points rather than noise. star_drift_speed (0.0 by
+	// default) slowly rotates the sampling direction around world Y
+	// before it's floored into cells, which reads as the whole field
+	// gently drifting sideways past camera instead of holding still —
+	// off everywhere this shader is already in use, since it defaults
+	// to no rotation at all.
+	vec3 star_dir = dir;
+	if (star_drift_speed > 0.0) {
+		float drift_a = TIME * star_drift_speed;
+		float sa = sin(drift_a);
+		float ca = cos(drift_a);
+		star_dir = vec3(dir.x * ca + dir.z * sa, dir.y, -dir.x * sa + dir.z * ca);
+	}
+	vec3 cell = floor(star_dir * 260.0);
 	float n = hash13(cell);
 	float star_threshold = mix(0.9985, 0.997, star_density);
 	if (n > star_threshold) {
@@ -347,8 +373,13 @@ void sky() {
 		vec2 exp_uv = offset.xy * 5.0;
 		vec2 exp_cell = floor(exp_uv);
 		vec2 exp_local = fract(exp_uv);
-		float exp_active_cell = step(hash12(exp_cell + 99.0), 0.15);
-		float exp_period = mix(14.0, 30.0, hash12(exp_cell + 41.0));
+		// planet_explosion_frequency scales both how many cells ever get
+		// to flash at all (capped well short of 1.0 so it can never make
+		// literally every cell flash) and how fast each active cell's
+		// cadence repeats — at the default 1.0 this reduces to exactly
+		// the original 0.15 / 14-30s cadence.
+		float exp_active_cell = step(hash12(exp_cell + 99.0), min(0.15 * planet_explosion_frequency, 0.9));
+		float exp_period = mix(14.0, 30.0, hash12(exp_cell + 41.0)) / max(planet_explosion_frequency, 0.001);
 		float exp_phase = hash12(exp_cell + 5.0) * exp_period;
 		float exp_t = mod(TIME + exp_phase, exp_period);
 		float exp_duration = 0.5;

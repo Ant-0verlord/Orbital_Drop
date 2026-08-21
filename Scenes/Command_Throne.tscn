@@ -221,6 +221,10 @@ layout_mode = 2
 visible = false
 layout_mode = 2
 
+[node name="EpilogueBtn" type="Button" parent="MeshInstance3D/StaticBody3D/CommandThronePopup/ReportPanel/ReportVBox" unique_id=2098765434]
+visible = false
+layout_mode = 2
+
 [node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/CommandThronePopup" unique_id=45888852 instance=ExtResource("4_602gn")]
 layout_mode = 1
 

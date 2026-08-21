@@ -98,9 +98,44 @@ func _build_background() -> void:
 	add_child(bg_rect)
 	move_child(bg_rect, 0)
 
+	_build_logo_watermark()
+
 	if bg:
 		bg.color = Color(0.02, 0.03, 0.05, 0.5)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+# -------------------------------------------------------
+# Faint, oversized logo watermark sitting between the
+# background art and the dark scrim (so the scrim dims it
+# a little further, on top of its own low alpha) — big
+# enough to read as a deliberate background flourish, not
+# so bright it competes with the title/buttons on top.
+# -------------------------------------------------------
+func _build_logo_watermark() -> void:
+	var texture = load("res://UI/MainMenu/orbital_drop_logo.png")
+	if texture == null:
+		return
+
+	var logo_rect := TextureRect.new()
+	logo_rect.name = "LogoWatermark"
+	logo_rect.texture = texture
+	logo_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Faint — the scrim (added right after this) dims it further still.
+	logo_rect.modulate = Color(1.0, 1.0, 1.0, 0.24)
+
+	# Large centred box — the logo image is 2048x1024 (2:1), so a
+	# 1700x850 box keeps that aspect ratio while filling most of the
+	# screen behind the title/buttons.
+	logo_rect.set_anchors_preset(Control.PRESET_CENTER)
+	logo_rect.offset_left = -850
+	logo_rect.offset_right = 850
+	logo_rect.offset_top = -425
+	logo_rect.offset_bottom = 425
+
+	add_child(logo_rect)
+	move_child(logo_rect, 1)
 
 
 # -------------------------------------------------------
