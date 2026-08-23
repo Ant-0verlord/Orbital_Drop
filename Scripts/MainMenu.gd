@@ -23,6 +23,14 @@ extends Control
 
 
 func _ready() -> void:
+	# The player controller captures the mouse for first-person movement and
+	# leaves it captured when it changes scene back here (see
+	# CommandThronePopup._on_return_menu_pressed). Mouse mode is global and
+	# survives a scene change, so without this the menu comes up with the
+	# cursor hidden and locked to screen centre — every button unclickable,
+	# and no keyboard fallback to escape with.
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
 	_build_background()
 	_style_title()
 	_style_buttons()

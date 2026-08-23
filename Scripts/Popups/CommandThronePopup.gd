@@ -467,18 +467,11 @@ func _on_retry_campaign_pressed() -> void:
 	if player and player.has_method("on_popup_closed"):
 		player.on_popup_closed()
 
-	# A full campaign retry needs more than GameManager.start_campaign()
-	# alone. That resets the mission index/supply pools/turn counters, but
-	# deliberately leaves a few things untouched because they're meant to
-	# carry forward between missions WITHIN one campaign run — a squad
-	# that went Lost, or one carrying Mission 4's data package, stays that
-	# way on a normal mission-to-mission advance. None of that should
-	# survive into a brand new attempt, so clear it explicitly here.
-	SquadManager.squads.clear()
-	SquadManager.current_turn = 0
-	SquadManager.interference = 0.0
-	GameManager.data_carrier_squad = ""
-	GameManager.extraction_zone = ""
+	# start_campaign() clears the squad roster, turn counter, interference
+	# and data-carrier/extraction state itself — those persist between
+	# missions within a run but must not survive into a new attempt. This
+	# used to be done by hand here, which meant the main menu's Play button
+	# (which only calls start_campaign) didn't get the same treatment.
 	GameManager.start_campaign()
 
 	# Reload Command Centre fresh — same scene-transition GameManager's
@@ -566,7 +559,7 @@ func _on_help_pressed() -> void:
 		),
 		_step(
 			"SQUAD STATUS — A quick overview of all squads, their status, and their current position. Active is healthy. Wounded means taking casualties. Critical means one more hit and they are lost.",
-			^"PanelContainer/VBoxContainer/SquadSummary"
+			^"PanelContainer/VBoxContainer/ScrollContainer/SquadSummary"
 		),
 		_step(
 			"LAST TURN DEBRIEF — A summary of what happened last turn across all squads. Read this alongside the Intel Desk for the full picture.",
@@ -574,7 +567,7 @@ func _on_help_pressed() -> void:
 		),
 		_step(
 			"ENGAGE TURN SEAL — Ends the current turn and resolves all squad actions. You must lock allocations at the Logistics Terminal first. Once sealed you cannot undo it.",
-			^"PanelContainer/VBoxContainer/TurnSealBtn"
+			^"PanelContainer/VBoxContainer/ButtonRow/EndTurnBtn"
 		),
 	]
 	tutorial_overlay.start(steps, self)

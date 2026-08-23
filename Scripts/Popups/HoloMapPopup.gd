@@ -302,19 +302,19 @@ func _on_help_pressed() -> void:
 	var steps: Array[TutorialStep] = [
 		_step(
 			"THE MAP — Shows every sector and who controls it. Green = your squads holding it. Red = enemy controlled. Dark blue/grey = neutral (unclaimed). Squad names and enemy X markers show current positions.",
-			^"HexCanvas"
+			^"PanelContainer/VBoxContainer/HexCanvas"
 		),
 		_step(
 			"PANNING — Middle-click and drag to move around larger maps. On Mission 3 and beyond the map will not fit on screen without scrolling.",
-			^"HexCanvas"
+			^"PanelContainer/VBoxContainer/HexCanvas"
 		),
 		_step(
 			"SPECIAL MARKERS — [T] Comms Tower (power it with Fuel Cells). [!] Priority Target (eliminate in M4 to secure data). [EXT] Extraction Zone (all squads must reach this in M5).",
-			^"HexCanvas"
+			^"PanelContainer/VBoxContainer/HexCanvas"
 		),
 		_step(
 			"SECTOR LIST — Every sector listed here with its current state and which squad occupies it. Scroll down to see the full list on larger maps.",
-			^"SectorList"
+			^"PanelContainer/VBoxContainer/ScrollContainer/SectorList"
 		),
 	]
 
@@ -322,7 +322,7 @@ func _on_help_pressed() -> void:
 	if not GameManager.get_pending_reinforcement().is_empty() or not GameManager.get_pending_bombardment().is_empty():
 		steps.append(_step(
 			"PLACEMENT MODE — A reinforcement drop or orbital strike is armed. Click a hex on the map to select your target, then confirm. The map will highlight valid positions.",
-			^"PlacementBanner"
+			^"PanelContainer/VBoxContainer/PlacementBanner"
 		))
 
 	tutorial_overlay.start(steps, self)

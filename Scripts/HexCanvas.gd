@@ -84,8 +84,25 @@ func _clamp_pan_offset() -> void:
 		max_y = max(max_y, entry.center.y)
 
 	var margin = HEX_RADIUS * 2.0
-	pan_offset.x = clamp(pan_offset.x, size.x - max_x - margin, -min_x + margin)
-	pan_offset.y = clamp(pan_offset.y, size.y - max_y - margin, -min_y + margin)
+	# When the whole map already fits inside the canvas — which is the case on
+	# Missions 1 and 2 — the low bound computes HIGHER than the high bound.
+	# Godot's clamp() is min(max(v, lo), hi), so an inverted pair silently
+	# collapses to `hi` and the grid snaps to a fixed offset and then refuses
+	# to move at all. There's nothing to scroll to in that case, so pin it at
+	# zero (centred) instead of clamping.
+	var lo_x: float = size.x - max_x - margin
+	var hi_x: float = -min_x + margin
+	if lo_x > hi_x:
+		pan_offset.x = 0.0
+	else:
+		pan_offset.x = clamp(pan_offset.x, lo_x, hi_x)
+
+	var lo_y: float = size.y - max_y - margin
+	var hi_y: float = -min_y + margin
+	if lo_y > hi_y:
+		pan_offset.y = 0.0
+	else:
+		pan_offset.y = clamp(pan_offset.y, lo_y, hi_y)
 
 func _process(delta: float) -> void:
 	if not visible:
@@ -189,9 +206,17 @@ func _sector_at(pos: Vector2) -> String:
 
 func _point_in_hex(point: Vector2, center: Vector2, radius: float) -> bool:
 	var local = point - center
-	# Pointy-top hex containment check
-	var q = (2.0 / 3.0 * local.x) / radius
-	var r = (-1.0 / 3.0 * local.x + sqrt(3.0) / 3.0 * local.y) / radius
+	# Pointy-top pixel -> axial inverse. This MUST match the orientation used
+	# by _hex_points() (vertices at 60*i - 30 degrees, i.e. a vertex top and
+	# bottom) and by _build_hex_layout()'s axial -> pixel, which are both
+	# pointy-top. It previously used the FLAT-top inverse
+	# (q = 2/3*x, r = -1/3*x + sqrt(3)/3*y), which produces a containment
+	# hexagon rotated 30 degrees against the one actually drawn — so part of
+	# each hex couldn't be clicked, and a sliver outside it could, meaning a
+	# reinforcement drop or orbital strike could land on the neighbouring
+	# sector to the one the player aimed at.
+	var q = (sqrt(3.0) / 3.0 * local.x - 1.0 / 3.0 * local.y) / radius
+	var r = (2.0 / 3.0 * local.y) / radius
 	var s = -q - r
 	var rq = round(q); var rr = round(r); var rs = round(s)
 	var dq = abs(rq - q); var dr = abs(rr - r); var ds = abs(rs - s)
@@ -289,9 +314,11 @@ func _draw() -> void:
 					var pulse = sin(pulse_time * 1.6) * 0.5 + 0.5
 					fill.a = lerp(0.6, 1.0, pulse)
 
-		draw_colored_polygon(_hex_points(center, HEX_INNER), fill)
-		
-		# Special sector colour override
+		# Special sector colour override — has to happen BEFORE the polygon is
+		# drawn. It used to sit just after the draw_colored_polygon() call
+		# below, where nothing read `fill` again, so the tower/priority/
+		# extraction tints (and their pulses) were computed and thrown away and
+		# those hexes never looked any different from an ordinary one.
 		var special_type = special_sectors.get(sector, "")
 		if not placement_mode and special_type != "":
 			match special_type:
@@ -305,6 +332,8 @@ func _draw() -> void:
 				"extraction":
 					var pulse = sin(pulse_time * 1.5) * 0.5 + 0.5
 					fill = fill.lerp(COLOR_EXTRACTION, 0.6 + pulse * 0.2)
+
+		draw_colored_polygon(_hex_points(center, HEX_INNER), fill)
 
 		# Border
 		var border = COLOR_BORDER

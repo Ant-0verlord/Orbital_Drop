@@ -3,7 +3,13 @@ extends Node3D
 # CommandCentre.gd
 # =============================================================
 
-@onready var result_overlay:    Control     = $ResultOverlay
+# Optional — there is no ResultOverlay node in Command_Centre.tscn at the
+# moment, because the mission result is presented by the Command Throne's
+# own report panel instead. get_node_or_null (rather than $ResultOverlay)
+# is what keeps that from logging a "Node not found" error on every load;
+# every use below is already null-guarded, so adding the node back would
+# simply switch this second display on.
+@onready var result_overlay:    Control     = get_node_or_null("ResultOverlay")
 @onready var briefing_overlay:  CanvasLayer = $MissionBriefingOverlay
 @onready var guide_overlay:     CanvasLayer = $GuideOverlay
 
@@ -180,14 +186,22 @@ func _start_mission() -> void:
 func _on_allocations_locked() -> void:
 	GuideManager.on_allocs_locked()
 
+# TurnManager emits mission_complete when a mission ENDS, win or lose, with
+# the outcome carried in report.won — so this has to check it rather than
+# assume, otherwise a failed mission would announce "MISSION COMPLETE".
+#
+# Neither handler appends to GameManager.campaign_record any more:
+# TurnManager already appends a proper per-mission dictionary (mission,
+# won, score, rating) for every mission, while these two were pushing bare
+# "win"/"loss" strings into that same array — so it ended up holding two
+# different shapes of entry for every mission played.
 func _on_mission_complete(report: Dictionary) -> void:
 	GuideManager.on_turn_ended()
-	GameManager.campaign_record.append("win")
-	_show_result(true, "MISSION COMPLETE", "Objective achieved.")
+	if report.get("won", false):
+		_show_result(true, "MISSION COMPLETE", "Objective achieved.")
 
 func _on_mission_failed(reason: String) -> void:
 	GuideManager.on_turn_ended()
-	GameManager.campaign_record.append("loss")
 	_show_result(false, "MISSION FAILED", reason)
 
 func _show_result(win: bool, title: String, message: String) -> void:

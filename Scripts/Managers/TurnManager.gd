@@ -490,9 +490,16 @@ func _end_mission(won: bool, reason: String) -> void:
 		"rating":  score.rating,
 	})
 
-	if won:
-		emit_signal("mission_complete", report)
-	else:
+	# mission_complete is the "mission has ended, here is the full report"
+	# signal, and the outcome is carried inside the report as report.won. The
+	# console popups connect ONLY to this one and branch on that flag, so it
+	# has to fire on a loss as well or the failure report screen — and the
+	# Retry button on it — never appears. mission_failed is the extra
+	# "and here's the reason" notification layered on top, not a replacement.
+	#
+	# This used to emit mission_complete inside the `if won:` branch AND
+	# again unconditionally underneath, so every listener ran twice on a win.
+	if not won:
 		emit_signal("mission_failed", reason)
 	emit_signal("mission_complete", report)
 

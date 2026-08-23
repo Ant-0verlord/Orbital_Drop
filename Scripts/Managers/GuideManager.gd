@@ -88,7 +88,12 @@ func on_allocs_locked() -> void:
 		var has_pending = not GameManager.get_pending_reinforcement().is_empty() or not GameManager.get_pending_bombardment().is_empty()
 		_set_step(Step.VISIT_HOLOMAP if has_pending else Step.VISIT_THRONE)
 
-func on_turn_ended() -> void:
+# TurnManager.turn_ended passes the turn number, while CommandCentre calls
+# this directly with no argument — the default value keeps both callers
+# valid. Without the parameter the signal connection fails at emit time
+# ("method expected 0 arguments, but called with 1") and the guide never
+# retires itself after turn 1.
+func on_turn_ended(_turn_number: int = 0) -> void:
 	if not guide_active:
 		return
 	if not turn_1_done:

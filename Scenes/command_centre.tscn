@@ -236,6 +236,33 @@ light_size = 0.037
 spot_range = 34.70398
 spot_angle = 70.506996
 
+[node name="SpotLight3D3" type="SpotLight3D" parent="SpotLight3D2" unique_id=1547530649]
+transform = Transform3D(1, 0, 0, 0, 0.9771125, 0.2127234, 0, -0.2127234, 0.9771125, 1.009964, -2.341512, -6.47058)
+light_energy = 16.0
+light_indirect_energy = 16.0
+light_volumetric_fog_energy = 0.0
+light_size = 0.037
+spot_range = 34.70398
+spot_angle = 70.506996
+
+[node name="SpotLight3D2" type="SpotLight3D" parent="SpotLight3D2/SpotLight3D3" unique_id=863293600]
+transform = Transform3D(1, 0, 0, 0, -0.99999535, -0.003046953, 0, 0.003046953, -0.99999535, 3.2819188, -0.10256177, -3.9344888)
+light_energy = 16.0
+light_indirect_energy = 16.0
+light_volumetric_fog_energy = 0.0
+light_size = 0.037
+spot_range = 34.70398
+spot_angle = 70.506996
+
+[node name="SpotLight3D2" type="SpotLight3D" parent="SpotLight3D2/SpotLight3D3/SpotLight3D2" unique_id=44331024]
+transform = Transform3D(-0.9660695, 0.0015739514, -0.25827745, 0.000786985, -0.9999588, -0.009037449, -0.25828102, -0.008934064, 0.9660286, 6.143855, -0.11433964, -0.069100976)
+light_energy = 16.0
+light_indirect_energy = 16.0
+light_volumetric_fog_energy = 0.0
+light_size = 0.037
+spot_range = 34.70398
+spot_angle = 70.506996
+
 [node name="MissionBriefingOverlay" parent="." unique_id=1970799262 instance=ExtResource("9_uagpp")]
 
 [node name="GuideOverlay" parent="." unique_id=1628897131 instance=ExtResource("10_0dw1l")]

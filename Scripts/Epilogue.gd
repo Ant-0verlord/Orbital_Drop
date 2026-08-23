@@ -71,7 +71,9 @@ extends Node3D
 #                           DIVING cut)
 #   CLOUD_DISTANCE/RADIUS — where the dive cloud sits and how big it is
 #   FLAG_HOLD_DURATION    — how long the 2D finale holds before fading out
-#   FLAG_TEX_WIDTH_PX/HEIGHT_PX — how big the flag is drawn
+#   FLAG_TEX_WIDTH_PX, FLAG_CLOTH_HEIGHT_PX — how big the flag's visible
+#                           cloth is drawn (the rect around it is sized
+#                           from these; see FLAG_CLOTH_BAND)
 #   POLE_WIDTH_PX/TOP_MARGIN_PX — how thick the pole is and how far it
 #                           pokes up above the raised flag
 #   FLAG_RAISE_DURATION   — how long the rise up the pole takes
@@ -154,7 +156,17 @@ const SKY_COLOR := Color(0.72, 0.68, 0.6)
 # only thing on screen now, so it reads as a hero shot rather than a
 # small prop. Keeps the same ~1.56:1 aspect ratio as the source texture.
 const FLAG_TEX_WIDTH_PX: float = 320.0
-const FLAG_TEX_HEIGHT_PX: float = 205.0
+# How tall the visible CLOTH is meant to read on screen.
+const FLAG_CLOTH_HEIGHT_PX: float = 205.0
+# Flag2D.gdshader insets the cloth from the top and bottom of its quad by
+# its edge_margin uniform (0.06 each side, which is also the headroom the
+# wave needs), leaving the cloth occupying this fraction of the quad. Keep
+# in sync with that uniform — if they drift, the flag just reads slightly
+# larger or smaller than intended, nothing breaks.
+const FLAG_CLOTH_BAND: float = 0.88
+# So the RECT has to be drawn taller than the cloth is meant to look —
+# the rest is the shader's wave headroom, which is transparent.
+const FLAG_TEX_HEIGHT_PX: float = FLAG_CLOTH_HEIGHT_PX / FLAG_CLOTH_BAND
 # How long the rise up the pole takes (see Phase.FLAG_HOLD in _process()).
 const FLAG_RAISE_DURATION: float = 3.0
 
@@ -163,10 +175,12 @@ const FLAG_RAISE_DURATION: float = 3.0
 # whole pole+flag assembly sits in the middle of the screen, not just
 # the flag texture on its own.
 const POLE_WIDTH_PX: float = 10.0
-# How far the pole pokes up above the flag's fully-raised top edge —
-# just enough to read as a proper pole cap, not a bare stick the flag is
-# taped to.
-const POLE_TOP_MARGIN_PX: float = 24.0
+# How far the pole pokes up above the flag RECT's fully-raised top edge.
+# The visible cloth starts a further FLAG_TEX_HEIGHT_PX * (1 -
+# FLAG_CLOTH_BAND) / 2 (~14px) below that, so the gap actually seen above
+# the cloth is roughly this plus that — enough to read as a proper pole
+# cap, not a bare stick the flag is taped to.
+const POLE_TOP_MARGIN_PX: float = 14.0
 # How far the pole's bottom extends past the bottom of the screen —
 # reads as "planted, continuing off-frame" rather than a pole that just
 # stops in mid-air.
@@ -201,9 +215,6 @@ var _snap_to_basis: Basis
 var _reveal_to_basis: Basis
 var _reveal_from_basis: Basis
 
-# NOTE: "[PARTNER NAME]" below is a placeholder — swap in your partner's
-# actual name (or however you'd both like to be credited) before this
-# ships anywhere final.
 const PART1_TEXT := """ORBITAL DROP
 
 
@@ -403,8 +414,11 @@ func _process(delta: float) -> void:
 
 		Phase.SNAPPING:
 			crawl_label_b.position.y += SCROLL_SPEED * delta
-			var t = clamp(_phase_time / SNAP_DURATION, 0.0, 1.0)
-			var eased = t * t * (3.0 - 2.0 * t)
+			# Explicitly typed rather than inferred with := — clamp() and
+			# friends are generic builtins, so := on them trips GDScript's
+			# type inference. Same in the phases below.
+			var t: float = clamp(_phase_time / SNAP_DURATION, 0.0, 1.0)
+			var eased: float = t * t * (3.0 - 2.0 * t)
 			_set_camera_basis(_reading_basis.slerp(_snap_to_basis, eased))
 			if t >= 1.0:
 				_set_camera_basis(_snap_to_basis)
@@ -419,8 +433,8 @@ func _process(delta: float) -> void:
 				_phase_time = 0.0
 
 		Phase.REVEALING:
-			var t = clamp(_phase_time / REVEAL_PAN_DURATION, 0.0, 1.0)
-			var eased = t * t * (3.0 - 2.0 * t)
+			var t: float = clamp(_phase_time / REVEAL_PAN_DURATION, 0.0, 1.0)
+			var eased: float = t * t * (3.0 - 2.0 * t)
 			_set_camera_basis(_reveal_from_basis.slerp(_reveal_to_basis, eased))
 			_set_explosion_level(
 				lerp(EXPLOSION_FREQ_START, EXPLOSION_FREQ_MID, eased),
@@ -434,8 +448,8 @@ func _process(delta: float) -> void:
 				_phase_time = 0.0
 
 		Phase.DIVING:
-			var t = clamp(_phase_time / DIVE_DURATION, 0.0, 1.0)
-			var eased = t * t
+			var t: float = clamp(_phase_time / DIVE_DURATION, 0.0, 1.0)
+			var eased: float = t * t
 			camera.fov = lerp(CAMERA_FOV, DIVE_END_FOV, eased)
 			# Ease forward toward the cloud on top of the FOV narrowing —
 			# together they read as accelerating straight into it, not

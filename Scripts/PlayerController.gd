@@ -137,8 +137,14 @@ func _unhandled_input(event: InputEvent) -> void:
 				# including the mission debrief report screen.
 				interact_label.visible = false
 
-	# TEMPORARY DEBUG — jump to mission by number key (remove before release)
-	if event is InputEventKey and event.pressed and not popup_open and not pause_menu_open:
+	# DEBUG — jump to mission by number key. Gated on OS.is_debug_build() so
+	# it stays available while playing from the editor (and from a debug
+	# export) but can't fire in a release export: number keys have no other
+	# use in this game, so anyone else at the keyboard tapping 1-5 would
+	# otherwise silently reset the campaign to Mission 1 and lose their run
+	# with no confirmation. Drop the OS.is_debug_build() check if these are
+	# needed in an exported release build for a demo.
+	if OS.is_debug_build() and event is InputEventKey and event.pressed and not popup_open and not pause_menu_open:
 		if event.keycode >= KEY_1 and event.keycode <= KEY_5:
 			var mission_index = event.keycode - KEY_1
 			GameManager.debug_jump_to_mission(mission_index)

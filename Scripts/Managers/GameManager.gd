@@ -1136,7 +1136,26 @@ func debug_jump_to_mission(index: int) -> void:
 	emit_signal("mission_advanced")
 	print("DEBUG: Jumped to mission %d — %s" % [index, missions[index].get("title", "")])
 
+# Starts a BRAND NEW campaign run — both callers (the main menu's Play
+# button and the Command Throne's Retry Campaign button) mean exactly that.
+#
+# The squad roster and its companions are cleared here rather than left to
+# the caller. They're deliberately persistent BETWEEN MISSIONS within one
+# run — a squad that went Lost stays lost, the squad carrying the data
+# package keeps it — but none of that should survive into a new attempt.
+# Retry Campaign used to do this clearing itself while the main menu's Play
+# button didn't, so finishing a run and pressing Play started Mission 1
+# with the previous run's casualties still marked Lost (unable to ever act,
+# and an instant fail on turn 1 if both starting squads had died), the
+# previous run's reinforcement squads still on the roster, and a stale
+# data-carrier marker on the map.
 func start_campaign() -> void:
+	SquadManager.squads.clear()
+	SquadManager.current_turn = 0
+	SquadManager.interference = 0.0
+	data_carrier_squad = ""
+	extraction_zone = ""
+
 	current_mission = 0
 	campaign_record = []
 	used_reinforcement_names = []

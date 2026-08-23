@@ -3,6 +3,13 @@ render_mode unshaded, cull_disabled;
 // =============================================================
 // Flag.gdshader
 // =============================================================
+// CURRENTLY UNUSED — kept for reference. The epilogue's finale was
+// rebuilt as a flat 2D scene, so the banner is drawn by Flag2D.gdshader
+// now instead (a canvas_item shader, since a flat quad has no subdivided
+// vertices for the technique below to bend). Nothing in the project
+// loads this file any more, so it's safe to delete if you'd rather not
+// carry it.
+//
 // A simple cloth-wave vertex shader for the Orbital Drop banner shown
 // at the end of the campaign epilogue. Cheap and reliable: no cloth
 // physics or SoftBody needed, just a couple of sine waves displacing a
