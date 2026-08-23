@@ -63,8 +63,11 @@ extends Node3D
 # Tunable knobs, if the pacing feels off once you've actually watched it:
 #   SCROLL_SPEED         — how fast the space crawl text rises (world
 #                           units/sec)
-#   AUTO_RETURN_DIST      — how far each half's text has to recede before
-#                           moving on to the next stage
+#   CRAWL_CLEAR_MARGIN    — cushion past the top of frame before the next
+#                           beat starts. Each half now runs until its text
+#                           is genuinely gone, so how long the crawl takes
+#                           is set by SCROLL_SPEED and the length of the
+#                           text itself, not by a fixed distance
 #   EXPLOSION_FREQ_MID/PEAK, EXPLOSION_AMOUNT_MID/PEAK — how far the
 #                           finale's explosions escalate (MID by the end
 #                           of the REVEALING pan, PEAK by the end of the
@@ -116,11 +119,20 @@ const DOWN_OFFSET: float = 7.5
 const SNAP_DURATION: float = 0.9
 const SNAP_YAW: float = deg_to_rad(35.0)
 
-# How far each half's text has to recede (past FORWARD_DIST) before the
-# next beat kicks in. Trimmed down from an earlier pass — at the old
-# value the gap between "text finishes scrolling" and "something new
-# happens" read as a dead pause rather than a breath.
-const AUTO_RETURN_DIST: float = 8.0
+# Each half of the crawl runs until the text has genuinely left the top of
+# the frame — see _crawl_finished(). How long that takes depends on how
+# tall the rendered block is, so it's measured from the label rather than
+# guessed at with a fixed distance; SCROLL_SPEED is the knob for pacing.
+#
+# Cushion (world units) past the top of frame before the next beat starts,
+# so the last line is unambiguously gone rather than still clipping the
+# edge as the camera moves.
+const CRAWL_CLEAR_MARGIN: float = 0.8
+# Used only if Label3D hasn't built its text mesh yet when it's first
+# asked (get_aabb() comes back empty). Comfortably taller than either half
+# of the crawl, so the worst case is a slightly late hand-off rather than a
+# phase that never ends.
+const CRAWL_FALLBACK_BLOCK_HEIGHT: float = 24.0
 const REVEAL_PAN_DURATION: float = 4.0
 
 const DIVE_DURATION: float = 1.4
@@ -403,7 +415,7 @@ func _process(delta: float) -> void:
 	match _phase:
 		Phase.READING_A:
 			crawl_label_a.position.y += SCROLL_SPEED * delta
-			if _receded_enough(crawl_label_a, _away_dir):
+			if _crawl_finished(crawl_label_a, _reading_basis):
 				# Hide A the instant B is due to take over — guarantees
 				# the two crawls are never both on screen together during
 				# the whip-pan, however far A has actually scrolled.
@@ -427,7 +439,7 @@ func _process(delta: float) -> void:
 
 		Phase.READING_B:
 			crawl_label_b.position.y += SCROLL_SPEED * delta
-			if _receded_enough(crawl_label_b, _snap_away_dir):
+			if _crawl_finished(crawl_label_b, _snap_to_basis):
 				_reveal_from_basis = _snap_to_basis
 				_phase = Phase.REVEALING
 				_phase_time = 0.0
@@ -482,8 +494,52 @@ func _process(delta: float) -> void:
 				_finish()
 
 
-func _receded_enough(label: Label3D, away_dir: Vector3) -> bool:
-	return label.global_transform.origin.dot(away_dir) > FORWARD_DIST + AUTO_RETURN_DIST
+# True once the WHOLE text block has travelled up past the top edge of the
+# frame — not merely its origin.
+#
+# This used to test the label's ORIGIN against a fixed recession distance
+# (FORWARD_DIST + AUTO_RETURN_DIST). Two things were wrong with that. The
+# origin sits at the block's TOP line (vertical_alignment = TOP, see
+# _build_crawl_rig), with the rest of the text hanging below it, so its
+# position says nothing about where the LAST line has got to. And at the
+# tuned values it tripped after 18.4 units of scroll, while even the top
+# line didn't clear the frame until 20.2 — so the whip-pan and the planet
+# reveal both cut away with the text still visibly on screen.
+#
+# Instead: take the lowest point of the actual rendered text and ask
+# whether it has passed above the top of the camera's frustum. Reading it
+# from the label (rather than counting lines) means wrapping is accounted
+# for automatically, so editing PART1_TEXT/PART2_TEXT can't silently
+# reintroduce an early cut.
+func _crawl_finished(label: Label3D, view_basis: Basis) -> bool:
+	var bounds: AABB = label.get_aabb()
+	var local_bottom: float = bounds.position.y
+	if bounds.size.y <= 0.0:
+		local_bottom = -CRAWL_FALLBACK_BLOCK_HEIGHT
+
+	# Only the local Y offset matters: the rig is tilted about the view's own
+	# RIGHT axis, so the block's local X maps onto that axis and contributes
+	# nothing to either the depth or the height measured below.
+	var bottom: Vector3 = label.global_transform * Vector3(0.0, local_bottom, 0.0)
+
+	var depth: float = bottom.dot(-view_basis.z)
+	if depth <= 0.01:
+		# Behind the camera plane means NOT finished, which is worth spelling
+		# out because the instinct is the opposite. The block is tilted away
+		# from the camera, so its lowest line is its NEAREST point — on a long
+		# enough crawl that line starts out behind the camera and only comes
+		# forward as the text scrolls up (depth rises steadily with the
+		# scroll). So this is the state before the block has cleared, never
+		# after it, and the frustum test below wouldn't be meaningful here
+		# anyway — the top plane extends backwards behind the camera too, so a
+		# point behind and well below it would read as "above" the plane.
+		return false
+
+	# Half-height of the frustum at that depth. Camera3D.fov is the VERTICAL
+	# field of view (keep_aspect defaults to KEEP_HEIGHT), which is the axis
+	# the crawl actually travels along.
+	var top_edge: float = depth * tan(deg_to_rad(CAMERA_FOV * 0.5))
+	return bottom.dot(view_basis.y) > top_edge + CRAWL_CLEAR_MARGIN
 
 
 func _set_camera_basis(b: Basis) -> void:
