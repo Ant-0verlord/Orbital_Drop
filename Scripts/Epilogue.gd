@@ -6,8 +6,8 @@ extends Node3D
 # from the Command Throne's report screen — "View Epilogue" only shows
 # there once Mission 5 itself is beaten). A Star-Wars-crawl-style text
 # scroll in front of the same SpaceSky backdrop used aboard the Command
-# Centre, ending on a "sneaky cut" — dive into an actual cloud placed out
-# along the planet direction, cut to white mid-cloud, and land on a
+# Centre, ending on a "sneaky cut" — zoom hard into the planet, wash to
+# white at the end of the zoom, and land on a
 # simple flat 2D scene: just the Orbital Drop banner on its pole,
 # centred on screen, rising up into place — instead of trying to render
 # a believable continuous descent all the way to the surface (or any
@@ -27,16 +27,19 @@ extends Node3D
 #   READING_B  — camera fixed again at the new framing while the second
 #                half (a little more lore, then "THE END") scrolls.
 #   REVEALING  — once that text has scrolled fully away, the camera
-#                slowly pans across to finally look at the planet (and
-#                the dive cloud sitting in front of it). Explosions on
-#                the planet's surface start ramping up as it comes into
-#                view.
+#                slowly pans across to finally look at the planet.
+#                Explosions on the planet's surface start ramping up as
+#                it comes into view.
 #   DIVING     — no separate held "explosions build up" beat anymore —
-#                as soon as the pan finishes, FOV rushes inward AND the
-#                camera eases forward toward the dive cloud (together
-#                reading as flying straight at it) while the explosions
-#                keep climbing to their peak and the screen washes to
-#                white as it's entered.
+#                as soon as the pan finishes the FOV rushes inward,
+#                magnifying the planet until its surface fills the frame,
+#                while the explosions keep climbing to their peak and the
+#                screen washes to white.
+#                Note this is a pure FOV zoom, with no camera travel: the
+#                planet is drawn by SpaceSky.gdshader as part of the sky,
+#                i.e. at infinity, so moving the camera towards it would
+#                not change its size on screen by a single pixel. Only
+#                narrowing the FOV actually closes the distance.
 #   FLAG_HOLD  — the "sneaky cut": at full white, the whole 3D space
 #                scene is swapped for a plain flat-colour 2D backdrop
 #                (built by _build_finale_2d() under a CanvasLayer, not a
@@ -72,7 +75,10 @@ extends Node3D
 #                           finale's explosions escalate (MID by the end
 #                           of the REVEALING pan, PEAK by the end of the
 #                           DIVING cut)
-#   CLOUD_DISTANCE/RADIUS — where the dive cloud sits and how big it is
+#   DIVE_END_FOV/DURATION — how far the final zoom pushes in and how long
+#                           it takes (the whole of the dive beat)
+#   CRAWL_BOOST_PER_TICK/MAX — how much a mouse-wheel notch speeds the
+#                           crawl up, and the ceiling on that
 #   FLAG_HOLD_DURATION    — how long the 2D finale holds before fading out
 #   FLAG_TEX_WIDTH_PX, FLAG_CLOTH_HEIGHT_PX — how big the flag's visible
 #                           cloth is drawn (the rect around it is sized
@@ -80,8 +86,11 @@ extends Node3D
 #   POLE_WIDTH_PX/TOP_MARGIN_PX — how thick the pole is and how far it
 #                           pokes up above the raised flag
 #   FLAG_RAISE_DURATION   — how long the rise up the pole takes
-# Pressing any key/mouse button skips straight to the main menu at any
+# Pressing any key or mouse button skips straight to the main menu at any
 # point, so a duration guess that runs long never actually traps anyone.
+# The mouse WHEEL is the exception — it fast-forwards the crawl instead of
+# skipping (see _unhandled_input), so a player who just wants to get to the
+# ending faster has something short of an all-or-nothing skip.
 # =============================================================
 
 enum Phase { READING_A, SNAPPING, READING_B, REVEALING, DIVING, FLAG_HOLD }
@@ -93,7 +102,9 @@ var crawl_rig_b: Node3D
 var crawl_label_b: Label3D
 var fade_rect: ColorRect
 var sky_material: ShaderMaterial
-var _dive_cloud: Node3D
+
+# Extra crawl speed from the mouse wheel — see CRAWL_BOOST_PER_TICK.
+var _scroll_boost: float = 0.0
 
 # --- 2D finale ---
 var flag_sprite: TextureRect
@@ -101,6 +112,22 @@ var _flag_base_y: float
 var _flag_top_y: float
 
 const SCROLL_SPEED: float = 0.6
+
+# --- Mouse-wheel fast-forward, crawl only ---
+# Wheel down piles on speed, wheel up bleeds it back off again (never below
+# the normal pace, and never into reverse). The boost also decays on its
+# own, which makes this an ACTIVE fast-forward: spin to keep the text
+# moving, stop and it eases back to reading pace within about a second
+# rather than staying stuck fast because of one stray flick.
+#
+# Deliberately limited to the crawl. The planet reveal, the zoom and the
+# flag hold are fixed-length beats built around their own easing curves and
+# the wash to white — letting the wheel rush those would just desynchronise
+# the ending. See _crawl_is_scrolling().
+const CRAWL_BOOST_PER_TICK: float = 1.1
+const CRAWL_BOOST_MAX: float = 4.4
+# How fast the boost bleeds away, in units of scroll speed per second.
+const CRAWL_BOOST_DECAY: float = 5.0
 const CAMERA_FOV: float = 62.0
 # More upright than a full theatrical crawl — still tilted back enough
 # to read as receding into the distance, just not leaning back so hard
@@ -135,22 +162,16 @@ const CRAWL_CLEAR_MARGIN: float = 0.8
 const CRAWL_FALLBACK_BLOCK_HEIGHT: float = 24.0
 const REVEAL_PAN_DURATION: float = 4.0
 
-const DIVE_DURATION: float = 1.4
-const DIVE_END_FOV: float = 16.0
-# The camera eases forward into the dive cloud on top of the FOV zoom
-# itself, so it reads as flying at it rather than just a lens effect.
-const DIVE_FORWARD_DIST: float = 6.0
+# The dive is now a pure FOV zoom (see the DIVING note in the header), so
+# these two carry the whole beat on their own — pushed further in and given
+# a little longer to breathe than when a cloud rushing past the camera was
+# doing half the work of selling it.
+const DIVE_DURATION: float = 1.8
+const DIVE_END_FOV: float = 10.0
 const FLAG_REVEAL_FADE_DURATION: float = 1.0
 # Bumped up from the original 5.0 so there's a proper beat to actually
 # watch the flag rise up the pole and settle before it fades out.
 const FLAG_HOLD_DURATION: float = 9.0
-
-# --- Dive cloud --- the thing actually being "flown into" for the cut,
-# planted out along PLANET_DIR so it's already sitting there once the
-# camera turns to face the planet, and grows to fill frame as the FOV
-# narrows and the camera eases toward it.
-const CLOUD_DISTANCE: float = 22.0
-const CLOUD_RADIUS: float = 7.0
 
 # =============================================================
 # 2D finale scene — a plain flat-colour CanvasLayer scene (Control/
@@ -330,8 +351,6 @@ func _build_scene() -> void:
 	# blocks of text sitting beside each other rather than one at a time.
 	crawl_rig_b.visible = false
 
-	_dive_cloud = _build_dive_cloud()
-
 	# --- Skip hint --- a fixed 2D overlay, not part of the 3D crawl.
 	var skip_layer := CanvasLayer.new()
 	skip_layer.name = "SkipLayer"
@@ -339,11 +358,11 @@ func _build_scene() -> void:
 
 	var skip_hint := Label.new()
 	skip_hint.name = "SkipLabel"
-	skip_hint.text = "Press any key to skip"
+	skip_hint.text = "Scroll to speed up  ·  Press any key to skip"
 	skip_hint.add_theme_color_override("font_color", Color(0.72, 0.76, 0.82))
 	skip_hint.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	skip_hint.position = Vector2(-260, -50)
-	skip_hint.size = Vector2(240, 30)
+	skip_hint.position = Vector2(-400, -50)
+	skip_hint.size = Vector2(380, 30)
 	skip_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	skip_layer.add_child(skip_hint)
 
@@ -411,10 +430,13 @@ func _process(delta: float) -> void:
 		return
 
 	_phase_time += delta
+	# Bleed off any mouse-wheel boost. move_toward rather than a multiply so
+	# it settles exactly on zero instead of creeping towards it forever.
+	_scroll_boost = move_toward(_scroll_boost, 0.0, CRAWL_BOOST_DECAY * delta)
 
 	match _phase:
 		Phase.READING_A:
-			crawl_label_a.position.y += SCROLL_SPEED * delta
+			crawl_label_a.position.y += _crawl_step(delta)
 			if _crawl_finished(crawl_label_a, _reading_basis):
 				# Hide A the instant B is due to take over — guarantees
 				# the two crawls are never both on screen together during
@@ -425,7 +447,7 @@ func _process(delta: float) -> void:
 				_phase_time = 0.0
 
 		Phase.SNAPPING:
-			crawl_label_b.position.y += SCROLL_SPEED * delta
+			crawl_label_b.position.y += _crawl_step(delta)
 			# Explicitly typed rather than inferred with := — clamp() and
 			# friends are generic builtins, so := on them trips GDScript's
 			# type inference. Same in the phases below.
@@ -438,7 +460,7 @@ func _process(delta: float) -> void:
 				_phase_time = 0.0
 
 		Phase.READING_B:
-			crawl_label_b.position.y += SCROLL_SPEED * delta
+			crawl_label_b.position.y += _crawl_step(delta)
 			if _crawl_finished(crawl_label_b, _snap_to_basis):
 				_reveal_from_basis = _snap_to_basis
 				_phase = Phase.REVEALING
@@ -462,12 +484,12 @@ func _process(delta: float) -> void:
 		Phase.DIVING:
 			var t: float = clamp(_phase_time / DIVE_DURATION, 0.0, 1.0)
 			var eased: float = t * t
+			# Pure FOV zoom, held at the origin. The camera used to also
+			# ease forward, which was there to close on the dive cloud —
+			# with that gone there is nothing left in the scene to travel
+			# towards, since the planet lives in the sky shader and so sits
+			# at infinity. Moving would cost frames and change nothing.
 			camera.fov = lerp(CAMERA_FOV, DIVE_END_FOV, eased)
-			# Ease forward toward the cloud on top of the FOV narrowing —
-			# together they read as accelerating straight into it, not
-			# just a lens effect sitting still in space.
-			var dive_forward := -_reveal_to_basis.z
-			camera.global_transform = Transform3D(_reveal_to_basis, dive_forward * DIVE_FORWARD_DIST * eased)
 			# No separate held "explosions build up" beat anymore — they
 			# climb the rest of the way to PEAK during this same dive
 			# instead of camera holding still to watch them do it first.
@@ -492,6 +514,17 @@ func _process(delta: float) -> void:
 
 			if _phase_time >= FLAG_HOLD_DURATION:
 				_finish()
+
+
+# Per-frame scroll distance for the crawl, mouse-wheel boost included.
+func _crawl_step(delta: float) -> float:
+	return (SCROLL_SPEED + _scroll_boost) * delta
+
+
+# The wheel only drives the crawl itself — everything from the planet
+# reveal onward is a fixed-length beat that shouldn't be rushed.
+func _crawl_is_scrolling() -> bool:
+	return _phase == Phase.READING_A or _phase == Phase.SNAPPING or _phase == Phase.READING_B
 
 
 # True once the WHOLE text block has travelled up past the top edge of the
@@ -553,7 +586,7 @@ func _set_explosion_level(freq: float, amount: float) -> void:
 	sky_material.set_shader_parameter("planet_explosion_amount", amount)
 
 
-# The "sneaky cut" — swapped in at full white (mid-dive-cloud), so none
+# The "sneaky cut" — swapped in at full white (at the end of the zoom), so none
 # of this is ever actually seen happening. The old 3D ground scene (sun,
 # terrain, mound) is gone entirely now — the 2D finale (see
 # _build_finale_2d()) fully covers the screen, so there's nothing left
@@ -562,65 +595,12 @@ func _do_cut_swap() -> void:
 	var old_env := get_node_or_null("SpaceEnvironment")
 	if old_env:
 		old_env.queue_free()
-	if _dive_cloud:
-		_dive_cloud.queue_free()
-		_dive_cloud = null
-
 	_build_finale_2d()
 
 	fade_rect.color = Color(1.0, 1.0, 1.0, 1.0)
 	var tw := create_tween()
 	tw.tween_property(fade_rect, "color:a", 0.0, FLAG_REVEAL_FADE_DURATION)
 	tw.tween_callback(func() -> void: fade_rect.color = Color(0.0, 0.0, 0.0, 0.0))
-
-
-# A soft, roughly-spherical cluster of overlapping fresnel-faded puffs,
-# planted out along PLANET_DIR so it's already sitting there once the
-# camera turns to look at the planet during REVEALING — the FOV
-# narrowing and forward ease during DIVING then close the distance and
-# fill the frame with it, instead of the "zoom into cloud" being nothing
-# but a flat colour wash.
-func _build_dive_cloud() -> Node3D:
-	var shader = load("res://Shaders/Cloud.gdshader")
-	if shader == null:
-		return null
-
-	var rig := Node3D.new()
-	rig.name = "DiveCloud"
-	rig.position = PLANET_DIR.normalized() * CLOUD_DISTANCE
-	add_child(rig)
-
-	# offset, radius pairs — uneven and overlapping so the cluster reads
-	# as one puffy mass rather than one obviously-a-sphere shape.
-	var puffs := [
-		Vector3(0.0, 0.0, 0.0), CLOUD_RADIUS,
-		Vector3(CLOUD_RADIUS * 0.55, CLOUD_RADIUS * 0.2, -CLOUD_RADIUS * 0.3), CLOUD_RADIUS * 0.7,
-		Vector3(-CLOUD_RADIUS * 0.6, -CLOUD_RADIUS * 0.15, CLOUD_RADIUS * 0.2), CLOUD_RADIUS * 0.65,
-		Vector3(CLOUD_RADIUS * 0.1, CLOUD_RADIUS * 0.5, CLOUD_RADIUS * 0.35), CLOUD_RADIUS * 0.55,
-	]
-
-	var i := 0
-	while i < puffs.size():
-		var offset: Vector3 = puffs[i]
-		var radius: float = puffs[i + 1]
-		i += 2
-
-		var puff := MeshInstance3D.new()
-		var mesh := SphereMesh.new()
-		mesh.radius = radius
-		mesh.height = radius * 2.0
-		mesh.radial_segments = 16
-		mesh.rings = 10
-		puff.mesh = mesh
-		puff.position = offset
-
-		var mat := ShaderMaterial.new()
-		mat.shader = shader
-		puff.material_override = mat
-
-		rig.add_child(puff)
-
-	return rig
 
 
 # =============================================================
@@ -712,6 +692,27 @@ func _build_flag_2d(root: Control, screen_size: Vector2) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _finishing:
 		return
+
+	# Wheel notches drive the crawl's speed and must be handled BEFORE the
+	# skip test below, not after: a wheel notch arrives as an
+	# InputEventMouseButton with pressed = true, so without this branch
+	# catching them first, nudging the wheel would fall straight through to
+	# _finish() and silently skip the entire epilogue.
+	if event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_WHEEL_DOWN:
+				if _crawl_is_scrolling():
+					_scroll_boost = min(_scroll_boost + CRAWL_BOOST_PER_TICK, CRAWL_BOOST_MAX)
+				return
+			MOUSE_BUTTON_WHEEL_UP:
+				if _crawl_is_scrolling():
+					_scroll_boost = max(_scroll_boost - CRAWL_BOOST_PER_TICK, 0.0)
+				return
+			MOUSE_BUTTON_WHEEL_LEFT, MOUSE_BUTTON_WHEEL_RIGHT:
+				# Sideways trackpad scrolling — swallowed for the same
+				# reason, so a stray horizontal flick can't skip either.
+				return
+
 	if (event is InputEventKey and event.pressed) or (event is InputEventMouseButton and event.pressed):
 		_finish()
 

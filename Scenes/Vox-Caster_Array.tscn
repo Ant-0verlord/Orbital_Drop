@@ -1,25 +1,28 @@
 [gd_scene format=3 uid="uid://bj4d3r48vrf44"]
 
-[ext_resource type="ArrayMesh" uid="uid://nu6jl1shytgi" path="res://Models/Vox-Caster Array.obj" id="1_7sr1o"]
+[ext_resource type="ArrayMesh" uid="uid://bpgdb82s8ahth" path="res://Models/Vox-Caster Array 3.0 .obj" id="1_v5mbw"]
 [ext_resource type="Script" uid="uid://2eyud7n0r8s6" path="res://Scripts/Consoles/VoxCaster.gd" id="2_3hiqr"]
 [ext_resource type="Script" uid="uid://lvgv4kp058x1" path="res://Scripts/Popups/VoxCasterPopup.gd" id="3_ch73s"]
 [ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_ch73s"]
 [ext_resource type="PackedScene" path="res://Scenes/HelpNudge.tscn" id="5_hlpndg"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_dl7dm"]
-size = Vector3(1.4224539, 3, 2.9299383)
+size = Vector3(1.0936506, 3, 2.9080217)
 
 [node name="Node3D" type="Node3D" unique_id=807166821]
 
+[node name="VoxCasterArray3_0" type="MeshInstance3D" parent="." unique_id=1017316993]
+transform = Transform3D(-0.9999975, 0, 0.002307633, 0, 1, 0, -0.002307633, 0, -0.9999975, -0.0108650625, 0, 0.058377743)
+mesh = ExtResource("1_v5mbw")
+
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1878356071]
-transform = Transform3D(-1.0200136, 0, 8.917242e-08, 0, 1.0200136, 0, -8.917242e-08, 0, -1.0200136, 0, 0, 0)
-mesh = ExtResource("1_7sr1o")
+transform = Transform3D(-1.0200136, 0, 8.917242e-08, 0, 1.0200136, 0, -8.917242e-08, 0, -1.0200136, 0.13695514, 0, 0.101217866)
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=1742761432]
 script = ExtResource("2_3hiqr")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=704792522]
-transform = Transform3D(1.0000004, 0, 0, 0, 1.0000004, 0, 0, 0, 1.0000004, 0.29370737, 1.2276659, -0.029503219)
+transform = Transform3D(1.0000004, 0, 0, 0, 1.0000004, 0, 0, 0, 1.0000004, 0.26875538, 1.2276666, -0.0046916604)
 shape = SubResource("BoxShape3D_dl7dm")
 
 [node name="VoxCasterPopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=826539505]
@@ -90,5 +93,5 @@ text = "Help"
 [node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup" unique_id=45888852 instance=ExtResource("4_ch73s")]
 layout_mode = 1
 
-[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup" instance=ExtResource("5_hlpndg")]
+[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/VoxCasterPopup" unique_id=1911841207 instance=ExtResource("5_hlpndg")]
 layout_mode = 1

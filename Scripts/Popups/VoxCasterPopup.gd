@@ -78,9 +78,35 @@ func _on_visibility_changed() -> void:
 
 func _on_turn_started(_turn: int) -> void:
 	cached_turn = -1
-	if not GameManager.has_seen_attention("vox_turn_%d" % _turn):
-		set_help_attention(true)
+
+	# The floating "!" over the console (and the matching Help-button pulse)
+	# is reserved for a squad in CRITICAL condition. It used to be raised at
+	# the start of EVERY turn regardless of how the squads were actually
+	# doing, which meant it was essentially always lit and so carried no
+	# information — the player learned to ignore it, which is the one thing
+	# an alert marker must not become.
+	#
+	# Cleared explicitly on the turns where nobody is critical, rather than
+	# only when the console is opened, so a squad being patched back up to
+	# Wounded takes the marker down with it instead of leaving it floating
+	# over a console with nothing urgent left to report.
+	if _any_squad_critical():
+		if not GameManager.has_seen_attention("vox_turn_%d" % _turn):
+			set_help_attention(true)
+	else:
+		set_help_attention(false)
+
 	if visible: refresh()
+
+
+# LOST deliberately doesn't count — a lost squad is past the point where
+# opening the vox and sending supplies could change anything, so flagging
+# it would just be noise the player can't act on.
+func _any_squad_critical() -> bool:
+	for squad_name in SquadManager.squads:
+		if SquadManager.squads[squad_name].status == SquadManager.Status.CRITICAL:
+			return true
+	return false
 
 func _on_turn_resolved() -> void:
 	if visible: refresh()

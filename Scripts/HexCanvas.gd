@@ -26,6 +26,16 @@ var pan_offset: Vector2 = Vector2.ZERO
 var dragging: bool = false
 var drag_start_mouse: Vector2 = Vector2.ZERO
 var drag_start_offset: Vector2 = Vector2.ZERO
+# Which button started the current drag, and whether it has actually moved
+# far enough to count as a drag rather than a click — see _gui_input().
+var _drag_button: int = 0
+var _drag_moved: bool = false
+
+# How far one wheel notch scrolls the map, in pixels.
+const PAN_WHEEL_STEP: float = 48.0
+# Mouse travel below this (pixels) still counts as a click, not a pan, so
+# dragging the map can share the left button with selecting a hex.
+const PAN_CLICK_SLOP: float = 6.0
 
 var special_sectors: Dictionary = {}
 # Format: { "sector_name": "priority" / "tower" / "tower_powered" / "extraction" }
@@ -68,9 +78,45 @@ const ICON_PRIORITY: Texture2D = preload("res://UI/Icons/icon_marker_priority.pn
 const ICON_TOWER:     Texture2D = preload("res://UI/Icons/icon_marker_tower.png")
 const ICON_EXTRACTION: Texture2D = preload("res://UI/Icons/icon_marker_extract.png")
 
+# Set whenever the layout is rebuilt, so refresh() can tell "same map, new
+# turn" (keep whatever the player has scrolled to) apart from "different
+# map entirely" (reframe it).
+var _layout_signature: String = ""
+
 func _ready() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# The canvas now stretches to fill whatever room the popup has left over
+	# rather than being a fixed 630x410 box, so its size isn't known until
+	# the container has laid it out — and changes again if the window does.
+	resized.connect(_on_resized)
+
+
+func _on_resized() -> void:
+	_center_pan()
+	queue_redraw()
+
+
+# Put the grid in the middle of the canvas, then pull it back inside the
+# pan bounds. The hexes are laid out around GRID_CENTER, which is the centre
+# of the ORIGINAL fixed 630x410 canvas — now that the canvas is bigger than
+# that and varies with the window, pan is what actually decides where the
+# map sits, so it has to be set deliberately rather than left at zero.
+func _center_pan() -> void:
+	if hex_entries.is_empty():
+		return
+	var min_x = INF; var max_x = -INF
+	var min_y = INF; var max_y = -INF
+	for entry in hex_entries:
+		min_x = min(min_x, entry.center.x)
+		max_x = max(max_x, entry.center.x)
+		min_y = min(min_y, entry.center.y)
+		max_y = max(max_y, entry.center.y)
+	pan_offset = Vector2(
+		size.x * 0.5 - (min_x + max_x) * 0.5,
+		size.y * 0.5 - (min_y + max_y) * 0.5
+	)
+	_clamp_pan_offset()
 
 func _clamp_pan_offset() -> void:
 	if hex_entries.is_empty():
@@ -93,14 +139,19 @@ func _clamp_pan_offset() -> void:
 	var lo_x: float = size.x - max_x - margin
 	var hi_x: float = -min_x + margin
 	if lo_x > hi_x:
-		pan_offset.x = 0.0
+		# Whole map already fits across the canvas, so there is nothing to
+		# scroll to — centre it rather than leaving it wherever pan happened
+		# to be. (Missions 1 and 2 are both this case: their grids are only
+		# ~300px and ~530px wide against a 630px canvas, which is why panning
+		# appears to do nothing there. It genuinely has nowhere to go.)
+		pan_offset.x = size.x * 0.5 - (min_x + max_x) * 0.5
 	else:
 		pan_offset.x = clamp(pan_offset.x, lo_x, hi_x)
 
 	var lo_y: float = size.y - max_y - margin
 	var hi_y: float = -min_y + margin
 	if lo_y > hi_y:
-		pan_offset.y = 0.0
+		pan_offset.y = size.y * 0.5 - (min_y + max_y) * 0.5
 	else:
 		pan_offset.y = clamp(pan_offset.y, lo_y, hi_y)
 
@@ -109,10 +160,21 @@ func _process(delta: float) -> void:
 		return
 	
 	if dragging:
-		var mouse_pos = get_local_mouse_position()
-		pan_offset = drag_start_offset + (mouse_pos - drag_start_mouse)
-		_clamp_pan_offset()
-		queue_redraw()
+		# A release can land outside this canvas (over another control, or
+		# off the window entirely), in which case _gui_input never sees it
+		# and the map would stay glued to the cursor. Check the button is
+		# genuinely still held rather than trusting the release to arrive.
+		if not Input.is_mouse_button_pressed(_drag_button):
+			dragging = false
+		else:
+			var mouse_pos = get_local_mouse_position()
+			var drag_delta: Vector2 = mouse_pos - drag_start_mouse
+			if drag_delta.length() > PAN_CLICK_SLOP:
+				_drag_moved = true
+			if _drag_moved:
+				pan_offset = drag_start_offset + drag_delta
+				_clamp_pan_offset()
+			queue_redraw()
 	
 	pulse_time += delta * PULSE_SPEED
 
@@ -148,6 +210,19 @@ func refresh(new_zone_states: Dictionary, axial_by_sector: Dictionary = {}, new_
 		current_axial_by_sector = axial_by_sector
 	special_sectors = new_special_sectors
 	_build_hex_layout()
+
+	# Reframe only when the map itself changed (a new mission), not on the
+	# ordinary once-a-turn refresh — otherwise every turn would yank the
+	# view back to centre out from under a player who had scrolled somewhere
+	# deliberately. Sector names are compared rather than just the count,
+	# since two missions could happen to have the same number of hexes.
+	var signature: String = ",".join(PackedStringArray(zone_states.keys()))
+	if signature != _layout_signature:
+		_layout_signature = signature
+		_center_pan()
+	else:
+		_clamp_pan_offset()
+
 	queue_redraw()
 
 func enter_placement_mode() -> void:
@@ -164,16 +239,60 @@ func exit_placement_mode() -> void:
 
 
 # -------------------------------------------------------
-# Mouse input — only active in placement mode
+# Mouse input. Panning works at ALL times; hex selection is still only
+# active in placement mode.
+#
+# Panning used to be middle-mouse-drag and nothing else, which on the big
+# Mission 3-5 maps (~1250px wide against a 630px canvas, so roughly half of
+# them is off-screen at any moment) left most players with no way they'd
+# ever find to reach the edges — plenty of mice make a middle-drag awkward
+# or impossible. The wheel and the left button now do it too.
 # -------------------------------------------------------
 func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		# --- Wheel scrolling ---
+		# Shift swaps the wheel to horizontal, the usual convention, and
+		# gives a plain wheel-only mouse a way to reach the left and right
+		# edges of the map. Trackpad horizontal scrolling arrives as the
+		# dedicated WHEEL_LEFT/RIGHT buttons and is handled as well.
+		var step: float = PAN_WHEEL_STEP
+		match event.button_index:
+			MOUSE_BUTTON_WHEEL_UP:
+				if event.shift_pressed:
+					pan_offset.x += step
+				else:
+					pan_offset.y += step
+				_clamp_pan_offset()
+				queue_redraw()
+				return
+			MOUSE_BUTTON_WHEEL_DOWN:
+				if event.shift_pressed:
+					pan_offset.x -= step
+				else:
+					pan_offset.y -= step
+				_clamp_pan_offset()
+				queue_redraw()
+				return
+			MOUSE_BUTTON_WHEEL_LEFT:
+				pan_offset.x += step
+				_clamp_pan_offset()
+				queue_redraw()
+				return
+			MOUSE_BUTTON_WHEEL_RIGHT:
+				pan_offset.x -= step
+				_clamp_pan_offset()
+				queue_redraw()
+				return
+
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_MIDDLE:
+		if event.button_index == MOUSE_BUTTON_MIDDLE or event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				dragging = true
+				_drag_button = event.button_index
+				_drag_moved = false
 				drag_start_mouse  = event.position
 				drag_start_offset = pan_offset
-			else:
+			elif event.button_index == _drag_button:
 				dragging = false
 
 	if not placement_mode:
@@ -186,7 +305,11 @@ func _gui_input(event: InputEvent) -> void:
 			queue_redraw()
 
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		# Selection fires on RELEASE, not press, and only when the mouse
+		# didn't travel far enough to be a pan (see PAN_CLICK_SLOP) — that's
+		# what lets the left button both drag the map and pick a hex without
+		# a drag across the grid dropping a reinforcement wherever it ended.
+		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and not _drag_moved:
 			var sector = _sector_at(event.position)
 			if sector != "":
 				placed_sector = sector

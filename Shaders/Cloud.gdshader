@@ -3,6 +3,12 @@ render_mode unshaded, cull_disabled, blend_mix, depth_draw_always, shadows_disab
 // =============================================================
 // Cloud.gdshader
 // =============================================================
+// CURRENTLY UNUSED — kept for reference. It was written for the epilogue's
+// "dive into a cloud" transition, which has since been replaced by a
+// straight FOV zoom into the planet (see Epilogue.gd's DIVING phase).
+// Nothing in the project loads this file any more, so it's safe to delete
+// if you'd rather not carry it.
+// =============================================================
 // A soft, edge-faded look for the epilogue's "dive cloud" — a cluster of
 // overlapping spheres (see Epilogue.gd's _build_dive_cloud()) uses this
 // on every sphere so the cluster reads as one puffy mass instead of a

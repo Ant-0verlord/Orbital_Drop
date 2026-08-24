@@ -1,26 +1,29 @@
 [gd_scene format=3 uid="uid://caglsrgxql7v5"]
 
-[ext_resource type="ArrayMesh" uid="uid://cpi4ecavsejjf" path="res://Models/Intel Desk.obj" id="1_1kgtn"]
+[ext_resource type="ArrayMesh" uid="uid://clktf0l6earvc" path="res://Models/Intel Desk 3.0.obj" id="1_ms6us"]
 [ext_resource type="Script" uid="uid://bd5yqf4ku64t4" path="res://Scripts/Consoles/IntelConsole.gd" id="2_1kgtn"]
 [ext_resource type="Script" uid="uid://c5ousiyt0lvs" path="res://Scripts/Popups/IntelConsolePopup.gd" id="3_l8jtb"]
 [ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_l8jtb"]
 [ext_resource type="PackedScene" path="res://Scenes/HelpNudge.tscn" id="5_hlpndg"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_oohax"]
-size = Vector3(5.431281, 4.480967, 9.567525)
+size = Vector3(5.2765217, 3.911382, 9.360631)
 
 [node name="Node3D" type="Node3D" unique_id=112694284]
 
+[node name="IntelDesk3_0" type="MeshInstance3D" parent="." unique_id=444048391]
+transform = Transform3D(0.6415757, 0, 0, 0, 0.6415757, 0, 0, 0, 0.6415757, -0.21265578, -0.36435616, -0.023061246)
+mesh = ExtResource("1_ms6us")
+
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1662060828]
 transform = Transform3D(0.6678194, 0, 0, 0, 0.6678194, 0, 0, 0, 0.6678194, 0, 0, 0)
-mesh = ExtResource("1_1kgtn")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=43047206]
 transform = Transform3D(0.40051305, 0, 0, 0, 0.80175394, 0, 0, 0, 0.80175394, -0.16937487, 0, 0)
 script = ExtResource("2_1kgtn")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=935619825]
-transform = Transform3D(0.626079, 0, 0, 0, 0.626079, 0, 0, 0, 0.626079, 0.22844839, -0.0030802488, -0.015286043)
+transform = Transform3D(0.626079, 0, 0, 0, 0.626079, 0, 0, 0, 0.626079, -0.17451614, -0.18138288, -0.048695415)
 shape = SubResource("BoxShape3D_oohax")
 
 [node name="IntelConsolePopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=1946253231]
@@ -93,5 +96,5 @@ text = "Help"
 [node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup" unique_id=45888852 instance=ExtResource("4_l8jtb")]
 layout_mode = 1
 
-[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup" instance=ExtResource("5_hlpndg")]
+[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/IntelConsolePopup" unique_id=1396657624 instance=ExtResource("5_hlpndg")]
 layout_mode = 1

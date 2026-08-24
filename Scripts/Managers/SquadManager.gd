@@ -474,7 +474,14 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 					# the objective every turn rather than perpetually
 					# trailing a moving target, which produced a wandering,
 					# indirect route to extraction for the whole group.
-					if step_target == "":
+					# Was `if step_target == ""`, which could never be true —
+					# the empty case already broke out of the loop further up,
+					# and the intercept branch above only ever assigns a real
+					# sector. So escorts silently fell through to plain advance
+					# targeting and wandered off instead of covering the run to
+					# the zone, which is exactly what this block was written to
+					# stop. Keyed off "found nothing to intercept" instead.
+					if not engaging_enemy:
 						var ez = GameManager.extraction_zone
 						var escort_dest = ez if ez != "" else carrier_sector
 						if escort_dest != current_sector:
@@ -482,6 +489,25 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 								step_target = escort_dest
 							else:
 								step_target = _path_toward(current_sector, escort_dest)
+
+				# A goal override can hand back an empty target — most
+				# easily when the squad is already standing on the very tile
+				# its goal points at, since _path_toward() returns "" for
+				# from == to. The earlier `if step_target == "": break` sits
+				# ABOVE those overrides, so nothing re-checked it here, and
+				# the assignment below would blank the squad's sector: it
+				# would drop off the map permanently, every later target
+				# resolving from "" to "" again, while capture_tile("")
+				# quietly added a bogus "" entry to hex_control that
+				# get_held_count() counted as a real held sector.
+				#
+				# This matters much more now that the closest squad hunts
+				# the priority target even from the tower, because the
+				# ATTACK_PRIORITY branch (unlike the tower one) has no
+				# "not already there" guard — so a squad sharing a hex with
+				# the target hits exactly that case.
+				if step_target == "":
+					break
 
 				# A goal override above may have swapped step_target to a
 				# different tile than the one engaging_enemy was set for
@@ -827,10 +853,19 @@ func _assign_goals() -> void:
 				if squad.status == Status.LOST:
 					continue
 				if squad_name == carrier_name:
-					# Carrier stays flexible/fighting until the shuttle is
-					# actually inbound — no point sitting it at the zone
-					# early and advertising exactly where the data is.
-					squad.goal = Goal.ADVANCE
+					# The carrier makes for the extraction zone immediately and
+					# doesn't stop for anything. It used to be left on ADVANCE
+					# ("stay flexible, don't advertise where the data is") until
+					# the shuttle was inbound, which sounds reasonable and is
+					# arithmetically impossible: the shuttle window is the last
+					# 2 turns, the carrier starts ~16 hexes from the zone, and
+					# even fuelled it only covers 2 hexes a turn — so it was
+					# given at most 4 hexes' worth of notice to make a 16-hex
+					# journey, and only ever reached the zone if ADVANCE had
+					# happened to wander it in the right direction for ten-odd
+					# turns. Arriving early and sitting on the objective is the
+					# whole job.
+					squad.goal = Goal.EXTRACT
 					continue
 				if ez_pre == "":
 					squad.goal = Goal.ADVANCE
@@ -842,7 +877,13 @@ func _assign_goals() -> void:
 
 			if not zone_candidates.is_empty():
 				zone_candidates.sort_custom(func(a, b): return a.dist < b.dist)
-				var zone_slots = 2  # up to 2 squads pre-emptively secure the zone
+				# All but one squad pushes for the zone; the last one is left
+				# on ADVANCE so the theatre isn't completely abandoned and
+				# there's still someone taking ground for the tile score.
+				# This was a flat 2 regardless of how many squads were alive,
+				# which on a full roster left most of them fighting halfway
+				# across the map when the shuttle called.
+				var zone_slots: int = max(2, zone_candidates.size() - 1)
 				for i in range(zone_candidates.size()):
 					var entry = zone_candidates[i]
 					squads[entry.name].goal = Goal.SECURE_ZONE if i < zone_slots else Goal.ADVANCE
@@ -911,6 +952,13 @@ func _assign_goals() -> void:
 	# squad hunts the target first, every turn — only once that's
 	# happening (a squad is confirmed near/targeting it) does the tower
 	# even become an option for anyone else.
+	#
+	# "Closest" here means closest FULL STOP: while the target is still
+	# alive it outranks the tower, so a squad standing on the tower is just
+	# as eligible to be picked as any other and will walk off the tower to
+	# go after it. The tower is worth holding, but it's worth nothing if
+	# the mission's actual objective never gets hunted — and whichever
+	# squad is nearest the target is the one that reaches it soonest.
 	var priority_hunter = ""
 	if mission_type == "eliminate_priority" and GameManager.priority_target_alive:
 		var pt_sector = EnemyManager.get_priority_target_sector()
@@ -919,14 +967,6 @@ func _assign_goals() -> void:
 			for squad_name in squads:
 				var s = squads[squad_name]
 				if s.status == Status.LOST or s.get("has_data", false):
-					continue
-				# A squad already garrisoning the tower (standing right on
-				# it) never gets pulled off to go hunt the priority target
-				# instead — that was another way a squad reinforced onto
-				# the tower could end up yanked away from it, on top of the
-				# tower_candidates cap fixed above. It's already doing the
-				# one job that matters most; someone else can hunt.
-				if tower_sector != "" and s.sector == tower_sector:
 					continue
 				var d = EnemyManager.get_distance_between(s.sector, pt_sector)
 				if d < best_dist:

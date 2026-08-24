@@ -82,6 +82,15 @@ func _ready() -> void:
 	legend_enemy.text     = "o Enemy"
 	legend_neutral.text   = "o Neutral"
 
+	# The header used to eat roughly a fifth of the popup's height before
+	# the map even started. Everything above the grid is now sized to match
+	# the sector list below it, which buys the map that space back — the
+	# map is what people open this console to look at.
+	for lbl in [legend_held, legend_contested, legend_enemy, legend_neutral,
+			turn_label, held_label]:
+		if lbl:
+			lbl.add_theme_font_size_override("font_size", 11)
+
 
 func _on_visibility_changed() -> void:
 	if not visible:
@@ -553,13 +562,13 @@ func _sector_pill(label_text: String, color: Color) -> PanelContainer:
 func _style_header(title_text: String, subtitle_text: String) -> void:
 	if title_label:
 		title_label.text = title_text
-		title_label.add_theme_font_size_override("font_size", 24)
+		title_label.add_theme_font_size_override("font_size", 17)
 		title_label.add_theme_color_override("font_color", Color(0.91, 0.91, 0.91))
 
 		var subtitle_label := Label.new()
 		subtitle_label.text = subtitle_text
 		subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-		subtitle_label.add_theme_font_size_override("font_size", 13)
+		subtitle_label.add_theme_font_size_override("font_size", 11)
 		subtitle_label.add_theme_color_override("font_color", Color(0.65, 0.68, 0.73))
 		var parent := title_label.get_parent()
 		parent.add_child(subtitle_label)
