@@ -229,7 +229,9 @@ func _update_held_label() -> void:
 				held_label.text = "Holding theatre — shuttle in %d turns" % (turns_left - TurnManager.SHUTTLE_ARRIVAL_WINDOW)
 				held_label.add_theme_color_override("font_color", Color(0.6, 0.75, 0.95))
 			else:
-				held_label.text = "SHUTTLE INBOUND — At extraction: %d squad(s)" % at_ez
+				held_label.text = "SHUTTLE DOWN — Aboard: %d  |  At zone: %d" % [
+					SquadManager.get_extracted_count(), at_ez
+				]
 				held_label.add_theme_color_override("font_color",
 					Color(0.4, 0.9, 0.4) if at_ez > 0 else Color(0.9, 0.6, 0.2))
 		_:
@@ -432,6 +434,10 @@ func _rebuild_sector_list() -> void:
 			if i > 0:
 				squad_text += ", "
 			squad_text += squad_names[i]
+			# Same "[ABOARD]" tag the map hex uses, so the list and the grid
+			# agree about who has already flown out.
+			if SquadManager.is_extracted(squad_names[i]):
+				squad_text += " [ABOARD]"
 
 		var squad_lbl := Label.new()
 		# Plain ASCII hyphen rather than an em dash ("—") — that codepoint

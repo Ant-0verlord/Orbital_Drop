@@ -253,6 +253,10 @@ func _transmission_quality(squad: Dictionary) -> String:
 
 	if interference <= 0.0:
 		return "normal"
+	if squad.get("extracted", false):
+		# Aboard the shuttle and off the surface — clear of every ground
+		# source of interference, so its channel always reads clean.
+		return "normal"
 	if squad.status == SquadManager.Status.LOST:
 		return "dead"
 
@@ -481,6 +485,12 @@ func _add_need_transmission(squad: Dictionary) -> void:
 	if squad.status == SquadManager.Status.LOST:
 		_add_lost_signal(squad)
 		return
+	# Aboard the shuttle — it has nothing left to request, so it gets a
+	# confirmation line instead of a supply card asking for medi-packs it
+	# can no longer be sent.
+	if squad.get("extracted", false):
+		_add_aboard_signal(squad)
+		return
 
 	var card := PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -546,6 +556,14 @@ func _add_lost_signal(squad: Dictionary) -> void:
 	lbl.text = ">>> %s [%s] — CARRIER LOST — NO SIGNAL" % [squad.name, squad.sector]
 	lbl.add_theme_font_size_override("font_size", 12)
 	lbl.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
+	transmission_container.add_child(lbl)
+
+
+func _add_aboard_signal(squad: Dictionary) -> void:
+	var lbl := Label.new()
+	lbl.text = ">>> %s [%s] — ABOARD SHUTTLE — CLEAR OF SURFACE" % [squad.name, squad.sector]
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", SquadManager.EXTRACTED_COLOR)
 	transmission_container.add_child(lbl)
 
 

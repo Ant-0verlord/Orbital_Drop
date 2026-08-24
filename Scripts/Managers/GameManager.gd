@@ -1303,7 +1303,8 @@ func calculate_extraction_bonus() -> Dictionary:
 		# Data was destroyed by orbital strike — can't be extracted
 		for squad_name in SquadManager.squads:
 			var squad = SquadManager.squads[squad_name]
-			if squad.status != SquadManager.Status.LOST and squad.sector == ez:
+			if squad.status != SquadManager.Status.LOST \
+					and (squad.get("extracted", false) or squad.sector == ez):
 				extracted_count += 1
 		return {
 			"extracted_count": extracted_count,
@@ -1316,7 +1317,11 @@ func calculate_extraction_bonus() -> Dictionary:
 		var squad = SquadManager.squads[squad_name]
 		if squad.status == SquadManager.Status.LOST:
 			continue
-		if squad.sector == ez:
+		# Boarded squads are locked in and counted even if the zone itself
+		# was later contested; the `sector == ez` half is kept as a fallback
+		# so this can never score lower than the old "who's standing here at
+		# the end" rule.
+		if squad.get("extracted", false) or squad.sector == ez:
 			extracted_count += 1
 			if squad.get("has_data", false):
 				data_extracted = true

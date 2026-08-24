@@ -256,7 +256,7 @@ func _update_squad_summary() -> void:
 		sector_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(sector_lbl)
 
-		row.add_child(_status_pill(squad.status))
+		row.add_child(_status_pill(squad.status, squad.get("extracted", false)))
 
 		squad_summary.add_child(card)
 		var spacer := Control.new()
@@ -697,8 +697,8 @@ func _style_primary_button(btn: Button) -> void:
 	btn.add_theme_font_size_override("font_size", 16)
 
 
-func _status_pill(status: int) -> PanelContainer:
-	var color := _status_color(status)
+func _status_pill(status: int, extracted: bool = false) -> PanelContainer:
+	var color: Color = SquadManager.EXTRACTED_COLOR if extracted else _status_color(status)
 	var pill := PanelContainer.new()
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(color.r * 0.22 + 0.03, color.g * 0.22 + 0.03, color.b * 0.22 + 0.03, 1.0)
@@ -718,7 +718,9 @@ func _status_pill(status: int) -> PanelContainer:
 	pill.add_theme_stylebox_override("panel", style)
 
 	var lbl := Label.new()
-	lbl.text = SquadManager.STATUS_NAMES[status].to_upper()
+	# A boarded squad reads as ABOARD SHUTTLE rather than its old
+	# Active/Wounded state, which stops being meaningful once it's flown out.
+	lbl.text = SquadManager.EXTRACTED_LABEL.to_upper() if extracted else SquadManager.STATUS_NAMES[status].to_upper()
 	lbl.add_theme_font_size_override("font_size", 11)
 	lbl.add_theme_color_override("font_color", color)
 	pill.add_child(lbl)

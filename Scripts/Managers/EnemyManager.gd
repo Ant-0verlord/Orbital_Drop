@@ -237,7 +237,9 @@ func capture_tile(sector: String) -> void:
 func advance_enemies(allocations: Dictionary) -> void:
 	var squad_map: Dictionary = {}
 	for squad in SquadManager.get_squads_for_ui():
-		if squad.status != SquadManager.Status.LOST:
+		# Extracted squads are aboard the shuttle, not on the ground —
+		# enemies have nothing left to advance onto or fight there.
+		if squad.status != SquadManager.Status.LOST and not squad.get("extracted", false):
 			squad_map[squad.sector] = squad.name
 
 	var squad_sectors = squad_map.keys()

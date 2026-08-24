@@ -300,6 +300,10 @@ func _rebuild_squad_rows() -> void:
 
 	for squad in SquadManager.get_squads_for_ui():
 		if squad.status == SquadManager.Status.LOST: continue
+		# Aboard the shuttle — there is nothing to drop supplies to any
+		# more, and leaving the row in would let points be spent on a squad
+		# that can never use them.
+		if squad.get("extracted", false): continue
 		squad_rows.append(_build_squad_row(squad))
 
 
@@ -322,7 +326,7 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 	row.add_child(name_lbl)
 
 	var info_lbl := Label.new()
-	info_lbl.text = "%s\n%s" % [SquadManager.STATUS_NAMES[squad.status], squad.sector]
+	info_lbl.text = "%s\n%s" % [SquadManager.status_label(squad), squad.sector]
 	info_lbl.custom_minimum_size.x = 130
 	info_lbl.add_theme_font_size_override("font_size", 12)
 	info_lbl.add_theme_color_override("font_color", _status_color(squad.status))

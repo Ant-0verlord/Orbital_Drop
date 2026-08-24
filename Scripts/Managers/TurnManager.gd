@@ -402,7 +402,7 @@ func _check_extract_win() -> void:
 	for squad in SquadManager.get_squads_for_ui():
 		if squad.status == SquadManager.Status.LOST:
 			continue
-		if squad.sector == ez:
+		if squad.get("extracted", false) or squad.sector == ez:
 			extracted += 1
 			if squad.get("has_data", false):
 				data_extracted = true

@@ -501,9 +501,17 @@ func _draw() -> void:
 			# as a "tofu" box instead of the intended glyph.
 			if squad_names[i] == GameManager.data_carrier_squad:
 				short += " [D]"
+			# Aboard the extraction shuttle — locked in and out of the fight.
+			# Same plain-ASCII tag style as [D] above, for the same font
+			# reason, and tinted so a boarded squad reads at a glance as no
+			# longer part of the ground picture.
+			var aboard: bool = SquadManager.is_extracted(squad_names[i])
+			if aboard:
+				short += " [ABOARD]"
 			draw_string(ThemeDB.fallback_font,
 				center + Vector2(-len(short) * 2.8, 4 + i * SQUAD_LINE_HEIGHT),
-				short, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 1, 1, 0.85))
+				short, HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
+				SquadManager.EXTRACTED_COLOR if aboard else Color(1, 1, 1, 0.85))
 
 		# Enemy/placement markers below whatever squad names were just
 		# drawn, so a busy (contested, multi-squad) hex doesn't overlap

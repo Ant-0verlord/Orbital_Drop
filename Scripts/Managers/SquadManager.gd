@@ -7,6 +7,7 @@ signal turn_resolved
 signal squad_lost(squad_name: String)
 signal data_passed(from_squad: String, to_squad: String)
 signal data_destroyed_by_enemy(squad_name: String)
+signal squad_extracted(squad_name: String)
 
 enum Status { ACTIVE, WOUNDED, CRITICAL, LOST }
 enum Need   { ARMAMENTS, MEDI_PACKS, FUEL_CELLS }
@@ -51,6 +52,19 @@ const STATUS_NAMES: Dictionary = {
 	Status.CRITICAL: "Critical",
 	Status.LOST:     "Lost — no signal",
 }
+
+# "Aboard" isn't a Status enum value — it's a separate flag, because a
+# boarded squad keeps whatever Active/Wounded state it had. But once it's
+# off the surface that state stops meaning anything to the player, so every
+# console shows this in its place.
+const EXTRACTED_LABEL: String = "Aboard shuttle"
+const EXTRACTED_COLOR: Color = Color(0.4, 0.85, 1.0)
+
+func status_label(squad: Dictionary) -> String:
+	if squad.get("extracted", false):
+		return EXTRACTED_LABEL
+	return STATUS_NAMES.get(squad.status, "Unknown")
+
 
 const NEED_NAMES: Dictionary = {
 	Need.ARMAMENTS:  "Armaments",
@@ -148,6 +162,9 @@ func _make_squad(s: Dictionary) -> Dictionary:
 		"surprise_bonus":    false,
 		"goal":              Goal.ADVANCE,
 		"has_data":          false,
+		# Aboard the extraction shuttle and out of the fight for good — see
+		# shuttle_is_boarding() and the "locked in" block in resolve_turn().
+		"extracted":         false,
 		"tower_fuel_turns":  0,
 		"tower_fuel_turns_waited": 0,
 	}
@@ -165,6 +182,7 @@ func add_squad(squad_name: String, sector: String, surprise: bool) -> void:
 		"surprise_bonus":    surprise,
 		"goal":              Goal.ADVANCE,
 		"has_data":          false,
+		"extracted":         false,
 		"tower_fuel_turns":  0,
 		"tower_fuel_turns_waited": 0,
 	}
@@ -206,10 +224,46 @@ func _on_priority_target_eliminated(squad_name: String, sector: String) -> void:
 
 
 
+# True once the extraction shuttle is physically on the ground and taking
+# people aboard — Mission 5's last few turns. Squads standing on the zone
+# from this point are locked in rather than merely counted at the end.
+func shuttle_is_boarding() -> bool:
+	if GameManager.mission_type != "extract":
+		return false
+	if GameManager.extraction_zone == "":
+		return false
+	return (TurnManager.max_turns - TurnManager.current_turn) <= TurnManager.SHUTTLE_ARRIVAL_WINDOW
+
+
+func is_extracted(squad_name: String) -> bool:
+	return squads.get(squad_name, {}).get("extracted", false)
+
+
+func get_extracted_count() -> int:
+	var n := 0
+	for key in squads:
+		if squads[key].get("extracted", false):
+			n += 1
+	return n
+
+
 func get_squads_for_ui() -> Array:
 	var result: Array = []
 	for key in squads:
 		result.append(squads[key])
+	return result
+
+
+# Squads still physically on the surface. Extracted ones are aboard the
+# shuttle, so anything reasoning about who can still fight, hold ground or
+# be attacked should use this rather than iterating `squads` directly.
+func get_active_squads_on_map() -> Array:
+	var result: Array = []
+	for key in squads:
+		var s = squads[key]
+		if s.status == Status.LOST or s.get("extracted", false):
+			continue
+		result.append(s)
 	return result
 
 
@@ -236,6 +290,17 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 		if squad.status == Status.LOST:
 			squad.report = _lost_line(squad)
 			action_results[squad_name] = { "action": "lost", "moved_to": "" }
+			continue
+
+		# Already aboard the shuttle — locked in. It has physically left the
+		# surface, so it takes no further turn of any kind: no movement, no
+		# combat, no supply draw, no status decay. It just holds its report
+		# until the mission ends and it's counted as extracted.
+		if squad.get("extracted", false):
+			squad.report = "%s is aboard the shuttle at %s. Secured and clear of the surface." % [
+				squad.name, GameManager.extraction_zone
+			]
+			action_results[squad_name] = { "action": "extracted", "moved_to": "" }
 			continue
 
 		var alloc    = allocations.get(squad_name, {})
@@ -605,6 +670,23 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 		squad["first_turn_bonus"] = false
 		squad["surprise_bonus"]   = false
 
+		# Reached the zone with the shuttle already down — board now and lock
+		# in, rather than the old behaviour of only tallying who happened to
+		# be standing on the hex when the mission ended. Boarding is
+		# one-way: from here the squad is out of the fight and can't be
+		# pushed off the zone, killed, or wander away again.
+		if not squad.get("extracted", false) and shuttle_is_boarding() \
+				and squad.sector == GameManager.extraction_zone:
+			squad["extracted"] = true
+			action = "extracted"
+			squad.report = "%s is aboard the shuttle at %s. Secured and clear of the surface." % [
+				squad.name, GameManager.extraction_zone
+			]
+			squad.need = _next_need(squad, action)
+			action_results[squad_name] = { "action": action, "moved_to": moved_to }
+			emit_signal("squad_extracted", squad_name)
+			continue
+
 		squad.report = _generate_report(squad, action, moved_to, used_banked_arms, used_banked_fuel, used_banked_meds, obstacle, casualty_from_kill)
 		squad.need   = _next_need(squad, action)
 		action_results[squad_name] = { "action": action, "moved_to": moved_to }
@@ -650,6 +732,12 @@ func apply_overrun_casualty(squad_name: String) -> void:
 		return
 	var squad = squads[squad_name]
 	if squad.status == Status.LOST:
+		return
+	# Locked in aboard the shuttle — off the surface and out of reach. This
+	# is the guard that makes boarding actually mean something: without it a
+	# squad could reach the zone, board, and still be worn down to Lost by
+	# enemies holding the hex over the last couple of turns.
+	if squad.get("extracted", false):
 		return
 	_worsen_status(squad)
 	if squad.status == Status.LOST:
@@ -850,7 +938,7 @@ func _assign_goals() -> void:
 
 			for squad_name in squads:
 				var squad = squads[squad_name]
-				if squad.status == Status.LOST:
+				if squad.status == Status.LOST or squad.get("extracted", false):
 					continue
 				if squad_name == carrier_name:
 					# The carrier makes for the extraction zone immediately and
@@ -900,7 +988,7 @@ func _assign_goals() -> void:
 
 		for squad_name in squads:
 			var squad = squads[squad_name]
-			if squad.status == Status.LOST:
+			if squad.status == Status.LOST or squad.get("extracted", false):
 				continue
 
 			# Carrier always extracts
