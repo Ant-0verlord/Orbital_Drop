@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://caglsrgxql7v5" path="res://Scenes/Intel_Desk.tscn" id="7_5ts7m"]
 [ext_resource type="PackedScene" uid="uid://1qfkfl330bb6" path="res://Scenes/MissionBriefingOverlay.tscn" id="9_uagpp"]
 [ext_resource type="PackedScene" uid="uid://dbhi1rx25cidk" path="res://Scenes/GuideOverlay.tscn" id="10_0dw1l"]
+[ext_resource type="PackedScene" uid="uid://nvny73e76msh" path="res://Models/atta-vollenweideri/source/atta_vollenweideri.fbx" id="11_y2x5b"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_5gfqt"]
 size = Vector3(2.0222778, 0.7503662, 8.042145)
@@ -242,3 +243,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1121812, 3.925805, -1.57888
 
 [node name="OmniLight3D12" type="OmniLight3D" parent="." unique_id=1712014260]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.62688494, 3.925805, -1.5788896)
+
+[node name="atta_vollenweideri" parent="." unique_id=1005259392 instance=ExtResource("11_y2x5b")]
+transform = Transform3D(11.615, 0, 0, 0, 11.615, 0, 0, 0, 11.615, 1.3059624, -0.042965204, 1.8987691)
+
+[node name="atta_vollenweideri2" parent="." unique_id=1963115242 instance=ExtResource("11_y2x5b")]
+transform = Transform3D(11.615, 0, 0, 0, 11.615, 0, 0, 0, 11.615, 1.3964007, -0.042965174, 1.73346)
+
+[node name="atta_vollenweideri3" parent="." unique_id=1711423781 instance=ExtResource("11_y2x5b")]
+transform = Transform3D(11.615, 0, 0, 0, 11.615, 0, 0, 0, 11.615, 1.2702748, -0.042965144, 1.5031623)
