@@ -113,11 +113,18 @@ const LASER_DIR := Vector3(1.0, 0.0, 0.0)
 # Long enough to run off past anything the player can see, so it reads as
 # reaching the planet rather than stopping in mid-air.
 const LASER_LENGTH: float = 400.0
-const LASER_CORE_RADIUS: float = 0.32
-const LASER_GLOW_RADIUS: float = 1.15
+const LASER_CORE_RADIUS: float = 0.6
+const LASER_GLOW_RADIUS: float = 2.4
 const LASER_STRIKE_TIME: float = 0.07   # snap on, no windup
-const LASER_SUSTAIN: float = 1.25
+const LASER_FLASH_SETTLE: float = 0.25  # muzzle flash drops to a steady burn
 const LASER_FADE: float = 0.7
+# The beam runs for exactly as long as the cannon-fire clip, so the sound
+# and the visual start and stop together. Read from the stream at runtime
+# rather than hardcoded, so swapping the sound doesn't silently leave a
+# beam hanging in the air after it (or cutting out halfway through). This
+# is the sustain in the middle — the snap-on, flash settle and fade are
+# subtracted from the clip's length below so the TOTAL matches it.
+const LASER_MIN_SUSTAIN: float = 0.2
 const LASER_CORE_ENERGY: float = 5.5
 const LASER_GLOW_ENERGY: float = 2.2
 
@@ -156,17 +163,25 @@ func _fire_orbital_laser() -> void:
 	# rather than coming from it.
 	var flash := OmniLight3D.new()
 	flash.name = "LaserFlash"
-	flash.light_color = Color(1.0, 0.55, 0.15)
+	# Kept in step with the shader's edge_color so the light the deck
+	# catches is the same orange as the beam casting it.
+	flash.light_color = Color(1.0, 0.65, 0.32)
 	flash.omni_range = 26.0
 	flash.light_energy = 0.0
 	rig.add_child(flash)
 
+	var sound_length: float = AudioManager.get_cannon_fire_length()
+	var sustain: float = max(
+		LASER_MIN_SUSTAIN,
+		sound_length - LASER_STRIKE_TIME - LASER_FLASH_SETTLE - LASER_FADE
+	)
+
 	var tw := create_tween()
 	tw.tween_property(core_mat, "shader_parameter/energy", LASER_CORE_ENERGY, LASER_STRIKE_TIME).from(0.0)
 	tw.parallel().tween_property(glow_mat, "shader_parameter/energy", LASER_GLOW_ENERGY, LASER_STRIKE_TIME).from(0.0)
-	tw.parallel().tween_property(flash, "light_energy", 6.0, LASER_STRIKE_TIME).from(0.0)
-	tw.tween_property(flash, "light_energy", 2.0, 0.25)
-	tw.tween_interval(LASER_SUSTAIN)
+	tw.parallel().tween_property(flash, "light_energy", 7.0, LASER_STRIKE_TIME).from(0.0)
+	tw.tween_property(flash, "light_energy", 2.4, LASER_FLASH_SETTLE)
+	tw.tween_interval(sustain)
 	tw.tween_property(core_mat, "shader_parameter/energy", 0.0, LASER_FADE)
 	tw.parallel().tween_property(glow_mat, "shader_parameter/energy", 0.0, LASER_FADE)
 	tw.parallel().tween_property(flash, "light_energy", 0.0, LASER_FADE)

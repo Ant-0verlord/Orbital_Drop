@@ -109,6 +109,26 @@ func play_cannon_fire() -> void:
 	_play_sfx(CANNON_FIRE, 2.0)
 
 
+# How long the cannon-fire clip runs, so a visual effect can be matched to
+# it rather than to a hardcoded guess that drifts the moment the sound is
+# swapped (see CommandCentre._fire_orbital_laser()). Read off the stream
+# itself; the fallback covers the sound failing to load, which does happen
+# — some clips in this folder are currently missing from disk and log a
+# "Failed loading resource" on startup.
+const CANNON_FIRE_FALLBACK_LENGTH: float = 2.2
+
+func get_cannon_fire_length() -> float:
+	var stream = _load(CANNON_FIRE)
+	if stream == null:
+		return CANNON_FIRE_FALLBACK_LENGTH
+	var seconds: float = stream.get_length()
+	# Some imported formats report 0 when the length isn't known ahead of
+	# time; treat that as "no idea" rather than "instantaneous".
+	if seconds <= 0.05:
+		return CANNON_FIRE_FALLBACK_LENGTH
+	return seconds
+
+
 # -------------------------------------------------------
 # Background ambience — shuffled rotation through AMBIENT_TRACKS,
 # never repeating a track until the whole set has played once.

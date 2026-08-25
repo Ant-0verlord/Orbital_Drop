@@ -29,7 +29,7 @@ render_mode unshaded, cull_disabled, blend_add, depth_draw_never, shadows_disabl
 // =============================================================
 
 uniform vec4 core_color : source_color = vec4(1.0, 0.96, 0.88, 1.0);
-uniform vec4 edge_color : source_color = vec4(1.0, 0.42, 0.06, 1.0);
+uniform vec4 edge_color : source_color = vec4(1.0, 0.65, 0.32, 1.0);
 
 // Overall brightness. Tweened from 0 up on fire and back down on fade —
 // that's what makes the beam appear and die away (see the tween in

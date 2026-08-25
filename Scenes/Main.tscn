@@ -46,7 +46,7 @@ text = "Play"
 layout_mode = 2
 text = "Settings"
 
-[node name="InstructionsBtn" type="Button" parent="VBoxContainer"]
+[node name="InstructionsBtn" type="Button" parent="VBoxContainer" unique_id=649197981]
 layout_mode = 2
 text = "Instructions"
 
@@ -129,5 +129,5 @@ step = 0.01
 layout_mode = 2
 text = "Back"
 
-[node name="InstructionsOverlay" parent="." instance=ExtResource("2_instr")]
+[node name="InstructionsOverlay" parent="." unique_id=1391868802 instance=ExtResource("2_instr")]
 layout_mode = 1
