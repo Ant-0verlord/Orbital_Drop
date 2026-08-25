@@ -38,14 +38,14 @@ offset_bottom = 455.0
 text = "Press E to interact"
 
 [node name="PauseMenu" type="Control" parent="CharacterBody3D/CanvasLayer" unique_id=700001001]
-layout_mode = 1
+visible = false
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
-visible = false
 
 [node name="Dim" type="ColorRect" parent="CharacterBody3D/CanvasLayer/PauseMenu" unique_id=700001002]
 layout_mode = 1
@@ -76,8 +76,8 @@ theme_override_constants/separation = 10
 
 [node name="PausedLabel" type="Label" parent="CharacterBody3D/CanvasLayer/PauseMenu/CenterPanel/VBoxContainer" unique_id=700001005]
 layout_mode = 2
-horizontal_alignment = 1
 text = "PAUSED"
+horizontal_alignment = 1
 
 [node name="ResumeBtn" type="Button" parent="CharacterBody3D/CanvasLayer/PauseMenu/CenterPanel/VBoxContainer" unique_id=700001006]
 layout_mode = 2
@@ -89,7 +89,7 @@ layout_mode = 2
 focus_mode = 0
 text = "Settings"
 
-[node name="InstructionsBtn" type="Button" parent="CharacterBody3D/CanvasLayer/PauseMenu/CenterPanel/VBoxContainer"]
+[node name="InstructionsBtn" type="Button" parent="CharacterBody3D/CanvasLayer/PauseMenu/CenterPanel/VBoxContainer" unique_id=1419037431]
 layout_mode = 2
 focus_mode = 0
 text = "Instructions"
@@ -100,6 +100,7 @@ focus_mode = 0
 text = "Exit Game"
 
 [node name="SettingsOverlay" type="ColorRect" parent="CharacterBody3D/CanvasLayer/PauseMenu" unique_id=700001009]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -107,7 +108,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.85)
-visible = false
 
 [node name="SettingsPanel" type="PanelContainer" parent="CharacterBody3D/CanvasLayer/PauseMenu/SettingsOverlay" unique_id=700001010]
 layout_mode = 1
@@ -143,8 +143,8 @@ text = "Master Volume"
 [node name="MasterSlider" type="HSlider" parent="CharacterBody3D/CanvasLayer/PauseMenu/SettingsOverlay/SettingsPanel/VBoxContainer/MasterRow" unique_id=700001015]
 custom_minimum_size = Vector2(280, 24)
 layout_mode = 2
-focus_mode = 0
 size_flags_horizontal = 3
+focus_mode = 0
 max_value = 1.0
 step = 0.01
 
@@ -160,8 +160,8 @@ text = "Music Volume"
 [node name="MusicSlider" type="HSlider" parent="CharacterBody3D/CanvasLayer/PauseMenu/SettingsOverlay/SettingsPanel/VBoxContainer/MusicRow" unique_id=700001018]
 custom_minimum_size = Vector2(280, 24)
 layout_mode = 2
-focus_mode = 0
 size_flags_horizontal = 3
+focus_mode = 0
 max_value = 1.0
 step = 0.01
 
@@ -177,8 +177,8 @@ text = "SFX Volume"
 [node name="SFXSlider" type="HSlider" parent="CharacterBody3D/CanvasLayer/PauseMenu/SettingsOverlay/SettingsPanel/VBoxContainer/SFXRow" unique_id=700001021]
 custom_minimum_size = Vector2(280, 24)
 layout_mode = 2
-focus_mode = 0
 size_flags_horizontal = 3
+focus_mode = 0
 max_value = 1.0
 step = 0.01
 
@@ -187,5 +187,5 @@ layout_mode = 2
 focus_mode = 0
 text = "Back"
 
-[node name="InstructionsOverlay" parent="CharacterBody3D/CanvasLayer/PauseMenu" instance=ExtResource("2_instr")]
+[node name="InstructionsOverlay" parent="CharacterBody3D/CanvasLayer/PauseMenu" unique_id=909797016 instance=ExtResource("2_instr")]
 layout_mode = 1
