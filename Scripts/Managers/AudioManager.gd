@@ -28,6 +28,12 @@ const ALARM: String = SFX_DIR + "Space Ambience/edr-synth-alarm-01-169969.mp3"
 
 # ---- Orbital strike cannon fire ----
 const CANNON_FIRE: String = SFX_DIR + "Laser Cannon Sounds/gman-lasers.mp3"
+# Purpose-made for the supply/reinforcement launch (see
+# CommandCentre._launch_drop_pods()) — a synthesised mag-catapult release:
+# metallic clank, heavy low thump, then a band-passed whoosh sweeping up
+# and receding. Deliberately low/mid-weighted so a salvo of them reads as
+# heavy machinery rather than hiss.
+const POD_LAUNCH: String = SFX_DIR + "Drop Pods/pod_launch.wav"
 
 # ---- Background ambience — rotates between these (not the full set of
 # 5) so the loop doesn't get too repetitive across a long session. Add/
@@ -107,6 +113,12 @@ func play_alarm() -> void:
 
 func play_cannon_fire() -> void:
 	_play_sfx(CANNON_FIRE, 2.0)
+
+
+# Pulled down a few dB because a full turn fires these as an overlapping
+# salvo of up to seven — at the cannon's level they'd stack into clipping.
+func play_pod_launch() -> void:
+	_play_sfx(POD_LAUNCH, -5.0)
 
 
 # How long the cannon-fire clip runs, so a visual effect can be matched to
