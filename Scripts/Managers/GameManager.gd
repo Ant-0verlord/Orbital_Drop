@@ -1043,8 +1043,19 @@ func start_current_mission() -> void:
 		push_error("GameManager: No mission data for index %d" % current_mission)
 		return
 
+	# Per-mission alert markers reset here, so a "seen" flag from an earlier
+	# mission can't suppress the same alert later on. This used to erase only
+	# keys beginning with "mission_" — a prefix nothing anywhere writes — so
+	# in practice nothing was cleared at all. Because most keys are just a
+	# turn number (intel_reinf_warning_4, vox_turn_3, holomap_placement_2 …),
+	# dismissing the turn-4 reinforcement warning on Mission 1 silently killed
+	# the turn-4 warning on Missions 3 and 5 as well.
+	#
+	# The help-nudge markers are deliberately kept: those are one-time
+	# "here is the Help button" pointers, and re-showing them at the start of
+	# every mission would be more irritating than never showing them.
 	for key in seen_attention_events.keys():
-		if key.begins_with("mission_"):
+		if not String(key).begins_with("help_nudge_"):
 			seen_attention_events.erase(key)
 
 	enemy_ai_mode = data.get("enemy_ai_mode", "aggressive")

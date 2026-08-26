@@ -291,7 +291,14 @@ func _update_held_label() -> void:
 
 func _rebuild_squad_rows() -> void:
 	if turn_label:
-		turn_label.text = "Turn %d / %d" % [TurnManager.current_turn, TurnManager.max_turns]
+	# TurnManager.current_turn counts turns RESOLVED, so mid-play it is one
+	# behind the turn actually being taken — the opening turn read "Turn 0"
+	# and the last playable one read one short, so the final turn number was
+	# never displayed at all. Show the turn in progress; once the mission is
+	# over current_turn IS the final count, so it's used as-is then.
+		var shown_turn: int = TurnManager.current_turn if TurnManager.mission_over \
+			else min(TurnManager.current_turn + 1, TurnManager.max_turns)
+		turn_label.text = "Turn %d / %d" % [shown_turn, TurnManager.max_turns]
 	_update_held_label()
 
 	squad_rows.clear()
@@ -377,17 +384,22 @@ func _build_squad_row(squad: Dictionary) -> Dictionary:
 			_on_supply_toggled.bind(squad.name, supply, checkboxes)
 		)
 
-	# Apply initial disabled state if one is already ticked
-	var any_ticked = false
-	var ticked_supply = ""
+	# Apply the initial disabled state, mirroring the rule enforced in
+	# _on_supply_toggled(): a squad may take TWO supplies, and only once both
+	# are ticked do the remaining boxes lock.
+	#
+	# This used to lock every box after the FIRST ticked one, and the rows are
+	# rebuilt on every open (LogisticsTerminal.open_popup -> refresh), so
+	# closing and reopening the terminal capped each squad at a single supply
+	# — and where two were already ticked, the second came back ticked AND
+	# disabled, impossible to un-tick without clearing the first.
+	var ticked_count = 0
 	for supply in checkboxes:
 		if checkboxes[supply].button_pressed:
-			any_ticked = true
-			ticked_supply = supply
-			break
-	if any_ticked:
+			ticked_count += 1
+	if ticked_count >= 2:
 		for supply in checkboxes:
-			if supply != ticked_supply:
+			if not checkboxes[supply].button_pressed:
 				checkboxes[supply].disabled = true
 
 	squad_container.add_child(card)
@@ -626,6 +638,18 @@ func _on_lock_pressed() -> void:
 	var pending = GameManager.get_pending_reinforcement()
 	if not pending.is_empty() and not pending.get("placed", false):
 		warning_label.text = "Cannot lock — place reinforcement drop zone on Holo-Map first."
+		warning_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+		return
+
+	# Same gate for an armed but unplaced orbital strike, which the
+	# instructions already promise ("while something is armed but not yet
+	# placed"). Without it the turn seals, TurnManager._process_bombardment
+	# bails because the strike was never given a target, and the charge is
+	# gone — from a pool of one or two for the whole mission — with no
+	# warning and nothing fired.
+	var pending_strike = GameManager.get_pending_bombardment()
+	if not pending_strike.is_empty() and not pending_strike.get("placed", false):
+		warning_label.text = "Cannot lock — mark the orbital strike target on the Holo-Map first."
 		warning_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
 		return
 

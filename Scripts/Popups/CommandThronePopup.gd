@@ -150,12 +150,20 @@ func _update_mission_info() -> void:
 	if objective_label:
 		objective_label.text = _get_objective_text(data)
 	if turn_label:
-		turn_label.text = "Turn %d / %d" % [TurnManager.current_turn, TurnManager.max_turns]
+	# TurnManager.current_turn counts turns RESOLVED, so mid-play it is one
+	# behind the turn actually being taken — the opening turn read "Turn 0"
+	# and the last playable one read one short, so the final turn number was
+	# never displayed at all. Show the turn in progress; once the mission is
+	# over current_turn IS the final count, so it's used as-is then.
+		var shown_turn: int = TurnManager.current_turn if TurnManager.mission_over \
+			else min(TurnManager.current_turn + 1, TurnManager.max_turns)
+		turn_label.text = "Turn %d / %d" % [shown_turn, TurnManager.max_turns]
 	if held_label:
 		_update_held_label()
 	if progress_bar:
 		progress_bar.max_value = TurnManager.max_turns
-		progress_bar.value = TurnManager.current_turn
+		progress_bar.value = TurnManager.current_turn if TurnManager.mission_over \
+			else min(TurnManager.current_turn + 1, TurnManager.max_turns)
 
 func _get_objective_text(data: Dictionary) -> String:
 	var mission_type = data.get("mission_type", "capture")
@@ -219,21 +227,26 @@ func _update_held_label() -> void:
 			var ez = GameManager.extraction_zone
 			var at_ez = 0
 			for squad in SquadManager.get_squads_for_ui():
-				if squad.sector == ez and squad.status != SquadManager.Status.LOST:
+				# Excludes squads already aboard — they keep their sector, so
+				# counting them here as "at extraction" as well would inflate
+				# the figure. They're reported separately below.
+				if squad.sector == ez and squad.status != SquadManager.Status.LOST \
+						and not squad.get("extracted", false):
 					at_ez += 1
 			var turns_left = TurnManager.max_turns - TurnManager.current_turn
 			if turns_left > TurnManager.SHUTTLE_ARRIVAL_WINDOW:
 				held_label.text = "Holding theatre — shuttle in %d turns" % (turns_left - TurnManager.SHUTTLE_ARRIVAL_WINDOW)
 				held_label.add_theme_color_override("font_color", Color(0.6, 0.75, 0.95))
 			else:
-				held_label.text = "SHUTTLE INBOUND — At extraction: %d squad(s)" % at_ez
+				var aboard: int = SquadManager.get_extracted_count()
+				held_label.text = "SHUTTLE DOWN — Aboard: %d  |  At zone: %d" % [aboard, at_ez]
 				held_label.add_theme_color_override("font_color",
-					Color(0.4, 0.9, 0.4) if at_ez > 0 else Color(0.9, 0.6, 0.2))
+					Color(0.4, 0.9, 0.4) if (aboard + at_ez) > 0 else Color(0.9, 0.6, 0.2))
 
 func _update_squad_summary() -> void:
 	for child in squad_summary.get_children():
 		child.queue_free()
-	var active = 0; var wounded = 0; var critical = 0; var lost = 0
+	var active = 0; var wounded = 0; var critical = 0; var lost = 0; var aboard = 0
 	for squad in SquadManager.get_squads_for_ui():
 		var card := PanelContainer.new()
 		card.add_theme_stylebox_override("panel", _card_style(squad.status))
@@ -262,16 +275,24 @@ func _update_squad_summary() -> void:
 		var spacer := Control.new()
 		spacer.custom_minimum_size.y = 4
 		squad_summary.add_child(spacer)
-		match squad.status:
-			SquadManager.Status.ACTIVE:   active += 1
-			SquadManager.Status.WOUNDED:  wounded += 1
-			SquadManager.Status.CRITICAL: critical += 1
-			SquadManager.Status.LOST:     lost += 1
+		# Counted by state as the player sees it: a boarded squad shows an
+		# ABOARD SHUTTLE pill on its card one line above, so tallying it as
+		# "operational" or "wounded" here made the summary contradict the
+		# card directly over it.
+		if squad.get("extracted", false):
+			aboard += 1
+		else:
+			match squad.status:
+				SquadManager.Status.ACTIVE:   active += 1
+				SquadManager.Status.WOUNDED:  wounded += 1
+				SquadManager.Status.CRITICAL: critical += 1
+				SquadManager.Status.LOST:     lost += 1
 	var parts = []
 	if active > 0:   parts.append("%d operational" % active)
 	if wounded > 0:  parts.append("%d wounded" % wounded)
 	if critical > 0: parts.append("%d critical" % critical)
 	if lost > 0:     parts.append("%d lost" % lost)
+	if aboard > 0:   parts.append("%d aboard" % aboard)
 	var summary := Label.new()
 	summary.text = ", ".join(parts)
 	summary.add_theme_font_size_override("font_size", 11)
@@ -358,6 +379,18 @@ func _show_report(report: Dictionary) -> void:
 
 	# Data package status — only relevant on missions with a priority
 	# target/data carrier at all (eliminate_priority, extract).
+	# Spell out the extraction bonus rather than letting it silently inflate
+	# the total — otherwise the score doesn't add up from the three columns
+	# shown above it.
+	var extract_text = ""
+	var extract_bonus: int = report.get("extraction_bonus", 0)
+	if extract_bonus > 0:
+		extract_text = "\n\nExtraction bonus: +%d  (%d squad(s) aboard%s)" % [
+			extract_bonus,
+			report.get("extracted_count", 0),
+			", data secured" if report.get("data_extracted", false) else ""
+		]
+
 	var data_text = ""
 	match report.get("data_status", ""):
 		"secured":
@@ -397,8 +430,8 @@ func _show_report(report: Dictionary) -> void:
 	if report_body:
 		if won:
 			report_body.text = (
-				"Sectors held: %d / %d\nSquads operational: %d   Squads lost: %d\nTurns taken: %d%s%s"
-				% [held, req, alive, lost_c, turns, data_text, carry_text]
+				"Sectors held: %d / %d\nSquads operational: %d   Squads lost: %d\nTurns taken: %d%s%s%s"
+				% [held, req, alive, lost_c, turns, extract_text, data_text, carry_text]
 			)
 		else:
 			var reason = report.get("reason", "Mission objectives not met.")
@@ -545,6 +578,14 @@ func _on_end_turn_pressed() -> void:
 	if TurnManager.mission_over: return
 	if not TurnManager.allocations_are_locked: return
 	TurnManager.end_turn()
+	# end_turn() resolves the whole turn synchronously, so if that turn ended
+	# the mission then _on_mission_complete has ALREADY built and shown the
+	# report panel by the time control returns here. Closing regardless would
+	# shut it in the same frame it appeared: the player would see the popup
+	# vanish with no score, no rating and no Retry/Advance button, and would
+	# have to walk back and reopen the throne to find them.
+	if TurnManager.mission_over:
+		return
 	_on_close_pressed()
 
 func _on_help_pressed() -> void:

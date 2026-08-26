@@ -387,10 +387,17 @@ func _tower_secured() -> bool:
 	var tower = GameManager.tower_sector
 	if tower == "" or not GameManager.tower_powered:
 		return false
-	for squad in SquadManager.get_squads_for_ui():
-		if squad.sector == tower and squad.status != SquadManager.Status.LOST:
-			return true
-	return false
+	# Powered is enough. Requiring a squad to still be STANDING on the tower
+	# made the objective silently un-complete itself the moment the garrison
+	# moved on — which happens routinely now that the squad closest to the
+	# priority target gets pulled off the tower to hunt it. That produced a
+	# mission failure reading "the relay tower was never taken and powered"
+	# on a run where the player had taken AND powered it.
+	#
+	# This can't credit a tower the player has actually lost:
+	# GameManager.check_tower_still_held() clears tower_powered as soon as
+	# the enemy retakes the hex.
+	return true
 
 
 func _check_extract_win() -> void:
@@ -441,6 +448,13 @@ func _end_mission(won: bool, reason: String) -> void:
 		data_extracted   = eb.data_extracted
 
 	var score = GameManager.calculate_score(held, current_turn, win_condition_hexes, won)
+	# Mission 5's extraction bonus (80 a squad, +200 if the data got out) is
+	# added to the reported total here. It was being calculated into
+	# final_score and then never read — the report shipped score.total, so
+	# getting three squads and the package off the planet was worth 440
+	# points that appeared nowhere. The RATING still comes from score.total,
+	# so it continues to reflect how the mission itself was fought rather
+	# than being inflated by the bonus.
 	var final_score = score.total + extraction_bonus
 
 	# Surface what actually happened to the data package at the end of any
@@ -469,7 +483,7 @@ func _end_mission(won: bool, reason: String) -> void:
 		"squads_alive":   squads_alive,
 		"squads_lost":    squads_lost,
 		"turns":          current_turn,
-		"score":          score.total,
+		"score":          final_score,
 		"rating":         score.rating,
 		"tile_score":     score.tile_score,
 		"turn_bonus":     score.turn_bonus,
@@ -486,7 +500,7 @@ func _end_mission(won: bool, reason: String) -> void:
 	GameManager.campaign_record.append({
 		"mission": GameManager.current_mission,
 		"won":     won,
-		"score":   score.total,
+		"score":   final_score,
 		"rating":  score.rating,
 	})
 

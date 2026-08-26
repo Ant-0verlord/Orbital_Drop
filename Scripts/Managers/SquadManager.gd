@@ -511,6 +511,18 @@ func resolve_turn(allocations: Dictionary) -> Dictionary:
 					# tower like any other squad (see _assign_goals()), so
 					# extraction_zone is always set here.
 					var ez = GameManager.extraction_zone
+					if ez != "" and ez == current_sector:
+						# ALREADY on the zone — stop here. Without this the
+						# override simply doesn't fire and step_target keeps
+						# whatever the default advance/attack targeting picked,
+						# which walks the squad straight back off the pad. It
+						# matters most for a fuelled squad (move_range 2): step
+						# one lands on the zone, step two leaves it, and since
+						# boarding is only tested after the whole move loop the
+						# squad ends the turn off-zone and never gets aboard.
+						# Goal.DEFEND_TOWER has the same guard for the same
+						# reason (see its dist_to_tower == 0 case above).
+						break
 					if ez != "" and ez != current_sector:
 						if ez in EnemyManager.adjacency.get(current_sector, []):
 							step_target = ez
@@ -715,6 +727,13 @@ func apply_bombardment_casualty(squad_name: String) -> void:
 		return
 	var squad = squads[squad_name]
 	if squad.status == Status.LOST:
+		return
+	# Aboard the shuttle and off the surface — same guard as
+	# apply_overrun_casualty(). A boarded squad keeps its sector, so without
+	# this an orbital strike called on the extraction zone would wound or
+	# kill squads that already flew out; if it hit the carrier it would also
+	# flag the data as destroyed.
+	if squad.get("extracted", false):
 		return
 	_worsen_status(squad)
 	if squad.status == Status.LOST:

@@ -104,7 +104,10 @@ func _on_turn_started(_turn: int) -> void:
 # it would just be noise the player can't act on.
 func _any_squad_critical() -> bool:
 	for squad_name in SquadManager.squads:
-		if SquadManager.squads[squad_name].status == SquadManager.Status.CRITICAL:
+		var s = SquadManager.squads[squad_name]
+		# Same reasoning as the distress call above — a boarded squad can't
+		# be resupplied, so it must not keep the console's "!" lit.
+		if s.status == SquadManager.Status.CRITICAL and not s.get("extracted", false):
 			return true
 	return false
 
@@ -175,7 +178,11 @@ func _rebuild_transmissions() -> void:
 	# Critical squads always break through — priority distress first
 	for squad_name in SquadManager.squads:
 		var squad = SquadManager.squads[squad_name]
-		if squad.status == SquadManager.Status.CRITICAL:
+		# Aboard the shuttle — off the surface and beyond help, so no
+		# distress call. Without this a CRITICAL squad that boards keeps
+		# broadcasting "send Medi-Packs immediately" for a squad the
+		# Logistics roster has already dropped.
+		if squad.status == SquadManager.Status.CRITICAL and not squad.get("extracted", false):
 			_add_distress_call(squad)
 
 	# All other squads — subject to transmission degradation

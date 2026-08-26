@@ -139,9 +139,13 @@ layout_mode = 2
 text = "Help"
 
 [node name="EndOverlay" type="ColorRect" parent="MeshInstance3D/StaticBody3D/LogisticsPopup" unique_id=750091720]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.05, 0.08, 0.96)
 
 [node name="EndVBox" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/EndOverlay" unique_id=1290137604]
 layout_mode = 1

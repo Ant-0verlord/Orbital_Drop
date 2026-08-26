@@ -180,7 +180,13 @@ func _refresh_from_game_state() -> void:
 
 func _update_labels() -> void:
 	if turn_label:
-		turn_label.text = "Turn %d" % TurnManager.current_turn
+	# TurnManager.current_turn counts turns RESOLVED, so mid-play it is one
+	# behind the turn actually being taken — the opening turn read "Turn 0"
+	# and the last playable one read one short, so the final turn number was
+	# never displayed at all. Show the turn in progress; once the mission is
+	# over current_turn IS the final count, so it's used as-is then.
+		turn_label.text = "Turn %d" % (TurnManager.current_turn if TurnManager.mission_over \
+			else min(TurnManager.current_turn + 1, TurnManager.max_turns))
 	if held_label:
 		_update_held_label()
 
@@ -222,7 +228,11 @@ func _update_held_label() -> void:
 			var ez = GameManager.extraction_zone
 			var at_ez = 0
 			for squad in SquadManager.get_squads_for_ui():
-				if squad.sector == ez and squad.status != SquadManager.Status.LOST:
+				# Boarded squads keep their sector forever, so without the
+				# extracted test they'd be counted here AND in the aboard
+				# figure beside it — two squads reading as four.
+				if squad.sector == ez and squad.status != SquadManager.Status.LOST \
+						and not squad.get("extracted", false):
 					at_ez += 1
 			var turns_left = TurnManager.max_turns - TurnManager.current_turn
 			if turns_left > TurnManager.SHUTTLE_ARRIVAL_WINDOW:
