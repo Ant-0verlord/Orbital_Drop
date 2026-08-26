@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://Scenes/InstructionsPopup.tscn" id="2_instr"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_kyqiw"]
+radius = 0.50146484
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_gntrk"]
 
