@@ -219,8 +219,17 @@ void sky() {
 	// glow_margin below (unchanged) still gives it a faint atmospheric
 	// halo just past that crisp cutoff, so it doesn't look hard-edged
 	// like a cardboard cutout, just well-defined.
-	float edge_margin = planet_angular_radius * 0.045;
-	float glow_margin = planet_angular_radius * 0.14;
+	// Tightened again, 0.045 -> 0.006. At the disc's size 0.045 spread the
+	// limb over roughly 2.4 degrees of sky — around forty pixels of blur at
+	// a 62-degree FOV — which is what made the planet read as a soft blob
+	// rather than a body with a definite edge. 0.006 is about five pixels:
+	// still smooth enough not to alias against the cubemap, but the
+	// silhouette now actually reads as an edge.
+	float edge_margin = planet_angular_radius * 0.006;
+	// Narrowed with it so the atmospheric halo sits as a defined ring just
+	// off the limb instead of a wide bloom that blurred the boundary back
+	// out again.
+	float glow_margin = planet_angular_radius * 0.10;
 	if (d < planet_angular_radius + glow_margin) {
 		// A proper local tangent-plane basis (right/up) perpendicular to
 		// pd, so the "flat disc" is a genuine projection centred on the
@@ -281,6 +290,13 @@ void sky() {
 		float continents = fbm(shape_warped);
 
 		float detail = fbm(surf * 2.6 + 11.0);
+		// A finer, higher-frequency pass used ONLY for surface texture, never
+		// for elevation. Feeding it into `elevation` would move coastlines
+		// and snowlines around (see the warning above); confined to the
+		// relief shading it just adds close-in grain, which is what makes
+		// the surface look resolved rather than smooth.
+		float micro = noise2(surf * 9.5 + 313.0);
+		float micro_fine = noise2(surf * 17.0 + 77.0);
 		float ridge_n = noise2(surf * 4.1 + 91.0);
 		float ridge = 1.0 - abs(ridge_n * 2.0 - 1.0);
 		ridge = ridge * ridge;
@@ -291,7 +307,10 @@ void sky() {
 		// with a lighter shallow-water ring right at the coast.
 		// ---------------------------------------------------------------
 		float ocean_level = mix(0.28, 0.66, planet_ocean_amount);
-		float land_mask = smoothstep(ocean_level - 0.045, ocean_level + 0.045, continents);
+		// Coastline transition tightened from 0.045 to 0.026 — wide enough
+		// to stay smooth, narrow enough that land meets sea on a line
+		// instead of a gradient.
+		float land_mask = smoothstep(ocean_level - 0.026, ocean_level + 0.026, continents);
 		float shallow_band = 1.0 - smoothstep(0.0, 0.06, abs(continents - ocean_level));
 		vec3 ocean_col = mix(planet_ocean_deep_color, planet_ocean_shallow_color, shallow_band);
 
@@ -351,7 +370,18 @@ void sky() {
 		// --- Day/night shading. The ridge pattern doubles as a cheap
 		// fake-relief term (small light/dark push based on "elevation")
 		// so lit terrain shows texture instead of one flat-lit tone.
-		float relief = (ridge - 0.5) * 0.10;
+		// At the old 0.10 the terrain shading was so shallow the disc looked
+		// airbrushed — the mountain ranges were in the data but barely
+		// visible. The extra contrast comes mostly from the two isotropic
+		// grain octaves rather than from `ridge`, deliberately: ridge is
+		// thin winding lines, and simply turning it up brings back the
+		// maze/circuit-board look this shader already fought once (see the
+		// biome note above). Weighting it this way measured the same overall
+		// surface contrast with roughly half as much of the ridge pattern
+		// showing through.
+		float relief = (ridge - 0.5) * 0.10
+				+ (micro - 0.5) * 0.12
+				+ (micro_fine - 0.5) * 0.06;
 		vec3 shaded = mix(planet_shadow_color, surface, clamp(ndotl + relief * ndotl, 0.0, 1.0));
 
 		// Clouds sit on top of the shading so their tops stay bright even
@@ -433,7 +463,7 @@ void sky() {
 		// day/night line, distinct from (and narrower than) the old rim
 		// highlight below, so the transition itself reads as a visible
 		// atmospheric-scatter line the way a real limb photo shows one.
-		float terminator = 1.0 - smoothstep(0.0, 0.05, abs(raw_ndotl));
+		float terminator = 1.0 - smoothstep(0.0, 0.035, abs(raw_ndotl));
 		shaded += planet_terminator_glow_color * terminator * 0.4;
 
 		// --- Two-tone atmosphere: a coloured haze that thickens toward
@@ -441,9 +471,13 @@ void sky() {
 		// day side, giving the disc a believable air/scatter halo instead
 		// of a hard-edged rock.
 		float limb = clamp(1.0 - nz, 0.0, 1.0);
-		float atmo_rim = pow(limb, 2.2);
+		// Exponent raised and strength cut so the haze clings to the grazing
+		// limb rather than spreading a blue veil across the whole disc. The
+		// old 2.2/0.35 pair was washing roughly a third of the visible face,
+		// which flattened every bit of terrain detail underneath it.
+		float atmo_rim = pow(limb, 3.2);
 		vec3 atmo_col = mix(planet_atmosphere_color * 0.35, planet_atmosphere_color * 1.3, ndotl);
-		shaded = mix(shaded, atmo_col, atmo_rim * 0.35);
+		shaded = mix(shaded, atmo_col, atmo_rim * 0.24);
 
 		// Was gated by smoothstep(0.55, 1.0, ndotl), which covers roughly
 		// the whole lit hemisphere's edge — that's what made the amber
