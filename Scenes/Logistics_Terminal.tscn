@@ -1,29 +1,28 @@
 [gd_scene format=3 uid="uid://ecaj1srmx3pq"]
 
-[ext_resource type="ArrayMesh" uid="uid://cimdrau4c0llv" path="res://Models/Logistics Terminal 2.0.obj" id="1_jyj6u"]
+[ext_resource type="ArrayMesh" uid="uid://bo28diof654ak" path="res://Models/Logistics Terminal 3.0.obj" id="1_3bly7"]
 [ext_resource type="Script" uid="uid://d1hkamug1ie0r" path="res://Scripts/Consoles/LogisticsTerminal.gd" id="2_jyj6u"]
 [ext_resource type="Script" uid="uid://l7snwg4vd2ji" path="res://Scripts/Popups/LogisticsPopup.gd" id="3_lbbgb"]
 [ext_resource type="PackedScene" uid="uid://dughmeacd25tq" path="res://Scenes/TutorialOverlay.tscn" id="4_lbbgb"]
 [ext_resource type="PackedScene" path="res://Scenes/HelpNudge.tscn" id="5_hlpndg"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_i6nf8"]
-size = Vector3(5.276805, 3.2378602, 2.3159518)
+size = Vector3(5.276805, 3.1559174, 2.3159518)
 
 [node name="Node3D" type="Node3D" unique_id=1292128161]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1318454912]
-transform = Transform3D(1.3113416e-07, 0, 1, 0, 1, 0, -1, 0, 1.3113416e-07, 0.966187, -0.4378904, -0.03768611)
-mesh = ExtResource("1_jyj6u")
+transform = Transform3D(9.134814e-08, 0, 0.6966007, 0, 0.6966007, 0, -0.6966007, 0, 9.134814e-08, 0.0149405, -0.60952914, 0.31139636)
+mesh = ExtResource("1_3bly7")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=683507405]
-transform = Transform3D(1.3113416e-07, 0, -1, 0, 1, 0, 1, 0, 1.3113416e-07, -0.037686236, 0.4378904, -0.966187)
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=683507405]
 script = ExtResource("2_jyj6u")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=1448184268]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9065192, 0.64893305, -0.07079656)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1448184268]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9065192, 0.60796165, -0.07079656)
 shape = SubResource("BoxShape3D_i6nf8")
 
-[node name="LogisticsPopup" type="Control" parent="MeshInstance3D/StaticBody3D" unique_id=68396652]
+[node name="LogisticsPopup" type="Control" parent="StaticBody3D" unique_id=68396652]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -32,7 +31,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_lbbgb")
 
-[node name="BG" type="ColorRect" parent="MeshInstance3D/StaticBody3D/LogisticsPopup" unique_id=841427897]
+[node name="BG" type="ColorRect" parent="StaticBody3D/LogisticsPopup" unique_id=841427897]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -41,7 +40,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.8784314)
 
-[node name="PanelContainer" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup" unique_id=1383368508]
+[node name="PanelContainer" type="PanelContainer" parent="StaticBody3D/LogisticsPopup" unique_id=1383368508]
 custom_minimum_size = Vector2(680, 0)
 layout_mode = 1
 anchors_preset = 15
@@ -50,95 +49,95 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer" unique_id=342897669]
+[node name="VBoxContainer" type="VBoxContainer" parent="StaticBody3D/LogisticsPopup/PanelContainer" unique_id=342897669]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1709019321]
+[node name="Title" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1709019321]
 layout_mode = 2
 
-[node name="TurnLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=195406345]
+[node name="TurnLabel" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=195406345]
 layout_mode = 2
 
-[node name="HeldLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1313510049]
+[node name="HeldLabel" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1313510049]
 layout_mode = 2
 
-[node name="LegendPanel" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1287371521]
+[node name="LegendPanel" type="PanelContainer" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1287371521]
 layout_mode = 2
 
-[node name="InstructionLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=491710425]
+[node name="InstructionLabel" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=491710425]
 layout_mode = 2
 
-[node name="PoolLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1568800754]
+[node name="PoolLabel" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1568800754]
 layout_mode = 2
 
-[node name="BudgetLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=952710410]
+[node name="BudgetLabel" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=952710410]
 layout_mode = 2
 
-[node name="WarningLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1401171810]
+[node name="WarningLabel" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1401171810]
 layout_mode = 2
 
-[node name="ReinforcementPanel" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1346934888]
+[node name="ReinforcementPanel" type="PanelContainer" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1346934888]
 layout_mode = 2
 
-[node name="RVBox" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel" unique_id=2000479483]
+[node name="RVBox" type="VBoxContainer" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel" unique_id=2000479483]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="ReinforcementPoolLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=774455002]
+[node name="ReinforcementPoolLabel" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=774455002]
 layout_mode = 2
 
-[node name="ReinforcementNameBtn" type="OptionButton" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=740426796]
+[node name="ReinforcementNameBtn" type="OptionButton" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=740426796]
 layout_mode = 2
 
-[node name="CallReinforcementBtn" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=1712340325]
+[node name="CallReinforcementBtn" type="Button" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=1712340325]
 layout_mode = 2
 text = "Call Reinforcement Drop"
 
-[node name="ReinforcementStatusLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=1201652903]
+[node name="ReinforcementStatusLabel" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ReinforcementPanel/RVBox" unique_id=1201652903]
 layout_mode = 2
 
-[node name="BombardmentPanel" type="PanelContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1032482518]
+[node name="BombardmentPanel" type="PanelContainer" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1032482518]
 layout_mode = 2
 
-[node name="BombardmentPoolLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/BombardmentPanel" unique_id=140690005]
+[node name="BombardmentPoolLabel" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/BombardmentPanel" unique_id=140690005]
 layout_mode = 2
 
-[node name="ArmBombardmentBtn" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/BombardmentPanel" unique_id=1636552871]
+[node name="ArmBombardmentBtn" type="Button" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/BombardmentPanel" unique_id=1636552871]
 layout_mode = 2
 text = "Arm Orbital Strike"
 
-[node name="BombardmentStatusLabel" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/BombardmentPanel" unique_id=2107017614]
+[node name="BombardmentStatusLabel" type="Label" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/BombardmentPanel" unique_id=2107017614]
 layout_mode = 2
 
-[node name="HSeparator" type="HSeparator" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=406368883]
+[node name="HSeparator" type="HSeparator" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=406368883]
 layout_mode = 2
 
-[node name="ScrollContainer" type="ScrollContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1880702202]
+[node name="ScrollContainer" type="ScrollContainer" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1880702202]
 custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="SquadContainer" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ScrollContainer" unique_id=536855974]
+[node name="SquadContainer" type="VBoxContainer" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ScrollContainer" unique_id=536855974]
 layout_mode = 2
 
-[node name="HSeparator3" type="HSeparator" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=82692739]
+[node name="HSeparator3" type="HSeparator" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=82692739]
 layout_mode = 2
 
-[node name="ButtonRow" type="HBoxContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1169133823]
+[node name="ButtonRow" type="HBoxContainer" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer" unique_id=1169133823]
 layout_mode = 2
 
-[node name="LockBtn" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=1474860410]
+[node name="LockBtn" type="Button" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=1474860410]
 layout_mode = 2
 
-[node name="CloseBtn" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=2142155908]
+[node name="CloseBtn" type="Button" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=2142155908]
 layout_mode = 2
 text = "Close  [Tab]"
 
-[node name="HelpBtn" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=298784176]
+[node name="HelpBtn" type="Button" parent="StaticBody3D/LogisticsPopup/PanelContainer/VBoxContainer/ButtonRow" unique_id=298784176]
 layout_mode = 2
 text = "Help"
 
-[node name="EndOverlay" type="ColorRect" parent="MeshInstance3D/StaticBody3D/LogisticsPopup" unique_id=750091720]
+[node name="EndOverlay" type="ColorRect" parent="StaticBody3D/LogisticsPopup" unique_id=750091720]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -147,7 +146,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.04, 0.05, 0.08, 0.96)
 
-[node name="EndVBox" type="VBoxContainer" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/EndOverlay" unique_id=1290137604]
+[node name="EndVBox" type="VBoxContainer" parent="StaticBody3D/LogisticsPopup/EndOverlay" unique_id=1290137604]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -161,17 +160,17 @@ offset_bottom = 20.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="EndTitle" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/EndOverlay/EndVBox" unique_id=456724933]
+[node name="EndTitle" type="Label" parent="StaticBody3D/LogisticsPopup/EndOverlay/EndVBox" unique_id=456724933]
 layout_mode = 2
 
-[node name="EndBody" type="Label" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/EndOverlay/EndVBox" unique_id=544555369]
+[node name="EndBody" type="Label" parent="StaticBody3D/LogisticsPopup/EndOverlay/EndVBox" unique_id=544555369]
 layout_mode = 2
 
-[node name="EndClose" type="Button" parent="MeshInstance3D/StaticBody3D/LogisticsPopup/EndOverlay/EndVBox" unique_id=1736968560]
+[node name="EndClose" type="Button" parent="StaticBody3D/LogisticsPopup/EndOverlay/EndVBox" unique_id=1736968560]
 layout_mode = 2
 
-[node name="TutorialOverlay" parent="MeshInstance3D/StaticBody3D/LogisticsPopup" unique_id=45888852 instance=ExtResource("4_lbbgb")]
+[node name="TutorialOverlay" parent="StaticBody3D/LogisticsPopup" unique_id=45888852 instance=ExtResource("4_lbbgb")]
 layout_mode = 1
 
-[node name="HelpNudge" parent="MeshInstance3D/StaticBody3D/LogisticsPopup" instance=ExtResource("5_hlpndg")]
+[node name="HelpNudge" parent="StaticBody3D/LogisticsPopup" unique_id=1801296214 instance=ExtResource("5_hlpndg")]
 layout_mode = 1
