@@ -258,408 +258,91 @@ transform = Transform3D(-4.3711385e-08, 0, 0.99999994, 0, 1, 0, -0.99999994, 0, 
 [node name="GuideOverlay" parent="." unique_id=1628897131 instance=ExtResource("10_0dw1l")]
 
 [node name="OmniLight3D4" type="OmniLight3D" parent="." unique_id=1428611040]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522458, -0.0155993495, 0.9998748, 0.0026587902, 0.0013935522, -0.0026373744, 0.9999956, 1.9904804, 3.7920256, -0.07312524)
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 1.8520575, 3.7920256, -0.07312524)
+light_energy = 0.448
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 10.330503
 omni_attenuation = -0.01
 
-[node name="OmniLight3D5" type="OmniLight3D" parent="." unique_id=97061759]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 0.31847644, 3.7920256, -0.07312524)
+[node name="OmniLight3D14" type="OmniLight3D" parent="." unique_id=756878500]
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 28.615112, -12.426211, -0.07312524)
+light_energy = 1.498
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 44.89484
 omni_attenuation = -0.01
 
-[node name="OmniLight3D28" type="OmniLight3D" parent="." unique_id=1914240253]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 5.4192743, -0.51501274, -0.07312524)
+[node name="OmniLight3D6" type="OmniLight3D" parent="." unique_id=2082913185]
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 1.8520575, 3.7920256, -5.120728)
+light_energy = 0.448
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 10.330503
 omni_attenuation = -0.01
 
-[node name="OmniLight3D29" type="OmniLight3D" parent="." unique_id=383235248]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 4.3116393, -0.51501274, 2.650782)
+[node name="OmniLight3D7" type="OmniLight3D" parent="." unique_id=834535805]
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 1.8520575, 3.7920256, 5.13931)
+light_energy = 0.448
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 10.330503
 omni_attenuation = -0.01
 
-[node name="OmniLight3D30" type="OmniLight3D" parent="." unique_id=936679200]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 4.3116393, -0.51501274, -2.902205)
+[node name="OmniLight3D5" type="OmniLight3D" parent="." unique_id=841492100]
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -5.303598, 3.7920256, -0.07312524)
+light_energy = 0.448
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 10.330503
 omni_attenuation = -0.01
 
-[node name="OmniLight3D6" type="OmniLight3D" parent="." unique_id=1226983231]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 3.6061327, 3.7920256, -0.07312524)
+[node name="OmniLight3D8" type="OmniLight3D" parent="." unique_id=1531542230]
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 1.8520575, -2.246069, -0.07312524)
+light_energy = 0.448
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 10.330503
 omni_attenuation = -0.01
 
-[node name="OmniLight3D7" type="OmniLight3D" parent="." unique_id=18367089]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 1.9904804, 3.7920256, 5.0846763)
+[node name="OmniLight3D9" type="OmniLight3D" parent="." unique_id=759366652]
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 1.8520575, -2.246069, -5.120728)
+light_energy = 0.448
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 10.330503
 omni_attenuation = -0.01
 
-[node name="OmniLight3D8" type="OmniLight3D" parent="." unique_id=22637049]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 0.31847644, 3.7920256, 5.0846763)
+[node name="OmniLight3D10" type="OmniLight3D" parent="." unique_id=1708351637]
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 1.8520575, -2.246069, 5.13931)
+light_energy = 0.448
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 10.330503
 omni_attenuation = -0.01
 
-[node name="OmniLight3D9" type="OmniLight3D" parent="." unique_id=598793807]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 3.6061327, 3.7920256, 5.0846763)
+[node name="OmniLight3D12" type="OmniLight3D" parent="." unique_id=2014049311]
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -3.905942, 1.719162, 8.219067)
+light_energy = 0.448
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 10.330503
 omni_attenuation = -0.01
 
-[node name="OmniLight3D16" type="OmniLight3D" parent="." unique_id=62018031]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -2.1609516, 0.31817842, 5.8236413)
+[node name="OmniLight3D13" type="OmniLight3D" parent="." unique_id=653869492]
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -3.905942, 1.719162, -8.360508)
+light_energy = 0.448
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 10.330503
 omni_attenuation = -0.01
 
-[node name="OmniLight3D17" type="OmniLight3D" parent="." unique_id=2010104408]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -3.8329558, 0.31817842, 5.8236413)
+[node name="OmniLight3D11" type="OmniLight3D" parent="." unique_id=1106849872]
+transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -5.303598, -2.246069, -0.07312524)
+light_energy = 0.448
 light_indirect_energy = 8.275
 light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D39" type="OmniLight3D" parent="." unique_id=1668462557]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -3.8329558, 0.04690838, 8.611142)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D40" type="OmniLight3D" parent="." unique_id=888947409]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -3.8329558, 3.091268, 8.611142)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D43" type="OmniLight3D" parent="." unique_id=464419236]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -10.962936, 3.091268, -1.5805578)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D44" type="OmniLight3D" parent="." unique_id=609765590]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 12.245916, 4.8923836, -6.2489386)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D45" type="OmniLight3D" parent="." unique_id=124696580]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 22.178652, 4.8923836, -6.2489386)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D46" type="OmniLight3D" parent="." unique_id=463387754]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 33.474236, 4.8923836, -6.2489386)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D47" type="OmniLight3D" parent="." unique_id=1156982170]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 12.245916, 2.448493, 0.3686428)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D48" type="OmniLight3D" parent="." unique_id=609324151]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 22.178652, 2.448493, 0.3686428)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D49" type="OmniLight3D" parent="." unique_id=2110321753]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 33.474236, 2.448493, 0.3686428)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D50" type="OmniLight3D" parent="." unique_id=797609484]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 12.245916, 5.158232, 5.6775594)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D51" type="OmniLight3D" parent="." unique_id=2018248858]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 22.178652, 5.158232, 5.6775594)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D52" type="OmniLight3D" parent="." unique_id=218890839]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 33.474236, 5.158232, 5.6775594)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D53" type="OmniLight3D" parent="." unique_id=1527457794]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 44.908997, 5.5254993, -6.2489386)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D54" type="OmniLight3D" parent="." unique_id=867082769]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 44.908997, 5.791348, 5.6775594)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D55" type="OmniLight3D" parent="." unique_id=2119986659]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 44.908997, 11.381151, -6.2489386)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D56" type="OmniLight3D" parent="." unique_id=822168560]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 44.908997, 11.646999, 5.6775594)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D57" type="OmniLight3D" parent="." unique_id=2066285220]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 37.061436, 11.381151, -6.2489386)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D58" type="OmniLight3D" parent="." unique_id=617740013]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 37.061436, 11.646999, 5.6775594)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 8.68788
-omni_attenuation = -0.01
-
-[node name="OmniLight3D41" type="OmniLight3D" parent="." unique_id=1763496124]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -3.8329558, 3.091268, -8.759364)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D42" type="OmniLight3D" parent="." unique_id=269157922]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -3.8329558, 0.50095844, -8.759364)
-light_energy = 1.69
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D18" type="OmniLight3D" parent="." unique_id=365265236]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -0.54529953, 0.31817842, 5.8236413)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D19" type="OmniLight3D" parent="." unique_id=1304795236]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 2.105918, 0.31817842, 5.8236413)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D20" type="OmniLight3D" parent="." unique_id=583806274]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 0.4339137, 0.31817842, 5.8236413)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D21" type="OmniLight3D" parent="." unique_id=254951599]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 3.72157, 0.31817842, 5.8236413)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D31" type="OmniLight3D" parent="." unique_id=691200227]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 5.4192743, -2.7050314, -0.07312524)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D32" type="OmniLight3D" parent="." unique_id=1454744315]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 4.3116393, -2.7050314, 2.650782)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D33" type="OmniLight3D" parent="." unique_id=1852940312]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 4.3116393, -2.7050314, -2.902205)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D34" type="OmniLight3D" parent="." unique_id=1079544048]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -2.1609516, -1.8718402, 5.8236413)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D35" type="OmniLight3D" parent="." unique_id=1354896754]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -0.54529953, -1.8718402, 5.8236413)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D36" type="OmniLight3D" parent="." unique_id=1725327088]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 2.105918, -1.8718402, 5.8236413)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D37" type="OmniLight3D" parent="." unique_id=1427743611]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 0.4339137, -1.8718402, 5.8236413)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D38" type="OmniLight3D" parent="." unique_id=121561152]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 3.72157, -1.8718402, 5.8236413)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D22" type="OmniLight3D" parent="." unique_id=525782646]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -2.1609516, 0.31817842, -5.262814)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D23" type="OmniLight3D" parent="." unique_id=263101382]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -3.8329558, 0.31817842, -5.262814)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D24" type="OmniLight3D" parent="." unique_id=25789494]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -0.54529953, 0.31817842, -5.262814)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D25" type="OmniLight3D" parent="." unique_id=405820967]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 2.105918, 0.31817842, -5.262814)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D26" type="OmniLight3D" parent="." unique_id=1599234265]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 0.4339137, 0.31817842, -5.262814)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D27" type="OmniLight3D" parent="." unique_id=127447658]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 3.72157, 0.31817842, -5.262814)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D10" type="OmniLight3D" parent="." unique_id=35967125]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 1.9904804, 3.7920256, -5.2825894)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D11" type="OmniLight3D" parent="." unique_id=1498403399]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 0.31847644, 3.7920256, -5.2825894)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D12" type="OmniLight3D" parent="." unique_id=770748514]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, 3.6061327, 3.7920256, -5.2825894)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D13" type="OmniLight3D" parent="." unique_id=951582697]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -5.023114, 3.7920256, -0.022926897)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D14" type="OmniLight3D" parent="." unique_id=1791671801]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -6.695118, 3.7920256, -0.022926897)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
-omni_attenuation = -0.01
-
-[node name="OmniLight3D15" type="OmniLight3D" parent="." unique_id=370815447]
-transform = Transform3D(0.9998774, 0.015602984, -0.0013522363, -0.0155993495, 0.99987483, 0.0026587946, 0.0013935522, -0.0026373747, 0.9999956, -3.4074616, 3.7920256, -0.022926897)
-light_indirect_energy = 8.275
-light_volumetric_fog_energy = 6.955
-omni_range = 5.803
+omni_range = 10.330503
 omni_attenuation = -0.01
 
 [node name="atta_vollenweideri" parent="." unique_id=1005259392 instance=ExtResource("11_y2x5b")]
